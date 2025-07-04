@@ -4,14 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Brain, List, Shuffle, ArrowRight, Edit3, Check, X, Heart, Clock, Zap } from "lucide-react";
+import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type FlowStep = 'input' | 'processing' | 'review' | 'ordering' | 'cards';
+type FlowStep = 'input' | 'processing' | 'review' | 'cards';
 
 interface ExtractedTask {
   title: string;
@@ -33,9 +31,10 @@ interface TaskListItemProps {
   task: string;
   index: number;
   onTaskUpdate: (updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => void;
+  onReorder: (dragIndex: number, hoverIndex: number) => void;
 }
 
-const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) => {
+const TaskListItem = ({ task, index, onTaskUpdate, onReorder }: TaskListItemProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
   const [isQuick, setIsQuick] = useState(false);
@@ -47,6 +46,9 @@ const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) => {
 
   return (
     <div className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors">
+      {/* Drag Handle */}
+      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab hover:text-foreground" />
+      
       {/* Task Number */}
       <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
         {index + 1}
@@ -110,21 +112,21 @@ const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) => {
         </div>
       </div>
       
-      {/* Visual Tags */}
+      {/* Visual Tags - No Emojis */}
       <div className="flex gap-1">
         {isLiked && (
           <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-100 text-rose-700">
-            ❤️
+            Love
           </Badge>
         )}
         {isUrgent && (
           <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700">
-            🔥
+            Urgent
           </Badge>
         )}
         {isQuick && (
           <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-100 text-green-700">
-            ⚡
+            Quick
           </Badge>
         )}
       </div>
@@ -134,7 +136,6 @@ const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) => {
 
 const Tasks = () => {
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
-  const [isManualMode, setIsManualMode] = useState(false);
   const [brainDumpText, setBrainDumpText] = useState("");
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
   const [reviewedTasks, setReviewedTasks] = useState<string[]>([]);
@@ -203,7 +204,7 @@ const Tasks = () => {
       
       if (error instanceof Error) {
         if (error.message.includes("quota") || error.message.includes("billing")) {
-          errorMessage = "OpenAI API quota exceeded. Please check your OpenAI billing at platform.openai.com/usage or use Task List mode instead.";
+          errorMessage = "OpenAI API quota exceeded. Please check your OpenAI billing at platform.openai.com/usage.";
         } else {
           errorMessage = error.message;
         }
@@ -221,31 +222,20 @@ const Tasks = () => {
     }
   };
 
-  const handleManualSubmit = () => {
-    if (!brainDumpText.trim()) return;
-    
-    // Split by lines and filter out empty lines
-    const tasks = brainDumpText
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .map(title => ({
-        title,
-        estimated_urgency: 'medium' as const,
-        estimated_effort: 'medium' as const
-      }));
-
-    setExtractedTasks(tasks);
-    setReviewedTasks(tasks.map(task => task.title));
-    setCurrentStep('review');
-  };
-
   const resetFlow = () => {
     setCurrentStep('input');
     setBrainDumpText("");
     setExtractedTasks([]);
     setReviewedTasks([]);
     setTaggedTasks([]);
+  };
+
+  const handleReorder = (dragIndex: number, hoverIndex: number) => {
+    const newTasks = [...reviewedTasks];
+    const draggedTask = newTasks[dragIndex];
+    newTasks.splice(dragIndex, 1);
+    newTasks.splice(hoverIndex, 0, draggedTask);
+    setReviewedTasks(newTasks);
   };
 
   const handleShuffle = async () => {
@@ -298,120 +288,67 @@ const Tasks = () => {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold">Task Creation</h1>
-          <p className="text-muted-foreground">
-            Transform your thoughts into organized, prioritized tasks
-          </p>
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-4">
+          {currentStep !== 'input' && (
+            <Button
+              onClick={() => setCurrentStep('input')}
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+          )}
+          <div className="text-center space-y-4 flex-1">
+            <h1 className="text-3xl font-bold">Task Creation</h1>
+            <p className="text-muted-foreground">
+              Transform your thoughts into organized, prioritized tasks
+            </p>
+          </div>
         </div>
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <div className="space-y-6">
-            {/* Mode Toggle */}
-            <Card>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-center gap-4">
-                  <div className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
-                    !isManualMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                  }`}>
-                    <Brain className="h-5 w-5" />
-                    <span className="font-medium">Brain Dump</span>
-                  </div>
-                  <Switch 
-                    checked={isManualMode}
-                    onCheckedChange={setIsManualMode}
-                  />
-                  <div className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
-                    isManualMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                  }`}>
-                    <List className="h-5 w-5" />
-                    <span className="font-medium">Task List</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Brain Dump Interface */}
-            {!isManualMode && (
-              <Card className="border-2 border-dashed border-muted-foreground/30">
-                <CardHeader className="text-center">
-                  <CardTitle className="flex items-center justify-center gap-2">
-                    <Brain className="h-6 w-6 text-primary" />
-                    Brain Dump Space
-                  </CardTitle>
-                  <p className="text-muted-foreground">
-                    Just dump everything on your mind here - don't worry about structure
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Textarea
-                    placeholder="Let it all out... thoughts, tasks, ideas, anything!\n\nFor example:\nNeed to call mom about dinner this weekend, also grocery shopping for the party, fix that leaky faucet that's been bugging me, send the quarterly report to Sarah by Friday, maybe clean the garage this weekend if I have time..."
-                    value={brainDumpText}
-                    onChange={(e) => setBrainDumpText(e.target.value)}
-                    className="min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
-                    rows={12}
-                  />
-                  <Button 
-                    onClick={handleBrainDumpSubmit}
-                    disabled={!brainDumpText.trim() || isProcessing}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Brain className="mr-2 h-4 w-4 animate-pulse" />
-                        AI is organizing your thoughts...
-                      </>
-                    ) : (
-                      <>
-                        Make a List
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Task List Interface */}
-            {isManualMode && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <List className="h-5 w-5" />
-                    Create Task List
-                  </CardTitle>
-                  <p className="text-muted-foreground">
-                    Enter your tasks in a structured format, one per line
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="task-list">Task List</Label>
-                    <Textarea
-                      id="task-list"
-                      placeholder="• Call mom about weekend dinner&#10;• Buy groceries for dinner party&#10;• Fix leaky faucet in kitchen&#10;• Send quarterly report to Sarah"
-                      value={brainDumpText}
-                      onChange={(e) => setBrainDumpText(e.target.value)}
-                      className="min-h-[200px] resize-none font-mono"
-                      rows={10}
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleManualSubmit}
-                    disabled={!brainDumpText.trim()}
-                    className="w-full"
-                    size="lg"
-                  >
-                    Create List
+          <Card className="border-2 border-dashed border-muted-foreground/30">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Brain className="h-6 w-6 text-primary" />
+                Brain Dump Space
+              </CardTitle>
+              <p className="text-muted-foreground">
+                Just dump everything on your mind here - AI will organize it into tasks
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                placeholder="Let it all out... thoughts, tasks, ideas, anything!\n\nFor example:\nNeed to call mom about dinner this weekend, also grocery shopping for the party, fix that leaky faucet that's been bugging me, send the quarterly report to Sarah by Friday, maybe clean the garage this weekend if I have time..."
+                value={brainDumpText}
+                onChange={(e) => setBrainDumpText(e.target.value)}
+                className="min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
+                rows={12}
+              />
+              <Button 
+                onClick={handleBrainDumpSubmit}
+                disabled={!brainDumpText.trim() || isProcessing}
+                className="w-full"
+                size="lg"
+              >
+                {isProcessing ? (
+                  <>
+                    <Brain className="mr-2 h-4 w-4 animate-pulse" />
+                    AI is organizing your thoughts...
+                  </>
+                ) : (
+                  <>
+                    Make a List
                     <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         {/* Processing Step */}
@@ -434,11 +371,11 @@ const Tasks = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <List className="h-5 w-5" />
+                <Brain className="h-5 w-5" />
                 Task List - Add Tags ({reviewedTasks.length} tasks)
               </CardTitle>
               <p className="text-muted-foreground">
-                Review your tasks and add tags to help prioritize them
+                Review your tasks, add tags, and drag to reorder
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -448,6 +385,7 @@ const Tasks = () => {
                     key={index}
                     task={task}
                     index={index}
+                    onReorder={handleReorder}
                     onTaskUpdate={(updatedTask) => {
                       setTaggedTasks(prev => {
                         const updated = [...prev];
@@ -474,52 +412,18 @@ const Tasks = () => {
                 ))}
               </div>
               
-              <div className="flex gap-4 pt-6">
-                <Button 
-                  onClick={() => setCurrentStep('ordering')} 
-                  className="flex-1" 
-                  size="lg"
-                >
-                  Continue to Prioritization
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button 
-                  onClick={resetFlow} 
-                  variant="outline"
-                  size="lg"
-                >
-                  Start Over
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Ordering Step */}
-        {currentStep === 'ordering' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Choose Your Approach</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-semibold">How would you like to tackle your tasks?</h3>
-                <p className="text-muted-foreground">
-                  Our AI can shuffle based on your preferences to reduce decision fatigue
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Direct Action Buttons */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
                 <Button
                   onClick={handleShuffle}
-                  className="h-32 flex-col gap-4 text-left"
+                  className="h-24 flex-col gap-2"
                   size="lg"
                 >
-                  <Shuffle className="h-8 w-8" />
-                  <div>
+                  <Shuffle className="h-6 w-6" />
+                  <div className="text-center">
                     <div className="font-semibold">Shuffle Button</div>
-                    <div className="text-sm opacity-90">
-                      AI prioritizes based on tags + your preferences to reduce decision fatigue
+                    <div className="text-xs opacity-90">
+                      AI prioritizes based on tags
                     </div>
                   </div>
                 </Button>
@@ -527,14 +431,14 @@ const Tasks = () => {
                 <Button
                   onClick={handleManualOrder}
                   variant="outline"
-                  className="h-32 flex-col gap-4 text-left"
+                  className="h-24 flex-col gap-2"
                   size="lg"
                 >
-                  <List className="h-8 w-8" />
-                  <div>
+                  <Brain className="h-6 w-6" />
+                  <div className="text-center">
                     <div className="font-semibold">Start in Order</div>
-                    <div className="text-sm opacity-90">
-                      Keep your tasks in the current order for manual control
+                    <div className="text-xs opacity-90">
+                      Keep current order
                     </div>
                   </div>
                 </Button>
