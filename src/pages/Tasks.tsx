@@ -156,15 +156,25 @@ const Tasks = () => {
   }, []);
 
   const handleBrainDumpSubmit = async () => {
-    if (!brainDumpText.trim()) return;
+    console.log('handleBrainDumpSubmit called with text:', brainDumpText);
+    
+    if (!brainDumpText.trim()) {
+      console.log('No brain dump text provided');
+      return;
+    }
 
     setIsProcessing(true);
     setCurrentStep('processing');
+    console.log('Set processing state and step to processing');
 
     try {
+      console.log('Calling edge function with brain dump text...');
+      
       const { data, error } = await supabase.functions.invoke('process-brain-dump', {
         body: { brainDumpText }
       });
+
+      console.log('Edge function response:', { data, error });
 
       if (error) {
         console.error('Edge function error:', error);
@@ -172,9 +182,11 @@ const Tasks = () => {
       }
 
       if (!data?.tasks) {
+        console.error('No tasks in response:', data);
         throw new Error('No tasks extracted from brain dump');
       }
 
+      console.log('Successfully extracted tasks:', data.tasks);
       setExtractedTasks(data.tasks);
       setReviewedTasks(data.tasks.map((task: ExtractedTask) => task.title));
       setCurrentStep('review');
@@ -186,14 +198,26 @@ const Tasks = () => {
 
     } catch (error) {
       console.error('Error processing brain dump:', error);
+      
+      let errorMessage = "Failed to process brain dump. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("quota") || error.message.includes("billing")) {
+          errorMessage = "OpenAI API quota exceeded. Please check your OpenAI billing at platform.openai.com/usage or use Task List mode instead.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to process brain dump. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       setCurrentStep('input');
     } finally {
       setIsProcessing(false);
+      console.log('Processing finished, set isProcessing to false');
     }
   };
 
