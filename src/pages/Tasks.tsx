@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Brain, List, Shuffle, ArrowRight, Edit3, Check, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Brain, List, Shuffle, ArrowRight, Edit3, Check, X, Heart, Clock, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type FlowStep = 'input' | 'processing' | 'review' | 'tagging' | 'ordering' | 'cards';
+type FlowStep = 'input' | 'processing' | 'review' | 'ordering' | 'cards';
 
 interface ExtractedTask {
   title: string;
@@ -28,6 +29,109 @@ interface Task {
   card_position: number;
 }
 
+interface TaskListItemProps {
+  task: string;
+  index: number;
+  onTaskUpdate: (updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => void;
+}
+
+const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [isUrgent, setIsUrgent] = useState(false);
+  const [isQuick, setIsQuick] = useState(false);
+
+  // Update parent whenever any tag changes
+  useEffect(() => {
+    onTaskUpdate({ is_liked: isLiked, is_urgent: isUrgent, is_quick: isQuick });
+  }, [isLiked, isUrgent, isQuick, onTaskUpdate]);
+
+  return (
+    <div className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors">
+      {/* Task Number */}
+      <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+        {index + 1}
+      </div>
+      
+      {/* Task Title */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium leading-6 text-foreground truncate">
+          {task}
+        </p>
+      </div>
+      
+      {/* Tag Controls */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={`liked-${index}`}
+            checked={isLiked}
+            onCheckedChange={(checked) => setIsLiked(checked === true)}
+            className="data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500"
+          />
+          <Label 
+            htmlFor={`liked-${index}`} 
+            className="text-xs flex items-center gap-1 cursor-pointer"
+          >
+            <Heart className="h-3 w-3" />
+            Love
+          </Label>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={`urgent-${index}`}
+            checked={isUrgent}
+            onCheckedChange={(checked) => setIsUrgent(checked === true)}
+            className="data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+          />
+          <Label 
+            htmlFor={`urgent-${index}`} 
+            className="text-xs flex items-center gap-1 cursor-pointer"
+          >
+            <Clock className="h-3 w-3" />
+            Urgent
+          </Label>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={`quick-${index}`}
+            checked={isQuick}
+            onCheckedChange={(checked) => setIsQuick(checked === true)}
+            className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+          />
+          <Label 
+            htmlFor={`quick-${index}`} 
+            className="text-xs flex items-center gap-1 cursor-pointer"
+          >
+            <Zap className="h-3 w-3" />
+            Quick
+          </Label>
+        </div>
+      </div>
+      
+      {/* Visual Tags */}
+      <div className="flex gap-1">
+        {isLiked && (
+          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-100 text-rose-700">
+            ❤️
+          </Badge>
+        )}
+        {isUrgent && (
+          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700">
+            🔥
+          </Badge>
+        )}
+        {isQuick && (
+          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-100 text-green-700">
+            ⚡
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Tasks = () => {
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
   const [isManualMode, setIsManualMode] = useState(false);
@@ -35,7 +139,6 @@ const Tasks = () => {
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
   const [reviewedTasks, setReviewedTasks] = useState<string[]>([]);
   const [taggedTasks, setTaggedTasks] = useState<Task[]>([]);
-  const [currentTagIndex, setCurrentTagIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState(null);
   const { toast } = useToast();
@@ -113,30 +216,12 @@ const Tasks = () => {
     setCurrentStep('review');
   };
 
-  const proceedToTagging = () => {
-    setCurrentStep('tagging');
-    setCurrentTagIndex(0);
-  };
-
-  const handleTaskTag = (isLiked: boolean, isUrgent: boolean, isQuick: boolean) => {
-    const currentTask = reviewedTasks[currentTagIndex];
-    const newTask: Task = {
-      id: `temp-${currentTagIndex}`,
-      title: currentTask,
-      status: 'active' as const,
-      is_liked: isLiked,
-      is_urgent: isUrgent,
-      is_quick: isQuick,
-      card_position: currentTagIndex + 1
-    };
-
-    setTaggedTasks(prev => [...prev, newTask]);
-
-    if (currentTagIndex < reviewedTasks.length - 1) {
-      setCurrentTagIndex(prev => prev + 1);
-    } else {
-      setCurrentStep('ordering');
-    }
+  const resetFlow = () => {
+    setCurrentStep('input');
+    setBrainDumpText("");
+    setExtractedTasks([]);
+    setReviewedTasks([]);
+    setTaggedTasks([]);
   };
 
   const handleShuffle = async () => {
@@ -185,15 +270,6 @@ const Tasks = () => {
     }
   };
 
-  const resetFlow = () => {
-    setCurrentStep('input');
-    setBrainDumpText("");
-    setExtractedTasks([]);
-    setReviewedTasks([]);
-    setTaggedTasks([]);
-    setCurrentTagIndex(0);
-  };
-
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -208,45 +284,110 @@ const Tasks = () => {
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  {isManualMode ? <List className="h-5 w-5" /> : <Brain className="h-5 w-5" />}
-                  {isManualMode ? "Create Task List" : "Brain Dump"}
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="mode-toggle">List Mode</Label>
+          <div className="space-y-6">
+            {/* Mode Toggle */}
+            <Card>
+              <CardContent className="py-4">
+                <div className="flex items-center justify-center gap-4">
+                  <div className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
+                    !isManualMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                  }`}>
+                    <Brain className="h-5 w-5" />
+                    <span className="font-medium">Brain Dump</span>
+                  </div>
                   <Switch 
-                    id="mode-toggle"
                     checked={isManualMode}
                     onCheckedChange={setIsManualMode}
                   />
+                  <div className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
+                    isManualMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                  }`}>
+                    <List className="h-5 w-5" />
+                    <span className="font-medium">Task List</span>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                placeholder={isManualMode 
-                  ? "Enter your tasks, one per line:\n• Call mom\n• Buy groceries\n• Fix leaky faucet"
-                  : "Just dump everything on your mind here...\n\nNeed to call mom, also grocery shopping for dinner party this weekend, fix the leaky faucet sometime, send that report to Sarah by friday..."
-                }
-                value={brainDumpText}
-                onChange={(e) => setBrainDumpText(e.target.value)}
-                className="min-h-[200px] resize-none"
-                rows={8}
-              />
-              <Button 
-                onClick={isManualMode ? handleManualSubmit : handleBrainDumpSubmit}
-                disabled={!brainDumpText.trim() || isProcessing}
-                className="w-full"
-                size="lg"
-              >
-                {isProcessing ? "Processing..." : isManualMode ? "Create List" : "Make a List"}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Brain Dump Interface */}
+            {!isManualMode && (
+              <Card className="border-2 border-dashed border-muted-foreground/30">
+                <CardHeader className="text-center">
+                  <CardTitle className="flex items-center justify-center gap-2">
+                    <Brain className="h-6 w-6 text-primary" />
+                    Brain Dump Space
+                  </CardTitle>
+                  <p className="text-muted-foreground">
+                    Just dump everything on your mind here - don't worry about structure
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Textarea
+                    placeholder="Let it all out... thoughts, tasks, ideas, anything!\n\nFor example:\nNeed to call mom about dinner this weekend, also grocery shopping for the party, fix that leaky faucet that's been bugging me, send the quarterly report to Sarah by Friday, maybe clean the garage this weekend if I have time..."
+                    value={brainDumpText}
+                    onChange={(e) => setBrainDumpText(e.target.value)}
+                    className="min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
+                    rows={12}
+                  />
+                  <Button 
+                    onClick={handleBrainDumpSubmit}
+                    disabled={!brainDumpText.trim() || isProcessing}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Brain className="mr-2 h-4 w-4 animate-pulse" />
+                        AI is organizing your thoughts...
+                      </>
+                    ) : (
+                      <>
+                        Make a List
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Task List Interface */}
+            {isManualMode && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <List className="h-5 w-5" />
+                    Create Task List
+                  </CardTitle>
+                  <p className="text-muted-foreground">
+                    Enter your tasks in a structured format, one per line
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="task-list">Task List</Label>
+                    <Textarea
+                      id="task-list"
+                      placeholder="• Call mom about weekend dinner&#10;• Buy groceries for dinner party&#10;• Fix leaky faucet in kitchen&#10;• Send quarterly report to Sarah"
+                      value={brainDumpText}
+                      onChange={(e) => setBrainDumpText(e.target.value)}
+                      className="min-h-[200px] resize-none font-mono"
+                      rows={10}
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleManualSubmit}
+                    disabled={!brainDumpText.trim()}
+                    className="w-full"
+                    size="lg"
+                  >
+                    Create List
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* Processing Step */}
@@ -264,125 +405,66 @@ const Tasks = () => {
           </Card>
         )}
 
-        {/* Review Step */}
+        {/* Review & Tag Step */}
         {currentStep === 'review' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Edit3 className="h-5 w-5" />
-                Review & Edit Tasks ({reviewedTasks.length})
+                <List className="h-5 w-5" />
+                Task List - Add Tags ({reviewedTasks.length} tasks)
               </CardTitle>
+              <p className="text-muted-foreground">
+                Review your tasks and add tags to help prioritize them
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {reviewedTasks.map((task, index) => (
-                  <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="flex-1">{task}</span>
-                    <Button variant="ghost" size="sm">
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <TaskListItem
+                    key={index}
+                    task={task}
+                    index={index}
+                    onTaskUpdate={(updatedTask) => {
+                      setTaggedTasks(prev => {
+                        const updated = [...prev];
+                        const existingIndex = updated.findIndex(t => t.id === `temp-${index}`);
+                        const newTask: Task = {
+                          id: `temp-${index}`,
+                          title: task,
+                          status: 'active',
+                          is_liked: updatedTask.is_liked,
+                          is_urgent: updatedTask.is_urgent,
+                          is_quick: updatedTask.is_quick,
+                          card_position: index + 1
+                        };
+                        
+                        if (existingIndex >= 0) {
+                          updated[existingIndex] = newTask;
+                        } else {
+                          updated.push(newTask);
+                        }
+                        return updated;
+                      });
+                    }}
+                  />
                 ))}
               </div>
-              <Button onClick={proceedToTagging} className="w-full" size="lg">
-                Tag Tasks
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Tagging Step */}
-        {currentStep === 'tagging' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Tag Task ({currentTagIndex + 1} of {reviewedTasks.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-center p-6 bg-muted rounded-lg">
-                <h3 className="text-xl font-semibold mb-2">
-                  {reviewedTasks[currentTagIndex]}
-                </h3>
-                <p className="text-muted-foreground">
-                  How do you feel about this task?
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="text-center space-y-2">
-                  <p className="font-medium">Choose all that apply:</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    <Badge variant="outline">1. If you love the task</Badge>
-                    <Badge variant="outline">2. If it's urgent</Badge>
-                    <Badge variant="outline">3. If it's quick</Badge>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button
-                    variant="outline"
-                    className="h-20 flex-col gap-2"
-                    onClick={() => handleTaskTag(true, false, false)}
-                  >
-                    <span className="text-2xl">❤️</span>
-                    <span>Love It</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-20 flex-col gap-2"
-                    onClick={() => handleTaskTag(false, true, false)}
-                  >
-                    <span className="text-2xl">🔥</span>
-                    <span>Urgent</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-20 flex-col gap-2"
-                    onClick={() => handleTaskTag(false, false, true)}
-                  >
-                    <span className="text-2xl">⚡</span>
-                    <span>Quick</span>
-                  </Button>
-                </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button
-                    variant="outline"
-                    className="h-20 flex-col gap-2"
-                    onClick={() => handleTaskTag(true, true, false)}
-                  >
-                    <span className="text-2xl">🚀</span>
-                    <span>Love + Urgent</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-20 flex-col gap-2"
-                    onClick={() => handleTaskTag(true, false, true)}
-                  >
-                    <span className="text-2xl">💖</span>
-                    <span>Love + Quick</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-20 flex-col gap-2"
-                    onClick={() => handleTaskTag(false, true, true)}
-                  >
-                    <span className="text-2xl">⚡🔥</span>
-                    <span>Urgent + Quick</span>
-                  </Button>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => handleTaskTag(false, false, false)}
+              
+              <div className="flex gap-4 pt-6">
+                <Button 
+                  onClick={() => setCurrentStep('ordering')} 
+                  className="flex-1" 
+                  size="lg"
                 >
-                  Skip (No special tags)
+                  Continue to Prioritization
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button 
+                  onClick={resetFlow} 
+                  variant="outline"
+                  size="lg"
+                >
+                  Start Over
                 </Button>
               </div>
             </CardContent>
