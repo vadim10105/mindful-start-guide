@@ -83,8 +83,8 @@ const Index = () => {
                 <Button asChild className="flex-1">
                   <Link to="/settings">Settings</Link>
                 </Button>
-                <Button variant="outline" className="flex-1">
-                  Start Tasks
+                <Button asChild variant="outline" className="flex-1">
+                  <Link to="/tasks">Start Tasks</Link>
                 </Button>
                 <Button 
                   variant="ghost" 
