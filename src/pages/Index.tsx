@@ -86,6 +86,14 @@ const Index = () => {
                 <Button variant="outline" className="flex-1">
                   Start Tasks
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                  }}
+                >
+                  Logout
+                </Button>
               </div>
             </CardContent>
           </Card>
