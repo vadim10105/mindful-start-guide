@@ -65,8 +65,8 @@ const Index = () => {
               <p className="text-muted-foreground">
                 Please sign in to access your personalized task management experience.
               </p>
-              <Button className="w-full">
-                Sign In / Sign Up
+              <Button asChild className="w-full">
+                <Link to="/auth">Sign In / Sign Up</Link>
               </Button>
             </CardContent>
           </Card>
