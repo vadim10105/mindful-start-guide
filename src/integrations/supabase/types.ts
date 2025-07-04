@@ -48,6 +48,115 @@ export type Database = {
         }
         Relationships: []
       }
+      subtasks: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_done: boolean | null
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_done?: boolean | null
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_done?: boolean | null
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          ai_priority_score: number | null
+          card_position: number
+          completed_at: string | null
+          created_at: string
+          difficulty: Database["public"]["Enums"]["task_difficulty"] | null
+          dopamine_score: number | null
+          flipped_image_url: string | null
+          id: string
+          inferred_from_onboarding: boolean | null
+          is_disliked: boolean | null
+          is_liked: boolean | null
+          is_quick: boolean | null
+          is_urgent: boolean | null
+          manually_reordered: boolean | null
+          source: Database["public"]["Enums"]["task_source"]
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_priority_score?: number | null
+          card_position?: number
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["task_difficulty"] | null
+          dopamine_score?: number | null
+          flipped_image_url?: string | null
+          id?: string
+          inferred_from_onboarding?: boolean | null
+          is_disliked?: boolean | null
+          is_liked?: boolean | null
+          is_quick?: boolean | null
+          is_urgent?: boolean | null
+          manually_reordered?: boolean | null
+          source?: Database["public"]["Enums"]["task_source"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_priority_score?: number | null
+          card_position?: number
+          completed_at?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["task_difficulty"] | null
+          dopamine_score?: number | null
+          flipped_image_url?: string | null
+          id?: string
+          inferred_from_onboarding?: boolean | null
+          is_disliked?: boolean | null
+          is_liked?: boolean | null
+          is_quick?: boolean | null
+          is_urgent?: boolean | null
+          manually_reordered?: boolean | null
+          source?: Database["public"]["Enums"]["task_source"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -56,7 +165,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_difficulty: "easy" | "neutral" | "hard"
+      task_source: "brain_dump" | "manual" | "ai"
+      task_status: "active" | "completed" | "skipped"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -171,6 +282,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      task_difficulty: ["easy", "neutral", "hard"],
+      task_source: ["brain_dump", "manual", "ai"],
+      task_status: ["active", "completed", "skipped"],
+    },
   },
 } as const
