@@ -161,33 +161,42 @@ export const TaskSwipeCards = ({ preferences, onChange }: TaskSwipeCardsProps) =
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-semibold">Which types of tasks do you enjoy?</h2>
         <p className="text-muted-foreground">
-          Rate each task type: swipe right (like), left (dislike), or down (neutral)
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Use arrow keys: Right = Like, Left = Dislike, Down = Neutral
+          Rate each task type by choosing like, dislike, or neutral
         </p>
         <div className="text-sm text-muted-foreground">
           {completed} of {total} completed
         </div>
       </div>
 
-      <div className="flex justify-center">
-        <Card 
-          className={`w-full max-w-md transition-transform duration-200 cursor-grab active:cursor-grabbing ${
-            dragDirection === 'right' ? 'transform translate-x-4 rotate-2' :
-            dragDirection === 'left' ? 'transform -translate-x-4 -rotate-2' :
-            dragDirection === 'down' ? 'transform translate-y-4' : ''
-          }`}
-          onTouchStart={handleTouchStart}
-        >
-          <CardContent className="p-6 space-y-4">
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-semibold">{currentTask.title}</h3>
-              <p className="text-muted-foreground font-medium">{currentTask.description}</p>
-              <p className="text-sm text-muted-foreground">{currentTask.examples}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="relative flex justify-center h-96">
+        {/* Card stack - show current card and next cards behind it */}
+        <div className="relative w-full max-w-md">
+          {taskTypes.slice(currentIndex, currentIndex + 3).map((task, index) => (
+            <Card 
+              key={task.id}
+              className={`absolute inset-0 transition-all duration-300 ${
+                index === 0 
+                  ? 'z-30 shadow-lg' 
+                  : index === 1 
+                    ? 'z-20 transform translate-y-2 scale-95 opacity-70' 
+                    : 'z-10 transform translate-y-4 scale-90 opacity-40'
+              } ${
+                dragDirection === 'right' ? 'transform translate-x-4 rotate-2' :
+                dragDirection === 'left' ? 'transform -translate-x-4 -rotate-2' :
+                dragDirection === 'down' ? 'transform translate-y-4' : ''
+              }`}
+              onTouchStart={index === 0 ? handleTouchStart : undefined}
+            >
+              <CardContent className="p-6 space-y-4">
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-semibold">{task.title}</h3>
+                  <p className="text-muted-foreground font-medium">{task.description}</p>
+                  <p className="text-sm text-muted-foreground">{task.examples}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* Button alternatives for accessibility */}
@@ -219,7 +228,7 @@ export const TaskSwipeCards = ({ preferences, onChange }: TaskSwipeCardsProps) =
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
-        Swipe the card or use the buttons above
+        Use the buttons above or arrow keys (←→↓)
       </div>
     </div>
   );

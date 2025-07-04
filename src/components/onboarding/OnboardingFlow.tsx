@@ -9,6 +9,7 @@ import { NameStep } from "./NameStep";
 import { EnergyTimeSteps } from "./EnergyTimeSteps";
 import { TaskPreferenceStep } from "./TaskPreferenceStep";
 import { TaskSwipeCards } from "./TaskSwipeCards";
+import { ReviewStep } from "./ReviewStep";
 
 type OnboardingData = {
   displayName: string;
@@ -32,7 +33,7 @@ export const OnboardingFlow = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const totalSteps = 5;
+  const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
 
   // Check if user is authenticated and already completed onboarding
@@ -119,6 +120,7 @@ export const OnboardingFlow = () => {
       case 3: return data.lowestEnergyTime.length > 0;
       case 4: return data.taskStartPreference.length > 0;
       case 5: return Object.keys(data.taskPreferences).length === 7;
+      case 6: return true; // Review step is always valid
       default: return false;
     }
   };
@@ -171,6 +173,13 @@ export const OnboardingFlow = () => {
               <TaskSwipeCards
                 preferences={data.taskPreferences}
                 onChange={(taskPreferences) => updateData({ taskPreferences })}
+              />
+            )}
+            
+            {currentStep === 6 && (
+              <ReviewStep
+                data={data}
+                onEdit={(step) => setCurrentStep(step)}
               />
             )}
             
