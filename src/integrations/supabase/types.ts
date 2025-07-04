@@ -12,36 +12,36 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          display_name: string | null
           id: string
           lowest_energy_time: string | null
           onboarding_completed: boolean | null
           peak_energy_time: string | null
-          task_avoid_ratings: Json | null
-          task_love_ratings: Json | null
+          task_preferences: Json | null
           task_start_preference: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           id?: string
           lowest_energy_time?: string | null
           onboarding_completed?: boolean | null
           peak_energy_time?: string | null
-          task_avoid_ratings?: Json | null
-          task_love_ratings?: Json | null
+          task_preferences?: Json | null
           task_start_preference?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           id?: string
           lowest_energy_time?: string | null
           onboarding_completed?: boolean | null
           peak_energy_time?: string | null
-          task_avoid_ratings?: Json | null
-          task_love_ratings?: Json | null
+          task_preferences?: Json | null
           task_start_preference?: string | null
           updated_at?: string
           user_id?: string
