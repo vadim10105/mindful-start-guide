@@ -199,13 +199,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const handleAddToCollection = async () => {
     if (!lastCompletedTask) return;
     
-    console.log('Before add to collection:', { 
-      currentViewingIndex, 
-      activeCommittedIndex, 
-      completedTasksSize: completedTasks.size,
-      lastCompletedTaskId: lastCompletedTask.id 
-    });
-    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -246,22 +239,14 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     
     // Move to next task after adding to collection
     const nextIndex = currentViewingIndex + 1;
-    console.log('Moving to next task:', { nextIndex, totalTasks: tasks.length });
     
     if (nextIndex < tasks.length) {
-      // Update state first
       setCurrentViewingIndex(nextIndex);
       setActiveCommittedIndex(nextIndex);
       setHasCommittedToTask(false);
       setNavigationUnlocked(false);
       setFlowStartTime(null);
       setFlowProgress(0);
-      
-      // Force swiper to slide to next card with a small delay to ensure state is updated
-      setTimeout(() => {
-        console.log('Sliding to index:', nextIndex);
-        swiperRef.current?.slideTo(nextIndex, 300, false);
-      }, 100);
       
       const nextTask = tasks[nextIndex];
       const newCardMessages = [
@@ -325,9 +310,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       setHasCommittedToTask(false);
       setNavigationUnlocked(false);
       setFlowStartTime(null);
-      
-      // Animate swipe to next card
-      swiperRef.current?.slideTo(nextIndex);
       
       const moveOnMessages = [
         `Fine, moving on to "${nextTask.title}"... this better be more interesting.`,

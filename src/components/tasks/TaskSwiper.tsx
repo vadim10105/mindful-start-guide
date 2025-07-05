@@ -82,7 +82,8 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
           }}
           allowSlideNext={!isNavigationLocked}
           allowSlidePrev={!isNavigationLocked}
-          initialSlide={currentViewingIndex}
+          key={currentViewingIndex} // Force re-render when index changes
+          initialSlide={0} // Always start at 0 since we're re-rendering
           className="w-full h-full"
         >
           {tasks.map((task, index) => (
