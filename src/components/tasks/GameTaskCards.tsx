@@ -10,6 +10,10 @@ import { TodaysCollection } from "./TodaysCollection";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import confetti from "canvas-confetti";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { EffectCards } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/effect-cards';
 
 interface TaskCardData {
   id: string;
@@ -42,7 +46,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const [flowStartTime, setFlowStartTime] = useState<number | null>(null);
   const [showCharacter, setShowCharacter] = useState(true);
   const [characterMessage, setCharacterMessage] = useState(
-    "Ready when you are! Click 'Commit to Task' to start your focused session."
+    "Ugh, fine... I guess we should probably do something productive. Click 'Commit to Task' if you're feeling ambitious."
   );
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
   const [hasCommittedToTask, setHasCommittedToTask] = useState(false);
@@ -55,7 +59,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const timerRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
 
-  // Calculate flow progress (0-100) based on 5-minute commitment periods
+  // Calculate flow progress (0-100) based on 20-minute commitment periods
   const [flowProgress, setFlowProgress] = useState(0);
 
   // Sunset images for card backs
@@ -70,15 +74,16 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       if (!flowStartTime || !hasCommittedToTask) return;
       
       const elapsed = Date.now() - flowStartTime;
-      const progress = Math.min((elapsed / (5 * 60 * 1000)) * 100, 100); // 5 minutes
+      const progress = Math.min((elapsed / (20 * 60 * 1000)) * 100, 100); // 20 minutes
       setFlowProgress(progress);
       
       // Unlock navigation after 5 minutes
       if (elapsed >= 5 * 60 * 1000 && !navigationUnlocked) {
         setNavigationUnlocked(true);
-        setCharacterMessage("Great focus! You can now navigate to other tasks or continue with this one.");
+        const currentTask = tasks[activeCommittedIndex];
+        setCharacterMessage(`Wow, you actually stuck with "${currentTask?.title}" longer than I would have! Feel free to browse around now.`);
         setShowCharacter(true);
-        setTimeout(() => setShowCharacter(false), 3000);
+        setTimeout(() => setShowCharacter(false), 4000);
       }
     };
 
@@ -107,11 +112,18 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       [currentTask.id]: Date.now()
     }));
     
-    setCharacterMessage("Perfect! Focus time has begun. You've got this!");
+    const lazyMessages = [
+      `Alright, "${currentTask.title}"... I'd probably procrastinate on this too, but here we are.`,
+      `Even I can manage 5 minutes of focus on "${currentTask.title}"... probably.`,
+      `Fine, we're doing "${currentTask.title}". At least one of us is being productive today.`,
+      `"${currentTask.title}" it is. Try not to make me look too lazy by comparison.`
+    ];
+    
+    setCharacterMessage(lazyMessages[Math.floor(Math.random() * lazyMessages.length)]);
     setShowCharacter(true);
     
-    // Hide character after 3 seconds
-    setTimeout(() => setShowCharacter(false), 3000);
+    // Hide character after 4 seconds
+    setTimeout(() => setShowCharacter(false), 4000);
   };
 
   const handleTaskComplete = async (taskId: string) => {
@@ -211,9 +223,21 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
           setCurrentViewingIndex(nextIndex);
           setActiveCommittedIndex(nextIndex);
           setHasCommittedToTask(false);
-          setNavigationUnlocked(false);
+          setNavigationUnlocked(false); // Lock navigation again for new card
           setFlowStartTime(null);
           setFlowProgress(0);
+          
+          // Show lazy message about new card
+          const nextTask = tasks[nextIndex];
+          const newCardMessages = [
+            `Oh great, now we have "${nextTask?.title}"... this day just keeps getting better.`,
+            `Next up: "${nextTask?.title}". I'm already tired just thinking about it.`,
+            `"${nextTask?.title}" is calling... but I'm not answering.`,
+            `Well, "${nextTask?.title}" isn't going to do itself... unfortunately.`
+          ];
+          setCharacterMessage(newCardMessages[Math.floor(Math.random() * newCardMessages.length)]);
+          setShowCharacter(true);
+          setTimeout(() => setShowCharacter(false), 4000);
         }
       }
     } catch (error) {
@@ -274,218 +298,200 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
             </div>
           )}
 
-          {/* Main Card Display */}
-          <div className="relative">
-            {/* Stacked Card Deck Effect */}
-            <div className="mb-6 flex justify-center">
-              <div className="relative w-80" style={{ aspectRatio: '63/88' }}>
-                
-                {/* Background Cards (Stack Effect) */}
-                {!completedTasks.has(currentTask?.id) && [...Array(Math.min(3, tasks.length - 1))].map((_, i) => (
-                  <div
-                    key={`background-card-${i}`}
-                    className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg border border-primary/20 shadow-lg"
-                    style={{
-                      transform: `translateX(${(i + 1) * 3}px) translateY(${(i + 1) * 2}px) rotate(${(i + 1) * 1}deg)`,
-                      zIndex: 20 - i
+            {/* Main Card Display with Swiper */}
+            <div className="relative">
+              <div className="mb-6 flex justify-center">
+                <div className="w-80" style={{ aspectRatio: '63/88' }}>
+                  <Swiper
+                    effect="cards"
+                    grabCursor={true}
+                    modules={[EffectCards]}
+                    cardsEffect={{
+                      perSlideOffset: 8,
+                      perSlideRotate: 2,
+                      rotate: true,
+                      slideShadows: true,
                     }}
-                  />
-                ))}
-                
-                {/* Current Task Card */}
-                <div className={`absolute inset-0 transition-transform duration-700 ${
-                  isTaskCompleted ? '[transform:rotateY(180deg)]' : ''
-                }`} style={{ transformStyle: 'preserve-3d', zIndex: 25 }}>
-                  
-                  {/* Progress Border - Only show when committed and not completed */}
-                  {isTaskCommitted && !isTaskCompleted && (
-                    <ProgressBorder
-                      progress={flowProgress / 100}
-                      width={320}
-                      height={447}
-                      stroke={6}
-                      color="hsl(var(--primary))"
-                      className="pointer-events-none z-[15]"
-                    />
-                  )}
-                  
-                  {/* Front of Card */}
-                  <Card className={`absolute inset-0 border-2 shadow-xl transition-all duration-300 bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
-                    isTaskCompleted 
-                      ? 'border-green-500' 
-                      : isViewingDifferentCard
-                      ? 'border-muted-foreground/50'
-                      : 'border-primary/30 hover:border-primary/50'
-                  }`} style={{ backfaceVisibility: 'hidden' }}>
-                    <div className="h-full flex flex-col">
-                      <CardHeader className="text-center pb-4 flex-shrink-0">
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                            isViewingDifferentCard 
-                              ? 'bg-muted text-muted-foreground' 
-                              : 'bg-primary text-primary-foreground'
-                          }`}>
-                            {currentViewingIndex + 1}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            of {tasks.length}
-                          </div>
-                        </div>
-                        <CardTitle className="text-lg leading-tight text-foreground">
-                          {currentTask?.title || 'Loading task...'}
-                        </CardTitle>
-                        {isViewingDifferentCard && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            (Currently active: {activeTask?.title})
-                          </p>
-                        )}
-                      </CardHeader>
-                      
-                      <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
-                        {/* Task Tags */}
-                        <div className="flex flex-wrap gap-1 justify-center">
-                          {currentTask?.is_liked && (
-                            <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
-                              <Heart className="w-3 h-3 mr-1" />
-                              Love
-                            </Badge>
-                          )}
-                          {currentTask?.is_urgent && (
-                            <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-300">
-                              <Clock className="w-3 h-3 mr-1" />
-                              Urgent
-                            </Badge>
-                          )}
-                          {currentTask?.is_quick && (
-                            <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-300 border border-green-300">
-                              <Zap className="w-3 h-3 mr-1" />
-                              Quick
-                            </Badge>
-                          )}
-                          <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
-                            AI: {currentTask?.ai_effort || 'medium'} effort
-                          </Badge>
-                        </div>
-
-                        {/* Task Actions */}
-                        <div className="text-center space-y-2">
-                          {currentTask && !isTaskCompleted ? (
-                            isViewingDifferentCard ? (
-                              <div className="text-sm text-muted-foreground">
-                                You're currently focused on another task
-                              </div>
-                            ) : !isTaskCommitted ? (
-                              <Button 
-                                onClick={handleCommitToCurrentTask}
-                                size="sm"
-                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                              >
-                                <Play className="w-4 h-4 mr-2" />
-                                Commit to Task
-                              </Button>
-                            ) : (
-                              <Button 
-                                onClick={() => handleTaskComplete(currentTask.id)}
-                                size="sm"
-                                className="w-full bg-green-600 text-white hover:bg-green-700"
-                              >
-                                <Check className="w-4 h-4 mr-2" />
-                                Mark Complete
-                              </Button>
-                            )
-                          ) : isTaskCompleted ? (
-                            <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                              <Check className="w-4 h-4" />
-                              <span className="font-medium text-sm">Completed!</span>
-                            </div>
-                          ) : (
-                            <div className="text-sm text-muted-foreground">Loading...</div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </div>
-                  </Card>
-
-                  {/* Back of Card (Sunset Image) */}
-                  {isTaskCompleted && currentTask && (
-                    <div 
-                      className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)]"
-                      style={{ 
-                        backfaceVisibility: 'hidden',
-                        background: `linear-gradient(45deg, rgba(251,146,60,0.8), rgba(249,115,22,0.8)), url('${sunsetImages[currentViewingIndex % sunsetImages.length]}') center/cover`
-                      }}
-                    >
-                      <div className="h-full flex flex-col justify-between p-6 text-white">
-                        <div className="text-center">
-                          <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
-                          <p className="text-sm opacity-90">{currentTask.title}</p>
-                        </div>
-                        
-                        <div className="text-center space-y-4">
-                          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
-                            <p className="text-sm mb-2">🌅 Beautiful work!</p>
-                            <p className="text-xs opacity-75">You've earned this sunset moment</p>
-                          </div>
+                    onSlideChange={(swiper) => {
+                      if (!isNavigationLocked) {
+                        setCurrentViewingIndex(swiper.activeIndex);
+                      }
+                    }}
+                    allowSlideNext={!isNavigationLocked}
+                    allowSlidePrev={!isNavigationLocked}
+                    initialSlide={currentViewingIndex}
+                    className="w-full h-full"
+                  >
+                    {tasks.map((task, index) => (
+                      <SwiperSlide key={task.id}>
+                        <div className={`w-full h-full transition-transform duration-700 ${
+                          completedTasks.has(task.id) ? '[transform:rotateY(180deg)]' : ''
+                        }`} style={{ transformStyle: 'preserve-3d' }}>
                           
-                          <Button 
-                            onClick={() => setShowCompletionModal(true)}
-                            size="sm"
-                            className="w-full bg-white/20 hover:bg-white/30 border border-white/30"
-                          >
-                            View Completion Stats
-                          </Button>
+                          {/* Progress Border - Only show when committed and not completed */}
+                          {index === activeCommittedIndex && hasCommittedToTask && !completedTasks.has(task.id) && (
+                            <ProgressBorder
+                              progress={flowProgress / 100}
+                              width={320}
+                              height={447}
+                              stroke={6}
+                              color="hsl(var(--primary))"
+                              className="pointer-events-none z-[15]"
+                            />
+                          )}
+                          
+                          {/* Front of Card */}
+                          <Card className={`w-full h-full border-2 shadow-xl bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
+                            completedTasks.has(task.id)
+                              ? 'border-green-500' 
+                              : index !== activeCommittedIndex && hasCommittedToTask
+                              ? 'border-muted-foreground/50'
+                              : 'border-primary/30 hover:border-primary/50'
+                          }`} style={{ backfaceVisibility: 'hidden' }}>
+                            <div className="h-full flex flex-col">
+                              <CardHeader className="text-center pb-4 flex-shrink-0">
+                                <div className="flex items-center justify-center gap-2 mb-4">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                    index !== activeCommittedIndex && hasCommittedToTask
+                                      ? 'bg-muted text-muted-foreground' 
+                                      : 'bg-primary text-primary-foreground'
+                                  }`}>
+                                    {index + 1}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    of {tasks.length}
+                                  </div>
+                                </div>
+                                <CardTitle className="text-lg leading-tight text-foreground">
+                                  {task.title}
+                                </CardTitle>
+                                {index !== activeCommittedIndex && hasCommittedToTask && (
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    (Currently active: {tasks[activeCommittedIndex]?.title})
+                                  </p>
+                                )}
+                              </CardHeader>
+                              
+                              <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
+                                {/* Task Tags */}
+                                <div className="flex flex-wrap gap-1 justify-center">
+                                  {task.is_liked && (
+                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
+                                      <Heart className="w-3 h-3 mr-1" />
+                                      Love
+                                    </Badge>
+                                  )}
+                                  {task.is_urgent && (
+                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-300">
+                                      <Clock className="w-3 h-3 mr-1" />
+                                      Urgent
+                                    </Badge>
+                                  )}
+                                  {task.is_quick && (
+                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-300 border border-green-300">
+                                      <Zap className="w-3 h-3 mr-1" />
+                                      Quick
+                                    </Badge>
+                                  )}
+                                  <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
+                                    AI: {task.ai_effort || 'medium'} effort
+                                  </Badge>
+                                </div>
+
+                                {/* Task Actions */}
+                                <div className="text-center space-y-2">
+                                  {!completedTasks.has(task.id) ? (
+                                    index !== activeCommittedIndex && hasCommittedToTask ? (
+                                      <div className="text-sm text-muted-foreground">
+                                        You're currently focused on another task
+                                      </div>
+                                    ) : index !== currentViewingIndex ? (
+                                      <div className="text-sm text-muted-foreground">
+                                        Swipe to view this task
+                                      </div>
+                                    ) : !hasCommittedToTask || index !== activeCommittedIndex ? (
+                                      <Button 
+                                        onClick={handleCommitToCurrentTask}
+                                        size="sm"
+                                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                                      >
+                                        <Play className="w-4 h-4 mr-2" />
+                                        Commit to Task
+                                      </Button>
+                                    ) : (
+                                      <Button 
+                                        onClick={() => handleTaskComplete(task.id)}
+                                        size="sm"
+                                        className="w-full bg-green-600 text-white hover:bg-green-700"
+                                      >
+                                        <Check className="w-4 h-4 mr-2" />
+                                        Mark Complete
+                                      </Button>
+                                    )
+                                  ) : (
+                                    <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                                      <Check className="w-4 h-4" />
+                                      <span className="font-medium text-sm">Completed!</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </div>
+                          </Card>
+
+                          {/* Back of Card (Sunset Image) */}
+                          {completedTasks.has(task.id) && (
+                            <div 
+                              className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)]"
+                              style={{ 
+                                backfaceVisibility: 'hidden',
+                                background: `linear-gradient(45deg, rgba(251,146,60,0.8), rgba(249,115,22,0.8)), url('${sunsetImages[index % sunsetImages.length]}') center/cover`
+                              }}
+                            >
+                              <div className="h-full flex flex-col justify-between p-6 text-white">
+                                <div className="text-center">
+                                  <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
+                                  <p className="text-sm opacity-90">{task.title}</p>
+                                </div>
+                                
+                                <div className="text-center space-y-4">
+                                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+                                    <p className="text-sm mb-2">🌅 Beautiful work!</p>
+                                    <p className="text-xs opacity-75">You've earned this sunset moment</p>
+                                  </div>
+                                  
+                                  <Button 
+                                    onClick={() => setShowCompletionModal(true)}
+                                    size="sm"
+                                    className="w-full bg-white/20 hover:bg-white/30 border border-white/30"
+                                  >
+                                    View Completion Stats
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </div>
-                  )}
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
                 </div>
               </div>
-            </div>
 
-            {/* Navigation */}
-            {tasks.length > 1 && (
-              <div className="flex justify-between items-center mb-6">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (currentViewingIndex > 0) {
-                      setCurrentViewingIndex(prev => prev - 1);
-                    }
-                  }}
-                  disabled={currentViewingIndex === 0 || isNavigationLocked}
-                  className="flex items-center gap-2"
-                >
-                  {isNavigationLocked && <Lock className="w-4 h-4" />}
-                  <ArrowLeft className="w-4 h-4" />
-                  Previous
-                </Button>
-
-                <div className="text-sm text-muted-foreground text-center">
+              {/* Navigation Status */}
+              <div className="text-center mb-6">
+                <div className="text-sm text-muted-foreground">
                   {isNavigationLocked ? (
-                    `Navigation unlocks in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min`
+                    hasCommittedToTask ? (
+                      `Navigation unlocks in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min`
+                    ) : (
+                      "Commit to a task to start your focus session"
+                    )
                   ) : (
-                    "Navigate between tasks"
+                    "Swipe or drag to navigate between tasks"
                   )}
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (currentViewingIndex < tasks.length - 1) {
-                      setCurrentViewingIndex(prev => prev + 1);
-                    }
-                  }}
-                  disabled={currentViewingIndex >= tasks.length - 1 || isNavigationLocked}
-                  className="flex items-center gap-2"
-                >
-                  Next
-                  <ArrowRight className="w-4 h-4" />
-                  {isNavigationLocked && <Lock className="w-4 h-4" />}
-                </Button>
               </div>
-            )}
 
             {/* Task Preview Dots */}
             <div className="flex justify-center gap-2 mb-8">
