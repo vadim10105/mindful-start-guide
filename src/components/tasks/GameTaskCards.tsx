@@ -99,9 +99,9 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 relative">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10">
+      <div className="w-full px-4 py-8">
+        <div className="max-w-4xl mx-auto">
           
           {/* Task Selection Interface */}
           {showTaskSelection ? (
@@ -185,13 +185,14 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                   <div className="relative w-80" style={{ aspectRatio: '63/88' }}>
                     {/* Progress Ring around Card */}
                     <div 
-                      className="absolute inset-0 rounded-lg pointer-events-none z-[15]"
+                      className="absolute -inset-2 rounded-lg pointer-events-none z-[15]"
                       style={{
                         background: `conic-gradient(from -90deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
-                        padding: '4px',
+                        padding: '6px',
+                        animation: flowProgress >= 100 ? 'spin 2s linear infinite' : 'none'
                       }}
                     >
-                      <div className="w-full h-full bg-transparent rounded-lg" />
+                      <div className="w-full h-full bg-background rounded-lg" />
                     </div>
                     
                     {/* Background Cards (Stack Effect) */}
@@ -319,6 +320,45 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                     </div>
                   </div>
                 </div>
+
+                {/* Navigation - Show when tasks are unlocked */}
+                {unlockedCards > 1 && (
+                  <div className="flex justify-between items-center mb-6">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (currentCardIndex > 0) {
+                          setCurrentCardIndex(prev => prev - 1);
+                        }
+                      }}
+                      disabled={currentCardIndex === 0}
+                      className="flex items-center gap-2"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+
+                    <div className="text-sm text-muted-foreground">
+                      Swipe through your unlocked tasks
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (currentCardIndex < unlockedCards - 1) {
+                          setCurrentCardIndex(prev => prev + 1);
+                        }
+                      }}
+                      disabled={currentCardIndex >= unlockedCards - 1}
+                      className="flex items-center gap-2"
+                    >
+                      Next
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
 
                 {/* Locked Cards Indicator - only show when cards are locked */}
                 {unlockedCards === 1 && !showTaskSelection && (
