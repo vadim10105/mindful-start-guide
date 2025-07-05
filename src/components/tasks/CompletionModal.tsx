@@ -42,17 +42,10 @@ export const CompletionModal = ({
             </p>
           </div>
           
-          <div className="flex gap-3">
-            <Button 
-              onClick={onClose}
-              variant="outline"
-              className="flex-1"
-            >
-              Continue
-            </Button>
+          <div className="flex justify-center">
             <Button 
               onClick={onAddToCollection}
-              className="flex-1 bg-primary hover:bg-primary/90"
+              className="px-8 bg-primary hover:bg-primary/90"
             >
               <Trophy className="w-4 h-4 mr-2" />
               Add to Collection

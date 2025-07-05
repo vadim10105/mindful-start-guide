@@ -169,7 +169,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     
     setCompletedTasks(prev => new Set([...prev, taskId]));
     setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
-    setShowCompletionModal(true);
     
     // Move to next task immediately after completion
     const nextIndex = currentViewingIndex + 1;
@@ -195,6 +194,9 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       setShowCharacter(true);
       setTimeout(() => setShowCharacter(false), 8000);
     }
+    
+    // Show completion modal after swipe animation completes
+    setTimeout(() => setShowCompletionModal(true), 300);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
