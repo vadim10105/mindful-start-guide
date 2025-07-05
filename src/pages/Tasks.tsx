@@ -369,11 +369,13 @@ const Tasks = () => {
     try {
       const prioritized = await prioritizeTasks();
       setPrioritizedTasks(prioritized);
-      setCurrentStep('prioritized');
+      
+      // Go directly to game loading screen
+      setCurrentStep('game-loading');
       
       toast({
-        title: "Tasks Prioritized!",
-        description: `Organized ${prioritized.length} tasks based on your preferences and tags`,
+        title: "Tasks Shuffled!",
+        description: `AI organized ${prioritized.length} tasks - let's start your adventure!`,
       });
     } catch (error) {
       console.error('Error during shuffling:', error);
