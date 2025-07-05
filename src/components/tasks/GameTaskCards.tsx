@@ -102,7 +102,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10">
       <div className="w-full px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full">
           
           {/* Task Selection Interface */}
           {showTaskSelection ? (

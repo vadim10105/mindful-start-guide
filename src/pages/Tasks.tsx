@@ -457,7 +457,7 @@ const Tasks = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className={`${currentStep === 'game-cards' ? 'w-full' : 'max-w-4xl mx-auto'} space-y-6`}>
         
         {/* Header with Back Button */}
         <div className="flex items-center gap-4">
