@@ -24,6 +24,7 @@ interface Task {
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
+  is_disliked?: boolean;
   card_position: number;
 }
 
@@ -269,135 +270,119 @@ const Tasks = () => {
     setReviewedTasks(newTasks);
   };
 
-  const prioritizeTasks = () => {
+  const prioritizeTasks = async () => {
     console.log('Starting task prioritization...');
     console.log('User profile:', userProfile);
     console.log('Tagged tasks:', taggedTasks);
     console.log('Extracted tasks:', extractedTasks);
 
-    // Create combined task data with AI info
-    const combinedTasks = reviewedTasks.map((taskTitle, index) => {
+    // Create task input format for the edge function
+    const taskInputs = reviewedTasks.map((taskTitle, index) => {
       const taggedTask = taggedTasks.find(t => t.title === taskTitle);
       const extractedTask = extractedTasks.find(t => t.title === taskTitle);
       
       return {
         id: `temp-${index}`,
-        title: taskTitle,
-        is_liked: taggedTask?.is_liked || false,
-        is_urgent: taggedTask?.is_urgent || false,
-        is_quick: taggedTask?.is_quick || false,
-        ai_effort: extractedTask?.estimated_effort || 'medium',
-        ai_urgency: extractedTask?.estimated_urgency || 'medium'
+        text: taskTitle,
+        tags: {
+          liked: taggedTask?.is_liked || false,
+          urgent: taggedTask?.is_urgent || false,
+          quick: taggedTask?.is_quick || false,
+          disliked: taggedTask?.is_disliked || false
+        },
+        inferred: {
+          complexity: extractedTask?.estimated_effort === 'quick' ? 'low' : 
+                     extractedTask?.estimated_effort === 'long' ? 'high' : 'medium',
+          importance: extractedTask?.estimated_urgency === 'low' ? 'low' :
+                     extractedTask?.estimated_urgency === 'high' ? 'high' : 'medium',
+          category: 'Admin+Life' // Default category - we'll enhance this later
+        }
       };
     });
 
-    // Calculate priority scores
-    const scoredTasks = combinedTasks.map(task => {
-      let score = 0;
-      let explanationParts = [];
-
-      // 1. LIKED TASKS - High priority (+ 30 points)
-      if (task.is_liked) {
-        score += 30;
-        explanationParts.push("💙 You marked this as loved (+30)");
+    // Create user profile for the edge function
+    const profileInput = {
+      startPreference: userProfile?.task_start_preference === 'hard_first' ? 'eatTheFrog' : 'quickWin',
+      energyState: userProfile?.peak_energy_time ? 'high' : 'low',
+      categoryRatings: {
+        'Creative': 'Neutral',
+        'Analytical+Technical': 'Neutral', 
+        'DeepWork': 'Neutral',
+        'Admin+Life': 'Neutral',
+        'Chores': 'Neutral',
+        'Social': 'Neutral',
+        'Reflective': 'Neutral'
       }
+    };
 
-      // 2. URGENT TASKS - High priority (+ 25 points)
-      if (task.is_urgent) {
-        score += 25;
-        explanationParts.push("🔥 Marked as urgent (+25)");
-      }
-
-      // 3. QUICK TASKS - Momentum builder (+ 20 points)
-      if (task.is_quick) {
-        score += 20;
-        explanationParts.push("⚡ Quick win for momentum (+20)");
-      }
-
-      // 4. AI URGENCY ASSESSMENT (+ 5-15 points)
-      if (task.ai_urgency === 'high') {
-        score += 15;
-        explanationParts.push("🤖 AI detected high urgency (+15)");
-      } else if (task.ai_urgency === 'medium') {
-        score += 10;
-        explanationParts.push("🤖 AI detected medium urgency (+10)");
-      } else {
-        score += 5;
-        explanationParts.push("🤖 AI detected low urgency (+5)");
-      }
-
-      // 5. ONBOARDING PREFERENCES
-      if (userProfile?.task_start_preference) {
-        if (userProfile.task_start_preference === 'easy_first' && task.ai_effort === 'quick') {
-          score += 15;
-          explanationParts.push("📋 Your preference: easy tasks first (+15)");
-        } else if (userProfile.task_start_preference === 'hard_first' && task.ai_effort === 'long') {
-          score += 15;
-          explanationParts.push("📋 Your preference: hard tasks first (+15)");
-        } else if (userProfile.task_start_preference === 'loved_first' && task.is_liked) {
-          score += 10;
-          explanationParts.push("📋 Your preference: loved tasks first (+10)");
+    try {
+      const { data, error } = await supabase.functions.invoke('prioritize-tasks', {
+        body: {
+          tasks: taskInputs,
+          userProfile: profileInput
         }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error('Failed to prioritize tasks');
       }
 
-      // 6. EFFORT BALANCE - Prefer quick tasks when no specific preference
-      if (!userProfile?.task_start_preference || userProfile.task_start_preference === 'balanced') {
-        if (task.ai_effort === 'quick') {
-          score += 8;
-          explanationParts.push("⚖️ Quick task for momentum (+8)");
-        } else if (task.ai_effort === 'medium') {
-          score += 5;
-          explanationParts.push("⚖️ Medium effort task (+5)");
-        } else {
-          score += 2;
-          explanationParts.push("⚖️ Long task - scheduled later (+2)");
-        }
-      }
+      console.log('Prioritization response:', data);
 
-      // 7. COMBINATION BONUSES
-      if (task.is_liked && task.is_quick) {
-        score += 10;
-        explanationParts.push("🎯 Loved + Quick combo bonus (+10)");
-      }
-      
-      if (task.is_urgent && task.is_quick) {
-        score += 8;
-        explanationParts.push("🔥⚡ Urgent + Quick combo bonus (+8)");
-      }
-
-      const explanation = explanationParts.length > 0 
-        ? explanationParts.join(" • ")
-        : "📊 Base priority scoring applied";
-
-      return {
+      // Convert back to our expected format
+      const prioritizedTasks = data.orderedTasks.map((task: any) => ({
         id: task.id,
-        title: task.title,
-        priority_score: score,
-        explanation,
-        is_liked: task.is_liked,
-        is_urgent: task.is_urgent,
-        is_quick: task.is_quick,
-        ai_effort: task.ai_effort
-      };
-    });
+        title: task.text,
+        priority_score: task.totalScore,
+        explanation: `${task.rulePlacement} • Score: ${task.totalScore} (Base: ${task.scoreBreakdown.baseCategoryScore}, Tags: ${task.scoreBreakdown.liveTagScore}, Energy: ${task.scoreBreakdown.energyAdjust})`,
+        is_liked: task.tags.liked,
+        is_urgent: task.tags.urgent,
+        is_quick: task.tags.quick,
+        ai_effort: task.inferred.complexity
+      }));
 
-    // Sort by priority score (highest first)
-    const sortedTasks = scoredTasks.sort((a, b) => b.priority_score - a.priority_score);
-    
-    console.log('Prioritized tasks:', sortedTasks);
-    return sortedTasks;
+      return prioritizedTasks;
+
+    } catch (error) {
+      console.error('Error calling prioritization:', error);
+      // Fallback to simple scoring if edge function fails
+      return reviewedTasks.map((title, index) => ({
+        id: `temp-${index}`,
+        title,
+        priority_score: Math.random() * 100,
+        explanation: "Fallback prioritization - edge function unavailable",
+        is_liked: false,
+        is_urgent: false,
+        is_quick: false,
+        ai_effort: 'medium'
+      }));
+    }
   };
 
-  const handleShuffle = () => {
+  const handleShuffle = async () => {
     console.log('Shuffle button clicked');
-    const prioritized = prioritizeTasks();
-    setPrioritizedTasks(prioritized);
-    setCurrentStep('prioritized');
+    setIsProcessing(true);
     
-    toast({
-      title: "Tasks Prioritized!",
-      description: `Organized ${prioritized.length} tasks based on your preferences and tags`,
-    });
+    try {
+      const prioritized = await prioritizeTasks();
+      setPrioritizedTasks(prioritized);
+      setCurrentStep('prioritized');
+      
+      toast({
+        title: "Tasks Prioritized!",
+        description: `Organized ${prioritized.length} tasks based on your preferences and tags`,
+      });
+    } catch (error) {
+      console.error('Error during shuffling:', error);
+      toast({
+        title: "Error",
+        description: "Failed to prioritize tasks",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleManualOrder = async () => {
@@ -604,6 +589,7 @@ const Tasks = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
                 <Button
                   onClick={handleShuffle}
+                  disabled={isProcessing}
                   className="h-24 flex-col gap-2"
                   size="lg"
                 >
