@@ -1,19 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowRight, Lock, Heart, Clock, Zap, Check, Target, Play, Trophy, RotateCcw, Pause, SkipForward } from "lucide-react";
 import { MrIntentCharacter } from "./MrIntentCharacter";
-import { ProgressBorder } from "@/components/ui/progress-border";
 import { TodaysCollection } from "./TodaysCollection";
+import { TaskSwiper } from "./TaskSwiper";
+import { NavigationDots } from "./NavigationDots";
+import { CompletionModal } from "./CompletionModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import confetti from "canvas-confetti";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCards } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/effect-cards';
 
 interface TaskCardData {
   id: string;
@@ -49,7 +43,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     "Ugh, fine... I guess we should probably do something productive. Click 'Commit to Task' if you're feeling ambitious."
   );
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
-  const [pausedTasks, setPausedTasks] = useState<Map<string, number>>(new Map()); // taskId -> elapsed time in minutes
+  const [pausedTasks, setPausedTasks] = useState<Map<string, number>>(new Map());
   const [hasCommittedToTask, setHasCommittedToTask] = useState(false);
   const [taskStartTimes, setTaskStartTimes] = useState<Record<string, number>>({});
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -66,20 +60,20 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
 
   // Sunset images for card backs
   const sunsetImages = [
-    'https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=400&h=600&fit=crop', // blue starry night
-    'https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?w=400&h=600&fit=crop', // river between mountains
-    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=600&fit=crop', // mountain hit by sun rays
+    'https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=400&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?w=400&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=600&fit=crop',
   ];
 
+  // Progress tracking effect
   useEffect(() => {
     const updateProgress = () => {
       if (!flowStartTime || !hasCommittedToTask) return;
       
       const elapsed = Date.now() - flowStartTime;
-      const progress = Math.min((elapsed / (20 * 60 * 1000)) * 100, 100); // 20 minutes
+      const progress = Math.min((elapsed / (20 * 60 * 1000)) * 100, 100);
       setFlowProgress(progress);
       
-      // Unlock navigation after 5 minutes
       if (elapsed >= 5 * 60 * 1000 && !navigationUnlocked) {
         setNavigationUnlocked(true);
         const currentTask = tasks[activeCommittedIndex];
@@ -97,336 +91,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [flowStartTime, navigationUnlocked, hasCommittedToTask]);
-
-  const handleCommitToCurrentTask = () => {
-    const currentTask = tasks[currentViewingIndex];
-    if (!currentTask) return;
-    
-    setHasCommittedToTask(true);
-    setActiveCommittedIndex(currentViewingIndex);
-    setFlowStartTime(Date.now());
-    setFlowProgress(0);
-    setNavigationUnlocked(false);
-    
-    // Record start time for this specific task
-    setTaskStartTimes(prev => ({
-      ...prev,
-      [currentTask.id]: Date.now()
-    }));
-    
-    const lazyMessages = [
-      `Alright, "${currentTask.title}"... I'd probably procrastinate on this too, but here we are.`,
-      `Even I can manage 5 minutes of focus on "${currentTask.title}"... probably.`,
-      `Fine, we're doing "${currentTask.title}". At least one of us is being productive today.`,
-      `"${currentTask.title}" it is. Try not to make me look too lazy by comparison.`
-    ];
-    
-    setCharacterMessage(lazyMessages[Math.floor(Math.random() * lazyMessages.length)]);
-    setShowCharacter(true);
-    
-    // Hide character after 4 seconds
-      setTimeout(() => setShowCharacter(false), 8000);
-  };
-
-  const handleTaskComplete = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    // Calculate time spent
-    const startTime = taskStartTimes[taskId];
-    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0; // in minutes
-    
-    // Trigger confetti
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57']
-    });
-
-    // Stop the progress timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    setFlowProgress(0);
-    
-    // Update completed tasks
-    setCompletedTasks(prev => new Set([...prev, taskId]));
-    
-    // Show completion modal
-    setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
-    setShowCompletionModal(true);
-    
-    // Update database
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('tasks')
-          .update({ 
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            time_spent_minutes: timeSpent
-          })
-          .eq('id', taskId);
-
-        // Update daily stats
-        await supabase.rpc('update_daily_stats', {
-          p_user_id: user.id,
-          p_date: new Date().toISOString().split('T')[0],
-          p_tasks_completed: 1,
-          p_time_minutes: timeSpent
-        });
-      }
-    } catch (error) {
-      console.error('Error updating task:', error);
-    }
-    
-    onTaskComplete?.(taskId);
-  };
-
-  const handleAddToCollection = async () => {
-    if (!lastCompletedTask) return;
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('tasks')
-          .update({ collection_added_at: new Date().toISOString() })
-          .eq('id', lastCompletedTask.id);
-
-        // Add to today's collection
-        const newCollectedTask: CompletedTask = {
-          id: lastCompletedTask.id,
-          title: lastCompletedTask.title,
-          timeSpent: lastCompletedTask.timeSpent,
-          completedAt: new Date(),
-          sunsetImageUrl: sunsetImages[Math.floor(Math.random() * sunsetImages.length)]
-        };
-        
-        setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
-
-        // Update daily stats for collection
-        await supabase.rpc('update_daily_stats', {
-          p_user_id: user.id,
-          p_date: new Date().toISOString().split('T')[0],
-          p_cards_collected: 1
-        });
-
-        toast({
-          title: "Card Added to Collection!",
-          description: "Your sunset card has been saved to your collection.",
-        });
-
-        // Auto-advance to next card and reset states
-        const nextIndex = currentViewingIndex + 1;
-        if (nextIndex < tasks.length) {
-          setCurrentViewingIndex(nextIndex);
-          setActiveCommittedIndex(nextIndex);
-          setHasCommittedToTask(false);
-          setNavigationUnlocked(false); // Lock navigation again for new card
-          setFlowStartTime(null);
-          setFlowProgress(0);
-          
-          // Show lazy message about new card
-          const nextTask = tasks[nextIndex];
-          const newCardMessages = [
-            `Oh great, now we have "${nextTask?.title}"... this day just keeps getting better.`,
-            `Next up: "${nextTask?.title}". I'm already tired just thinking about it.`,
-            `"${nextTask?.title}" is calling... but I'm not answering.`,
-            `Well, "${nextTask?.title}" isn't going to do itself... unfortunately.`
-          ];
-          setCharacterMessage(newCardMessages[Math.floor(Math.random() * newCardMessages.length)]);
-          setShowCharacter(true);
-      setTimeout(() => setShowCharacter(false), 8000);
-        }
-      }
-    } catch (error) {
-      console.error('Error adding to collection:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add card to collection",
-        variant: "destructive",
-      });
-    }
-    
-    setShowCompletionModal(false);
-  };
-
-  const handleBackToActiveCard = () => {
-    setCurrentViewingIndex(activeCommittedIndex);
-  };
-
-  const handleMoveOnForNow = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    // Calculate time spent so far
-    const startTime = taskStartTimes[taskId];
-    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0; // in minutes
-    
-    // Stop the progress timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    setFlowProgress(0);
-    
-    // Add to paused tasks with elapsed time
-    setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
-    
-    // Update database to paused status
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('tasks')
-          .update({ 
-            status: 'paused',
-            paused_at: new Date().toISOString(),
-            time_spent_minutes: timeSpent
-          })
-          .eq('id', taskId);
-      }
-    } catch (error) {
-      console.error('Error pausing task:', error);
-    }
-    
-    // Find next available task
-    const nextTask = tasks.find((t, index) => 
-      index > currentViewingIndex && 
-      !completedTasks.has(t.id) && 
-      !pausedTasks.has(t.id)
-    );
-
-    if (nextTask) {
-      // Move to next task and restart commitment cycle
-      const nextIndex = tasks.indexOf(nextTask);
-      setCurrentViewingIndex(nextIndex);
-      setActiveCommittedIndex(nextIndex);
-      setHasCommittedToTask(false);
-      setNavigationUnlocked(false);
-      setFlowStartTime(null);
-      
-      const moveOnMessages = [
-        `Fine, moving on to "${nextTask.title}"... this better be more interesting.`,
-        `Next up: "${nextTask.title}". Here we go again...`,
-        `"${nextTask.title}" is next. Let's see if we can actually focus this time.`,
-        `Moving to "${nextTask.title}"... hopefully this goes better.`
-      ];
-      
-      setCharacterMessage(moveOnMessages[Math.floor(Math.random() * moveOnMessages.length)]);
-      setShowCharacter(true);
-      setTimeout(() => setShowCharacter(false), 8000);
-    } else {
-      // No more tasks available - just pause current one
-      setHasCommittedToTask(false);
-      setNavigationUnlocked(false);
-      setFlowStartTime(null);
-      
-      const pauseMessages = [
-        `Fine, taking a break from "${task.title}"... I wasn't really in the mood anyway.`,
-        `"${task.title}" can wait. Even I need a breather sometimes.`,
-        `Pausing "${task.title}"... probably for the best, honestly.`,
-        `We'll get back to "${task.title}" when we feel like it. No rush.`
-      ];
-      
-      setCharacterMessage(pauseMessages[Math.floor(Math.random() * pauseMessages.length)]);
-      setShowCharacter(true);
-      setTimeout(() => setShowCharacter(false), 8000);
-    }
-    
-    toast({
-      title: "Task Paused", 
-      description: nextTask ? `Moving on to "${nextTask.title}"` : `You can continue "${task.title}" later or skip it entirely.`,
-    });
-  };
-
-  const handleCarryOn = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    const pausedTime = pausedTasks.get(taskId) || 0;
-    
-    // Set up continuation with previous time
-    setHasCommittedToTask(true);
-    setActiveCommittedIndex(currentViewingIndex);
-    setFlowStartTime(Date.now());
-    setFlowProgress(0);
-    setNavigationUnlocked(false);
-    
-    // Update start time accounting for paused time
-    setTaskStartTimes(prev => ({
-      ...prev,
-      [taskId]: Date.now() - (pausedTime * 60000) // Subtract paused time
-    }));
-    
-    // Remove from paused tasks
-    setPausedTasks(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(taskId);
-      return newMap;
-    });
-    
-    const continueMessages = [
-      `Alright, back to "${task.title}"... where were we? Oh right, avoiding it.`,
-      `Continuing with "${task.title}"... hope you're more motivated than I am.`,
-      `"${task.title}" again... fine, let's see if we can actually finish it this time.`,
-      `Back to the grind with "${task.title}"... joy.`
-    ];
-    
-    setCharacterMessage(continueMessages[Math.floor(Math.random() * continueMessages.length)]);
-    setShowCharacter(true);
-    setTimeout(() => setShowCharacter(false), 4000);
-  };
-
-  const handleSkip = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    // Remove from paused tasks
-    setPausedTasks(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(taskId);
-      return newMap;
-    });
-    
-    // Update database to skipped status
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('tasks')
-          .update({ status: 'skipped' })
-          .eq('id', taskId);
-      }
-    } catch (error) {
-      console.error('Error skipping task:', error);
-    }
-    
-    const skipMessages = [
-      `Skipping "${task.title}"... honestly, probably for the best.`,
-      `"${task.title}" is now officially someone else's problem.`,
-      `Goodbye "${task.title}"... it's not you, it's definitely me.`,
-      `"${task.title}" has been eliminated. One less thing to worry about.`
-    ];
-    
-    setCharacterMessage(skipMessages[Math.floor(Math.random() * skipMessages.length)]);
-    setShowCharacter(true);
-    setTimeout(() => setShowCharacter(false), 4000);
-    
-    toast({
-      title: "Task Skipped",
-      description: `"${task.title}" has been removed from your list.`,
-    });
-  };
-
-  const isNavigationLocked = hasCommittedToTask && !navigationUnlocked;
-  const isViewingDifferentCard = currentViewingIndex !== activeCommittedIndex && hasCommittedToTask;
-  const currentTask = tasks[currentViewingIndex];
-  const activeTask = tasks[activeCommittedIndex];
-  const isTaskCompleted = currentTask ? completedTasks.has(currentTask.id) : false;
-  const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   // Keyboard navigation
   useEffect(() => {
@@ -455,7 +119,303 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentViewingIndex, activeCommittedIndex, hasCommittedToTask, isNavigationLocked, isTaskCommitted, completedTasks]);
+  }, [currentViewingIndex, activeCommittedIndex, hasCommittedToTask, completedTasks]);
+
+  const handleCommitToCurrentTask = () => {
+    const currentTask = tasks[currentViewingIndex];
+    if (!currentTask) return;
+    
+    setHasCommittedToTask(true);
+    setActiveCommittedIndex(currentViewingIndex);
+    setFlowStartTime(Date.now());
+    setFlowProgress(0);
+    setNavigationUnlocked(false);
+    
+    setTaskStartTimes(prev => ({
+      ...prev,
+      [currentTask.id]: Date.now()
+    }));
+    
+    const lazyMessages = [
+      `Alright, "${currentTask.title}"... I'd probably procrastinate on this too, but here we are.`,
+      `Even I can manage 5 minutes of focus on "${currentTask.title}"... probably.`,
+      `Fine, we're doing "${currentTask.title}". At least one of us is being productive today.`,
+      `"${currentTask.title}" it is. Try not to make me look too lazy by comparison.`
+    ];
+    
+    setCharacterMessage(lazyMessages[Math.floor(Math.random() * lazyMessages.length)]);
+    setShowCharacter(true);
+    setTimeout(() => setShowCharacter(false), 8000);
+  };
+
+  const handleTaskComplete = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const startTime = taskStartTimes[taskId];
+    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
+    
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57']
+    });
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    setFlowProgress(0);
+    
+    setCompletedTasks(prev => new Set([...prev, taskId]));
+    setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
+    setShowCompletionModal(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('tasks')
+          .update({ 
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            time_spent_minutes: timeSpent
+          })
+          .eq('id', taskId);
+
+        await supabase.rpc('update_daily_stats', {
+          p_user_id: user.id,
+          p_date: new Date().toISOString().split('T')[0],
+          p_tasks_completed: 1,
+          p_time_minutes: timeSpent
+        });
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+    
+    onTaskComplete?.(taskId);
+  };
+
+  const handleAddToCollection = async () => {
+    if (!lastCompletedTask) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('tasks')
+          .update({ collection_added_at: new Date().toISOString() })
+          .eq('id', lastCompletedTask.id);
+
+        const newCollectedTask: CompletedTask = {
+          id: lastCompletedTask.id,
+          title: lastCompletedTask.title,
+          timeSpent: lastCompletedTask.timeSpent,
+          completedAt: new Date(),
+          sunsetImageUrl: sunsetImages[Math.floor(Math.random() * sunsetImages.length)]
+        };
+        
+        setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
+
+        await supabase.rpc('update_daily_stats', {
+          p_user_id: user.id,
+          p_date: new Date().toISOString().split('T')[0],
+          p_cards_collected: 1
+        });
+
+        toast({
+          title: "Card Added to Collection!",
+          description: "Your sunset card has been saved to your collection.",
+        });
+
+        const nextIndex = currentViewingIndex + 1;
+        if (nextIndex < tasks.length) {
+          setCurrentViewingIndex(nextIndex);
+          setActiveCommittedIndex(nextIndex);
+          setHasCommittedToTask(false);
+          setNavigationUnlocked(false);
+          setFlowStartTime(null);
+          setFlowProgress(0);
+          
+          const nextTask = tasks[nextIndex];
+          const newCardMessages = [
+            `Oh great, now we have "${nextTask?.title}"... this day just keeps getting better.`,
+            `Next up: "${nextTask?.title}". I'm already tired just thinking about it.`,
+            `"${nextTask?.title}" is calling... but I'm not answering.`,
+            `Well, "${nextTask?.title}" isn't going to do itself... unfortunately.`
+          ];
+          setCharacterMessage(newCardMessages[Math.floor(Math.random() * newCardMessages.length)]);
+          setShowCharacter(true);
+          setTimeout(() => setShowCharacter(false), 8000);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding to collection:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add card to collection",
+        variant: "destructive",
+      });
+    }
+    
+    setShowCompletionModal(false);
+  };
+
+  const handleBackToActiveCard = () => {
+    setCurrentViewingIndex(activeCommittedIndex);
+  };
+
+  const handleMoveOnForNow = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const startTime = taskStartTimes[taskId];
+    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
+    
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    setFlowProgress(0);
+    
+    setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('tasks')
+          .update({ 
+            status: 'paused',
+            paused_at: new Date().toISOString(),
+            time_spent_minutes: timeSpent
+          })
+          .eq('id', taskId);
+      }
+    } catch (error) {
+      console.error('Error pausing task:', error);
+    }
+    
+    const nextTask = tasks.find((t, index) => 
+      index > currentViewingIndex && 
+      !completedTasks.has(t.id) && 
+      !pausedTasks.has(t.id)
+    );
+
+    if (nextTask) {
+      const nextIndex = tasks.indexOf(nextTask);
+      setCurrentViewingIndex(nextIndex);
+      setActiveCommittedIndex(nextIndex);
+      setHasCommittedToTask(false);
+      setNavigationUnlocked(false);
+      setFlowStartTime(null);
+      
+      const moveOnMessages = [
+        `Fine, moving on to "${nextTask.title}"... this better be more interesting.`,
+        `Next up: "${nextTask.title}". Here we go again...`,
+        `"${nextTask.title}" is next. Let's see if we can actually focus this time.`,
+        `Moving to "${nextTask.title}"... hopefully this goes better.`
+      ];
+      
+      setCharacterMessage(moveOnMessages[Math.floor(Math.random() * moveOnMessages.length)]);
+      setShowCharacter(true);
+      setTimeout(() => setShowCharacter(false), 8000);
+    } else {
+      setHasCommittedToTask(false);
+      setNavigationUnlocked(false);
+      setFlowStartTime(null);
+      
+      const pauseMessages = [
+        `Fine, taking a break from "${task.title}"... I wasn't really in the mood anyway.`,
+        `"${task.title}" can wait. Even I need a breather sometimes.`,
+        `Pausing "${task.title}"... probably for the best, honestly.`,
+        `We'll get back to "${task.title}" when we feel like it. No rush.`
+      ];
+      
+      setCharacterMessage(pauseMessages[Math.floor(Math.random() * pauseMessages.length)]);
+      setShowCharacter(true);
+      setTimeout(() => setShowCharacter(false), 8000);
+    }
+    
+    toast({
+      title: "Task Paused", 
+      description: nextTask ? `Moving on to "${nextTask.title}"` : `You can continue "${task.title}" later or skip it entirely.`,
+    });
+  };
+
+  const handleCarryOn = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const pausedTime = pausedTasks.get(taskId) || 0;
+    
+    setHasCommittedToTask(true);
+    setActiveCommittedIndex(currentViewingIndex);
+    setFlowStartTime(Date.now());
+    setFlowProgress(0);
+    setNavigationUnlocked(false);
+    
+    setTaskStartTimes(prev => ({
+      ...prev,
+      [taskId]: Date.now() - (pausedTime * 60000)
+    }));
+    
+    setPausedTasks(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(taskId);
+      return newMap;
+    });
+    
+    const continueMessages = [
+      `Alright, back to "${task.title}"... where were we? Oh right, avoiding it.`,
+      `Continuing with "${task.title}"... hope you're more motivated than I am.`,
+      `"${task.title}" again... fine, let's see if we can actually finish it this time.`,
+      `Back to the grind with "${task.title}"... joy.`
+    ];
+    
+    setCharacterMessage(continueMessages[Math.floor(Math.random() * continueMessages.length)]);
+    setShowCharacter(true);
+    setTimeout(() => setShowCharacter(false), 8000);
+  };
+
+  const handleSkip = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    setPausedTasks(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(taskId);
+      return newMap;
+    });
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('tasks')
+          .update({ status: 'skipped' })
+          .eq('id', taskId);
+      }
+    } catch (error) {
+      console.error('Error skipping task:', error);
+    }
+    
+    const skipMessages = [
+      `Skipping "${task.title}"... honestly, probably for the best.`,
+      `"${task.title}" is now officially someone else's problem.`,
+      `Goodbye "${task.title}"... it's not you, it's definitely me.`,
+      `"${task.title}" has been eliminated. One less thing to worry about.`
+    ];
+    
+    setCharacterMessage(skipMessages[Math.floor(Math.random() * skipMessages.length)]);
+    setShowCharacter(true);
+    setTimeout(() => setShowCharacter(false), 8000);
+    
+    toast({
+      title: "Task Skipped",
+      description: `"${task.title}" has been removed from your list.`,
+    });
+  };
 
   const formatTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
@@ -463,6 +423,9 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
+
+  const isNavigationLocked = hasCommittedToTask && !navigationUnlocked;
+  const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10">
@@ -477,278 +440,55 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
             </p>
           </div>
 
-            {/* Main Card Display with Swiper */}
-            <div className="relative">
-              <div className="mb-6 flex justify-center">
-                <div className="w-80" style={{ aspectRatio: '63/88' }}>
-                  <Swiper
-                    ref={swiperRef}
-                    effect="cards"
-                    grabCursor={true}
-                    modules={[EffectCards]}
-                    onSwiper={(swiper) => {
-                      swiperRef.current = swiper;
-                    }}
-                    cardsEffect={{
-                      perSlideOffset: 8,
-                      perSlideRotate: 2,
-                      rotate: true,
-                      slideShadows: true,
-                    }}
-                    onSlideChange={(swiper) => {
-                      if (!isNavigationLocked) {
-                        setCurrentViewingIndex(swiper.activeIndex);
-                      }
-                    }}
-                    allowSlideNext={!isNavigationLocked}
-                    allowSlidePrev={!isNavigationLocked}
-                    initialSlide={currentViewingIndex}
-                    className="w-full h-full"
-                  >
-                    {tasks.map((task, index) => (
-                      <SwiperSlide key={task.id}>
-                        <div className={`w-full h-full transition-transform duration-700 ${
-                          completedTasks.has(task.id) ? '[transform:rotateY(180deg)]' : ''
-                        }`} style={{ transformStyle: 'preserve-3d' }}>
-                          
-                          {/* Progress Border - Only show when committed and not completed */}
-                          {index === activeCommittedIndex && hasCommittedToTask && !completedTasks.has(task.id) && (
-                            <ProgressBorder
-                              progress={flowProgress / 100}
-                              width={320}
-                              height={447}
-                              stroke={6}
-                              color="hsl(var(--primary))"
-                              className="pointer-events-none z-[15]"
-                            />
-                          )}
-                          
-                          {/* Front of Card */}
-                          <Card className={`w-full h-full border-2 shadow-xl bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
-                            completedTasks.has(task.id)
-                              ? 'border-green-500' 
-                              : index !== activeCommittedIndex && hasCommittedToTask
-                              ? 'border-muted-foreground/50'
-                              : 'border-primary/30 hover:border-primary/50'
-                          }`} style={{ backfaceVisibility: 'hidden' }}>
-                            <div className="h-full flex flex-col">
-                              <CardHeader className="text-center pb-4 flex-shrink-0">
-                                <div className="flex items-center justify-center gap-2 mb-4">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                    index !== activeCommittedIndex && hasCommittedToTask
-                                      ? 'bg-muted text-muted-foreground' 
-                                      : 'bg-primary text-primary-foreground'
-                                  }`}>
-                                    {index + 1}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    of {tasks.length}
-                                  </div>
-                                </div>
-                                <CardTitle className="text-lg leading-tight text-foreground">
-                                  {task.title}
-                                </CardTitle>
-                                {index !== activeCommittedIndex && hasCommittedToTask && (
-                                  <p className="text-xs text-muted-foreground mt-2">
-                                    (Currently active: {tasks[activeCommittedIndex]?.title})
-                                  </p>
-                                )}
-                              </CardHeader>
-                              
-                              <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
-                                {/* Task Tags */}
-                                <div className="flex flex-wrap gap-1 justify-center">
-                                  {task.is_liked && (
-                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
-                                      <Heart className="w-3 h-3 mr-1" />
-                                      Love
-                                    </Badge>
-                                  )}
-                                  {task.is_urgent && (
-                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-300">
-                                      <Clock className="w-3 h-3 mr-1" />
-                                      Urgent
-                                    </Badge>
-                                  )}
-                                  {task.is_quick && (
-                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-300 border border-green-300">
-                                      <Zap className="w-3 h-3 mr-1" />
-                                      Quick
-                                    </Badge>
-                                  )}
-                                  <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
-                                    AI: {task.ai_effort || 'medium'} effort
-                                  </Badge>
-                                </div>
+          {/* Main Card Display */}
+          <div className="relative">
+            <TaskSwiper
+              ref={swiperRef}
+              tasks={tasks}
+              currentViewingIndex={currentViewingIndex}
+              activeCommittedIndex={activeCommittedIndex}
+              hasCommittedToTask={hasCommittedToTask}
+              completedTasks={completedTasks}
+              pausedTasks={pausedTasks}
+              isNavigationLocked={isNavigationLocked}
+              flowProgress={flowProgress}
+              sunsetImages={sunsetImages}
+              navigationUnlocked={navigationUnlocked}
+              onSlideChange={(activeIndex) => setCurrentViewingIndex(activeIndex)}
+              onCommit={handleCommitToCurrentTask}
+              onComplete={handleTaskComplete}
+              onMoveOn={handleMoveOnForNow}
+              onCarryOn={handleCarryOn}
+              onSkip={handleSkip}
+              onBackToActive={handleBackToActiveCard}
+              onShowCompletionModal={() => setShowCompletionModal(true)}
+              formatTime={formatTime}
+            />
 
-                                 {/* Task Actions */}
-                                 <div className="text-center space-y-2">
-                                   {!completedTasks.has(task.id) ? (
-                                     pausedTasks.has(task.id) ? (
-                                       // Paused task buttons
-                                       <div className="space-y-2">
-                                         <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                                           Paused • {formatTime(pausedTasks.get(task.id) || 0)} spent
-                                         </div>
-                                         <div className="flex gap-2">
-                                           <Button 
-                                             onClick={() => handleCarryOn(task.id)}
-                                             size="sm"
-                                             className="flex-1 bg-amber-500 text-white hover:bg-amber-600"
-                                           >
-                                             <Play className="w-4 h-4 mr-1" />
-                                             Carry On
-                                           </Button>
-                                           <Button 
-                                             onClick={() => handleSkip(task.id)}
-                                             size="sm"
-                                             variant="outline"
-                                             className="flex-1"
-                                           >
-                                             <SkipForward className="w-4 h-4 mr-1" />
-                                             Skip
-                                           </Button>
-                                         </div>
-                                       </div>
-                                     ) : index !== activeCommittedIndex && hasCommittedToTask ? (
-                                       // Show back to active card button inside other cards
-                                       <div className="space-y-2">
-                                         <div className="text-xs text-muted-foreground">
-                                           Currently active: {tasks[activeCommittedIndex]?.title}
-                                         </div>
-                                         <Button
-                                           onClick={handleBackToActiveCard}
-                                           variant="outline"
-                                           size="sm"
-                                           className="w-full flex items-center gap-2"
-                                         >
-                                           <RotateCcw className="w-4 h-4" />
-                                           Back to Active Card
-                                         </Button>
-                                       </div>
-                                     ) : index !== currentViewingIndex ? (
-                                       <div className="text-sm text-muted-foreground">
-                                         Swipe to view this task
-                                       </div>
-                                     ) : !hasCommittedToTask || index !== activeCommittedIndex ? (
-                                       <Button 
-                                         onClick={handleCommitToCurrentTask}
-                                         size="sm"
-                                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                                       >
-                                         <Play className="w-4 h-4 mr-2" />
-                                         Commit to Task
-                                       </Button>
-                                     ) : (
-                                        // Committed task - show both buttons 
-                                        <div className="space-y-2">
-                                          <div className="flex gap-2">
-                                            <Button 
-                                              onClick={() => handleTaskComplete(task.id)}
-                                              size="sm"
-                                              className="flex-1 bg-green-600 text-white hover:bg-green-700"
-                                            >
-                                              <Check className="w-4 h-4 mr-1" />
-                                              Mark Complete
-                                            </Button>
-                                            {navigationUnlocked && (
-                                              <Button 
-                                                onClick={() => handleMoveOnForNow(task.id)}
-                                                size="sm"
-                                                variant="outline"
-                                                className="flex-1"
-                                              >
-                                                <Pause className="w-4 h-4 mr-1" />
-                                                Move On For Now
-                                              </Button>
-                                            )}
-                                          </div>
-                                        </div>
-                                     )
-                                   ) : (
-                                     <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                                       <Check className="w-4 h-4" />
-                                       <span className="font-medium text-sm">Completed!</span>
-                                     </div>
-                                   )}
-                                 </div>
-                              </CardContent>
-                            </div>
-                          </Card>
-
-                          {/* Back of Card (Sunset Image) */}
-                          {completedTasks.has(task.id) && (
-                            <div 
-                              className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)]"
-                              style={{ 
-                                backfaceVisibility: 'hidden',
-                                background: `linear-gradient(45deg, rgba(251,146,60,0.8), rgba(249,115,22,0.8)), url('${sunsetImages[index % sunsetImages.length]}') center/cover`
-                              }}
-                            >
-                              <div className="h-full flex flex-col justify-between p-6 text-white">
-                                <div className="text-center">
-                                  <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
-                                  <p className="text-sm opacity-90">{task.title}</p>
-                                </div>
-                                
-                                <div className="text-center space-y-4">
-                                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
-                                    <p className="text-sm mb-2">🌅 Beautiful work!</p>
-                                    <p className="text-xs opacity-75">You've earned this sunset moment</p>
-                                  </div>
-                                  
-                                  <Button 
-                                    onClick={() => setShowCompletionModal(true)}
-                                    size="sm"
-                                    className="w-full bg-white/20 hover:bg-white/30 border border-white/30"
-                                  >
-                                    View Completion Stats
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
-                </div>
-              </div>
-
-              {/* Navigation Status */}
-              <div className="text-center mb-6">
-                <div className="text-sm text-muted-foreground">
-                  {isNavigationLocked ? (
-                    hasCommittedToTask ? (
-                      `Navigation and move-on unlock in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min • Press ↓ to complete`
-                    ) : (
-                      "Commit to a task to start your focus session • Press ↓ to commit"
-                    )
+            {/* Navigation Status */}
+            <div className="text-center mb-6">
+              <div className="text-sm text-muted-foreground">
+                {isNavigationLocked ? (
+                  hasCommittedToTask ? (
+                    `Navigation and move-on unlock in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min • Press ↓ to complete`
                   ) : (
-                    "Swipe, use arrow keys (←/→), or press ↓ to commit"
-                  )}
-                </div>
+                    "Commit to a task to start your focus session • Press ↓ to commit"
+                  )
+                ) : (
+                  "Swipe, use arrow keys (←/→), or press ↓ to commit"
+                )}
               </div>
-
-            {/* Task Preview Dots */}
-            <div className="flex justify-center gap-2 mb-8">
-              {tasks.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentViewingIndex
-                      ? 'bg-primary scale-125'
-                      : completedTasks.has(tasks[index].id)
-                      ? 'bg-green-500'
-                      : pausedTasks.has(tasks[index].id)
-                      ? 'bg-amber-500'
-                      : index === activeCommittedIndex && hasCommittedToTask
-                      ? 'bg-primary/60 border-2 border-primary'
-                      : 'bg-muted border-2 border-muted-foreground/30'
-                  }`}
-                />
-              ))}
             </div>
+
+            {/* Navigation Dots */}
+            <NavigationDots
+              tasks={tasks}
+              currentViewingIndex={currentViewingIndex}
+              activeCommittedIndex={activeCommittedIndex}
+              hasCommittedToTask={hasCommittedToTask}
+              completedTasks={completedTasks}
+              pausedTasks={pausedTasks}
+            />
 
             {/* Completion */}
             {completedTasks.size === tasks.length && (
@@ -763,49 +503,16 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       </div>
 
       {/* Completion Modal */}
-      <Dialog open={showCompletionModal} onOpenChange={setShowCompletionModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <Trophy className="h-6 w-6 text-primary" />
-              Task Complete!
-            </DialogTitle>
-          </DialogHeader>
-          
-          {lastCompletedTask && (
-            <div className="space-y-4">
-              <div className="text-center py-4">
-                <div className="text-4xl mb-2">🎉</div>
-                <h3 className="font-semibold mb-2">{lastCompletedTask.title}</h3>
-                <div className="flex items-center justify-center gap-2 text-2xl font-bold text-primary">
-                  <Clock className="h-6 w-6" />
-                  {formatTime(lastCompletedTask.timeSpent)}
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Time spent in focused work
-                </p>
-              </div>
-              
-              <div className="flex gap-3">
-                <Button 
-                  onClick={() => setShowCompletionModal(false)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Continue
-                </Button>
-                <Button 
-                  onClick={handleAddToCollection}
-                  className="flex-1 bg-primary hover:bg-primary/90"
-                >
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Add to Collection
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {lastCompletedTask && (
+        <CompletionModal
+          isOpen={showCompletionModal}
+          onClose={() => setShowCompletionModal(false)}
+          taskTitle={lastCompletedTask.title}
+          timeSpent={lastCompletedTask.timeSpent}
+          onAddToCollection={handleAddToCollection}
+          formatTime={formatTime}
+        />
+      )}
 
       {/* Today's Collection */}
       <TodaysCollection 
