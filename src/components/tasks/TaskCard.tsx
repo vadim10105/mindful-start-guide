@@ -35,6 +35,7 @@ interface TaskCardProps {
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
   onShowCompletionModal: () => void;
+  onAddToCollection: () => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
 }
@@ -59,6 +60,7 @@ export const TaskCard = ({
   onSkip,
   onBackToActive,
   onShowCompletionModal,
+  onAddToCollection,
   navigationUnlocked,
   formatTime
 }: TaskCardProps) => {
@@ -182,10 +184,10 @@ export const TaskCard = ({
               </div>
               
               <button 
-                onClick={onShowCompletionModal}
+                onClick={onAddToCollection}
                 className="w-full bg-white/20 hover:bg-white/30 border border-white/30 rounded-md py-2 px-4 text-sm transition-colors"
               >
-                View Completion Stats
+                Add to Collection
               </button>
             </div>
           </div>

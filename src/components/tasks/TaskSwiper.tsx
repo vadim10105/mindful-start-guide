@@ -35,6 +35,7 @@ interface TaskSwiperProps {
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
   onShowCompletionModal: () => void;
+  onAddToCollection: () => void;
   formatTime: (minutes: number) => string;
 }
 
@@ -57,6 +58,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   onSkip,
   onBackToActive,
   onShowCompletionModal,
+  onAddToCollection,
   formatTime
 }, ref) => {
   return (
@@ -105,6 +107,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 onSkip={onSkip}
                 onBackToActive={onBackToActive}
                 onShowCompletionModal={onShowCompletionModal}
+                onAddToCollection={onAddToCollection}
                 navigationUnlocked={navigationUnlocked}
                 formatTime={formatTime}
               />

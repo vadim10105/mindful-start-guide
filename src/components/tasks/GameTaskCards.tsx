@@ -170,34 +170,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     setCompletedTasks(prev => new Set([...prev, taskId]));
     setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
     
-    // Move to next task immediately after completion
-    const nextIndex = currentViewingIndex + 1;
-    if (nextIndex < tasks.length) {
-      setCurrentViewingIndex(nextIndex);
-      setActiveCommittedIndex(nextIndex);
-      setHasCommittedToTask(false);
-      setNavigationUnlocked(false);
-      setFlowStartTime(null);
-      setFlowProgress(0);
-      
-      // Animate swipe to next card
-      swiperRef.current?.slideTo(nextIndex);
-      
-      const nextTask = tasks[nextIndex];
-      const newCardMessages = [
-        `Oh great, now we have "${nextTask?.title}"... this day just keeps getting better.`,
-        `Next up: "${nextTask?.title}". I'm already tired just thinking about it.`,
-        `"${nextTask?.title}" is calling... but I'm not answering.`,
-        `Well, "${nextTask?.title}" isn't going to do itself... unfortunately.`
-      ];
-      setCharacterMessage(newCardMessages[Math.floor(Math.random() * newCardMessages.length)]);
-      setShowCharacter(true);
-      setTimeout(() => setShowCharacter(false), 8000);
-    }
-    
-    // Show completion modal after swipe animation completes
-    setTimeout(() => setShowCompletionModal(true), 300);
-    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -263,6 +235,31 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         description: "Failed to add card to collection",
         variant: "destructive",
       });
+    }
+    
+    // Move to next task after adding to collection
+    const nextIndex = currentViewingIndex + 1;
+    if (nextIndex < tasks.length) {
+      setCurrentViewingIndex(nextIndex);
+      setActiveCommittedIndex(nextIndex);
+      setHasCommittedToTask(false);
+      setNavigationUnlocked(false);
+      setFlowStartTime(null);
+      setFlowProgress(0);
+      
+      // Animate swipe to next card
+      swiperRef.current?.slideTo(nextIndex);
+      
+      const nextTask = tasks[nextIndex];
+      const newCardMessages = [
+        `Oh great, now we have "${nextTask?.title}"... this day just keeps getting better.`,
+        `Next up: "${nextTask?.title}". I'm already tired just thinking about it.`,
+        `"${nextTask?.title}" is calling... but I'm not answering.`,
+        `Well, "${nextTask?.title}" isn't going to do itself... unfortunately.`
+      ];
+      setCharacterMessage(newCardMessages[Math.floor(Math.random() * newCardMessages.length)]);
+      setShowCharacter(true);
+      setTimeout(() => setShowCharacter(false), 8000);
     }
     
     setShowCompletionModal(false);
@@ -471,6 +468,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               onSkip={handleSkip}
               onBackToActive={handleBackToActiveCard}
               onShowCompletionModal={() => setShowCompletionModal(true)}
+              onAddToCollection={handleAddToCollection}
               formatTime={formatTime}
             />
 
