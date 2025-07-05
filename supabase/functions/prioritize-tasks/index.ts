@@ -71,8 +71,10 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
   if (profile.energyState === 'low') {
     if (task.tags.quick) energyAdjust += 1;
     if (task.tags.liked) energyAdjust += 1;
-    // Additional penalty for HighComplexity when energy is low
-    if (task.inferred.complexity === 'high') energyAdjust -= 1;
+    // For QuickWin users with low energy, further penalize high complexity (total -2)
+    if (task.inferred.complexity === 'high') {
+      energyAdjust -= (profile.startPreference === 'quickWin') ? 2 : 1;
+    }
   } else { // high energy
     if (task.tags.urgent) energyAdjust += 1;
     if (task.inferred.complexity === 'high') energyAdjust += 1;
@@ -136,10 +138,17 @@ function applyQuickWinRules(tasks: TaskInput[], profile: UserProfile): ScoredTas
     }
   }
 
-  // Booster (Task 3): Highest-scoring Liked task
-  const boosterTask = remainingTasks
+  // Booster (Task 3): Highest-scoring Liked task, or next highest Quick/Neutral if no Liked tasks
+  let boosterTask = remainingTasks
     .filter(t => t.tags.liked)
     .sort((a, b) => b.totalScore - a.totalScore)[0];
+  
+  // If no liked tasks available, use next highest Quick or Neutral task
+  if (!boosterTask && orderedTasks.length < 3) {
+    boosterTask = remainingTasks
+      .filter(t => t.tags.quick || profile.categoryRatings[t.inferred.category] === 'Neutral')
+      .sort((a, b) => b.totalScore - a.totalScore)[0];
+  }
   
   if (boosterTask && orderedTasks.length < 3) {
     boosterTask.rulePlacement = 'Booster';
@@ -148,17 +157,22 @@ function applyQuickWinRules(tasks: TaskInput[], profile: UserProfile): ScoredTas
     remainingTasks.splice(remainingTasks.indexOf(boosterTask), 1);
   }
 
-  // EarlyPhase (Tasks 4-5): Exclude Disliked && HighComplexity, prefer Quick or Liked
-  const earlyPhaseEligible = remainingTasks
-    .filter(t => !(t.tags.disliked && t.inferred.complexity === 'high'))
-    .sort((a, b) => {
-      // Prefer Quick or Liked tasks first
-      const aPreference = (a.tags.quick || a.tags.liked) ? 1 : 0;
-      const bPreference = (b.tags.quick || b.tags.liked) ? 1 : 0;
-      if (aPreference !== bPreference) return bPreference - aPreference;
-      // Then by total score
-      return b.totalScore - a.totalScore;
-    });
+  // EarlyPhase (Tasks 4-5): Apply additional penalty to Disliked+HighComplexity, prefer Quick or Liked
+  const earlyPhaseEligible = remainingTasks.map(task => {
+    // Apply additional penalty for Disliked+HighComplexity tasks in early phase
+    const earlyPhasePenalty = (task.tags.disliked && task.inferred.complexity === 'high') ? -1 : 0;
+    return {
+      ...task,
+      adjustedScore: task.totalScore + earlyPhasePenalty
+    };
+  }).sort((a, b) => {
+    // Prefer Quick or Liked tasks first
+    const aPreference = (a.tags.quick || a.tags.liked) ? 1 : 0;
+    const bPreference = (b.tags.quick || b.tags.liked) ? 1 : 0;
+    if (aPreference !== bPreference) return bPreference - aPreference;
+    // Then by adjusted score
+    return b.adjustedScore - a.adjustedScore;
+  });
   
   for (let i = 0; i < Math.min(2, earlyPhaseEligible.length) && orderedTasks.length < 5; i++) {
     const task = earlyPhaseEligible[i];
