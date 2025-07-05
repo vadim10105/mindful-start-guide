@@ -191,16 +191,16 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                 {/* Stacked Card Deck Effect */}
                 <div className="mb-6 flex justify-center">
                   <div className="relative w-80" style={{ aspectRatio: '63/88' }}>
-                    {/* Progress Ring around Card */}
-                    <div 
-                      className="absolute inset-0 rounded-lg pointer-events-none z-30"
-                      style={{
-                        background: `conic-gradient(from -90deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
-                        padding: '4px',
-                      }}
-                    >
-                      <div className="w-full h-full bg-background rounded-lg" />
-                    </div>
+                     {/* Progress Ring around Card */}
+                     <div 
+                       className="absolute inset-0 rounded-lg pointer-events-none z-[15]"
+                       style={{
+                         background: `conic-gradient(from -90deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
+                         padding: '4px',
+                       }}
+                     >
+                       <div className="w-full h-full bg-transparent rounded-lg" />
+                     </div>
                     
                     {/* Background Cards (Stack Effect) */}
                     {!completedTasks.has(currentTask?.id) && [...Array(Math.min(3, tasks.length - 1))].map((_, i) => (
@@ -239,31 +239,31 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                            </CardTitle>
                          </CardHeader>
                         
-                        <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
-                          {/* Task Tags */}
-                          <div className="flex flex-wrap gap-1 justify-center">
-                            {currentTask?.is_liked && (
-                              <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-100 text-rose-700 dark:bg-rose-950/20 dark:text-rose-300">
-                                <Heart className="w-3 h-3 mr-1" />
-                                Love
-                              </Badge>
-                            )}
-                            {currentTask?.is_urgent && (
-                              <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 dark:bg-orange-950/20 dark:text-orange-300">
-                                <Clock className="w-3 h-3 mr-1" />
-                                Urgent
-                              </Badge>
-                            )}
-                            {currentTask?.is_quick && (
-                              <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-300">
-                                <Zap className="w-3 h-3 mr-1" />
-                                Quick
-                              </Badge>
-                            )}
-                            <Badge variant="outline" className="text-xs">
-                              AI: {currentTask?.ai_effort} effort
-                            </Badge>
-                          </div>
+                         <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
+                           {/* Task Tags */}
+                           <div className="flex flex-wrap gap-1 justify-center">
+                             {currentTask?.is_liked && (
+                               <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
+                                 <Heart className="w-3 h-3 mr-1" />
+                                 Love
+                               </Badge>
+                             )}
+                             {currentTask?.is_urgent && (
+                               <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-300">
+                                 <Clock className="w-3 h-3 mr-1" />
+                                 Urgent
+                               </Badge>
+                             )}
+                             {currentTask?.is_quick && (
+                               <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-300 border border-green-300">
+                                 <Zap className="w-3 h-3 mr-1" />
+                                 Quick
+                               </Badge>
+                             )}
+                             <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
+                               AI: {currentTask?.ai_effort || 'medium'} effort
+                             </Badge>
+                           </div>
 
                            {/* Task Actions */}
                            <div className="text-center">
@@ -271,7 +271,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                                <Button 
                                  onClick={() => handleTaskComplete(currentTask.id)}
                                  size="sm"
-                                 className="w-full"
+                                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                                >
                                  <Check className="w-4 h-4 mr-2" />
                                  Mark Complete
@@ -285,7 +285,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                                <div className="text-sm text-muted-foreground">Loading...</div>
                              )}
                            </div>
-                        </CardContent>
+                         </CardContent>
                       </Card>
 
                        {/* Back of Card (Sunset Image) */}
