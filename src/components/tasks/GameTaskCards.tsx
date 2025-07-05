@@ -201,19 +201,24 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                       isTaskCompleted ? '[transform:rotateY(180deg)]' : ''
                     }`} style={{ transformStyle: 'preserve-3d', zIndex: 25 }}>
                       
-                      {/* Progress Ring - 6px thick inner border */}
+                      {/* Progress Ring - Simple 6px border approach */}
                       <div 
-                        className="absolute inset-0 rounded-lg pointer-events-none z-[5] overflow-hidden"
-                      >
-                         <div 
-                           className="absolute inset-0 rounded-lg"
-                           style={{
-                             background: `conic-gradient(from 315deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
-                             mask: 'radial-gradient(circle, transparent calc(100% - 6px), black calc(100% - 6px), black 100%)',
-                             WebkitMask: 'radial-gradient(circle, transparent calc(100% - 6px), black calc(100% - 6px), black 100%)',
-                           }}
-                         />
-                      </div>
+                        className="absolute inset-[6px] rounded-lg pointer-events-none z-[5]"
+                        style={{
+                          border: '6px solid hsl(var(--primary))',
+                          clipPath: `polygon(
+                            0% 0%, 
+                            ${Math.min(flowProgress * 4, 100)}% 0%, 
+                            ${flowProgress > 25 ? '100%' : Math.max(flowProgress * 4, 0) + '%'} ${flowProgress > 25 ? Math.min((flowProgress - 25) * 4, 100) + '%' : '0%'}, 
+                            ${flowProgress > 50 ? '100%' : '100%'} ${flowProgress > 50 ? '100%' : Math.min((flowProgress - 25) * 4, 100) + '%'}, 
+                            ${flowProgress > 75 ? 100 - Math.min((flowProgress - 75) * 4, 100) + '%' : '100%'} ${flowProgress > 75 ? '100%' : '100%'}, 
+                            ${flowProgress > 75 ? '0%' : '100%'} ${flowProgress > 75 ? '100%' : '100%'}, 
+                            0% 100%, 
+                            0% 0%
+                          )`,
+                          opacity: flowProgress > 0 ? 1 : 0
+                        }}
+                      />
                       
                       {/* Front of Card */}
                       <Card className={`absolute inset-0 border-2 shadow-xl transition-all duration-300 bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
