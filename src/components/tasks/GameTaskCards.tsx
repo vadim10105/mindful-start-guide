@@ -203,14 +203,13 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                     }`} style={{ transformStyle: 'preserve-3d', zIndex: 25 }}>
                       
                       {/* Progress Ring */}
-                      {flowProgress > 0 && (
-                        <ProgressRing
-                          progress={flowProgress / 100}
-                          size={320}
-                          stroke={6}
-                          className="absolute inset-0 pointer-events-none z-[5]"
-                        />
-                      )}
+                      <ProgressRing
+                        progress={flowProgress / 100}
+                        size={320}
+                        stroke={8}
+                        color="hsl(var(--primary))"
+                        className="absolute inset-0 pointer-events-none z-[15]"
+                      />
                       
                       {/* Front of Card */}
                       <Card className={`absolute inset-0 border-2 shadow-xl transition-all duration-300 bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
