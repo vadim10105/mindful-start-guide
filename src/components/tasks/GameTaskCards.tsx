@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, Lock, Heart, Clock, Zap, Check, Target } from "lucide-react";
 import { MrIntentCharacter } from "./MrIntentCharacter";
+import { ProgressRing } from "@/components/ui/progress-ring";
 
 interface TaskCardData {
   id: string;
@@ -201,24 +202,15 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                       isTaskCompleted ? '[transform:rotateY(180deg)]' : ''
                     }`} style={{ transformStyle: 'preserve-3d', zIndex: 25 }}>
                       
-                      {/* Progress Ring - Simple 6px border approach */}
-                      <div 
-                        className="absolute inset-[6px] rounded-lg pointer-events-none z-[5]"
-                        style={{
-                          border: '6px solid hsl(var(--primary))',
-                          clipPath: `polygon(
-                            0% 0%, 
-                            ${Math.min(flowProgress * 4, 100)}% 0%, 
-                            ${flowProgress > 25 ? '100%' : Math.max(flowProgress * 4, 0) + '%'} ${flowProgress > 25 ? Math.min((flowProgress - 25) * 4, 100) + '%' : '0%'}, 
-                            ${flowProgress > 50 ? '100%' : '100%'} ${flowProgress > 50 ? '100%' : Math.min((flowProgress - 25) * 4, 100) + '%'}, 
-                            ${flowProgress > 75 ? 100 - Math.min((flowProgress - 75) * 4, 100) + '%' : '100%'} ${flowProgress > 75 ? '100%' : '100%'}, 
-                            ${flowProgress > 75 ? '0%' : '100%'} ${flowProgress > 75 ? '100%' : '100%'}, 
-                            0% 100%, 
-                            0% 0%
-                          )`,
-                          opacity: flowProgress > 0 ? 1 : 0
-                        }}
-                      />
+                      {/* Progress Ring */}
+                      {flowProgress > 0 && (
+                        <ProgressRing
+                          progress={flowProgress / 100}
+                          size={320}
+                          stroke={6}
+                          className="absolute inset-0 pointer-events-none z-[5]"
+                        />
+                      )}
                       
                       {/* Front of Card */}
                       <Card className={`absolute inset-0 border-2 shadow-xl transition-all duration-300 bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
