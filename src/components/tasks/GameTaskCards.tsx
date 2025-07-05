@@ -183,17 +183,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                 {/* Stacked Card Deck Effect */}
                 <div className="mb-6 flex justify-center">
                   <div className="relative w-80" style={{ aspectRatio: '63/88' }}>
-                    {/* Progress Ring inside Card */}
-                    <div 
-                      className="absolute inset-1 rounded-lg pointer-events-none z-[30]"
-                      style={{
-                        background: `conic-gradient(from -135deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
-                        padding: '3px',
-                        animation: flowProgress >= 100 ? 'spin 2s linear infinite' : 'none'
-                      }}
-                    >
-                      <div className="w-full h-full bg-card rounded-lg" />
-                    </div>
                     
                     {/* Background Cards (Stack Effect) */}
                     {!completedTasks.has(currentTask?.id) && [...Array(Math.min(3, tasks.length - 1))].map((_, i) => (
@@ -212,8 +201,20 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                       isTaskCompleted ? '[transform:rotateY(180deg)]' : ''
                     }`} style={{ transformStyle: 'preserve-3d', zIndex: 25 }}>
                       
+                      {/* Progress Ring inside Card - Behind content */}
+                      <div 
+                        className="absolute inset-2 rounded-lg pointer-events-none z-[5]"
+                        style={{
+                          background: `conic-gradient(from 225deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
+                          padding: '2px',
+                          animation: flowProgress >= 100 ? 'spin 2s linear infinite' : 'none'
+                        }}
+                      >
+                        <div className="w-full h-full bg-transparent rounded-lg" />
+                      </div>
+                      
                       {/* Front of Card */}
-                      <Card className={`absolute inset-0 border-2 shadow-xl transition-all duration-300 bg-card text-card-foreground ${
+                      <Card className={`absolute inset-0 border-2 shadow-xl transition-all duration-300 bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
                         isTaskCompleted 
                           ? 'border-green-500' 
                           : 'border-primary/30 hover:border-primary/50'
