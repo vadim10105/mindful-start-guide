@@ -78,16 +78,16 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 relative">
-      {/* Flow Progress Ring - Subtle visual around viewport */}
+      {/* Flow Progress Ring - Visible border around viewport */}
       <div 
-        className="fixed inset-0 pointer-events-none z-10"
+        className="fixed inset-2 pointer-events-none z-10 rounded-lg"
         style={{
-          background: `conic-gradient(from 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg)`,
-          maskImage: 'radial-gradient(circle at center, transparent 98%, black 99%, black 100%)',
-          WebkitMaskImage: 'radial-gradient(circle at center, transparent 98%, black 99%, black 100%)',
-          opacity: 0.3
+          background: `conic-gradient(from 0deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
+          padding: '3px',
         }}
-      />
+      >
+        <div className="w-full h-full bg-background rounded-lg" />
+      </div>
 
       <div className="container mx-auto px-4 py-8 relative z-20">
         <div className="max-w-2xl mx-auto">
@@ -102,70 +102,72 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
           {/* Main Card Display */}
           <div className="relative">
             {/* Current Task Card */}
-            <div className="mb-6">
-              <Card className={`border-2 shadow-xl transition-all duration-300 ${
-                isTaskCompleted 
-                  ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
-                  : 'border-primary/30 hover:border-primary/50'
-              }`}>
-                <CardHeader className="text-center pb-4">
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
-                      {currentCardIndex + 1}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      of {tasks.length}
-                    </div>
-                  </div>
-                  <CardTitle className="text-xl">{currentTask?.title}</CardTitle>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Task Tags */}
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {currentTask?.is_liked && (
-                      <Badge variant="secondary" className="bg-rose-100 text-rose-700 dark:bg-rose-950/20 dark:text-rose-300">
-                        <Heart className="w-3 h-3 mr-1" />
-                        Love
-                      </Badge>
-                    )}
-                    {currentTask?.is_urgent && (
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-950/20 dark:text-orange-300">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Urgent
-                      </Badge>
-                    )}
-                    {currentTask?.is_quick && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-300">
-                        <Zap className="w-3 h-3 mr-1" />
-                        Quick
-                      </Badge>
-                    )}
-                    <Badge variant="outline">
-                      AI: {currentTask?.ai_effort} effort
-                    </Badge>
-                  </div>
-
-                  {/* Task Actions */}
-                  <div className="text-center pt-4">
-                    {!isTaskCompleted ? (
-                      <Button 
-                        onClick={() => handleTaskComplete(currentTask.id)}
-                        size="lg"
-                        className="w-full max-w-xs"
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Mark Complete
-                      </Button>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                        <Check className="w-5 h-5" />
-                        <span className="font-medium">Completed!</span>
+            <div className="mb-6 flex justify-center">
+              <div className="w-80" style={{ aspectRatio: '63/88' }}>
+                <Card className={`h-full border-2 shadow-xl transition-all duration-300 ${
+                  isTaskCompleted 
+                    ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
+                    : 'border-primary/30 hover:border-primary/50'
+                }`}>
+                  <CardHeader className="text-center pb-4 flex-shrink-0">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                        {currentCardIndex + 1}
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      <div className="text-sm text-muted-foreground">
+                        of {tasks.length}
+                      </div>
+                    </div>
+                    <CardTitle className="text-lg leading-tight">{currentTask?.title}</CardTitle>
+                  </CardHeader>
+                  
+                  <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
+                    {/* Task Tags */}
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {currentTask?.is_liked && (
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-100 text-rose-700 dark:bg-rose-950/20 dark:text-rose-300">
+                          <Heart className="w-3 h-3 mr-1" />
+                          Love
+                        </Badge>
+                      )}
+                      {currentTask?.is_urgent && (
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 dark:bg-orange-950/20 dark:text-orange-300">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Urgent
+                        </Badge>
+                      )}
+                      {currentTask?.is_quick && (
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-300">
+                          <Zap className="w-3 h-3 mr-1" />
+                          Quick
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-xs">
+                        AI: {currentTask?.ai_effort} effort
+                      </Badge>
+                    </div>
+
+                    {/* Task Actions */}
+                    <div className="text-center">
+                      {!isTaskCompleted ? (
+                        <Button 
+                          onClick={() => handleTaskComplete(currentTask.id)}
+                          size="sm"
+                          className="w-full"
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Mark Complete
+                        </Button>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                          <Check className="w-4 h-4" />
+                          <span className="font-medium text-sm">Completed!</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Navigation */}
