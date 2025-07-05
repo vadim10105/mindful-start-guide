@@ -85,7 +85,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         const currentTask = tasks[activeCommittedIndex];
         setCharacterMessage(`Wow, you actually stuck with "${currentTask?.title}" longer than I would have! Feel free to browse around now.`);
         setShowCharacter(true);
-        setTimeout(() => setShowCharacter(false), 4000);
+        setTimeout(() => setShowCharacter(false), 8000);
       }
     };
 
@@ -125,7 +125,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     setShowCharacter(true);
     
     // Hide character after 4 seconds
-    setTimeout(() => setShowCharacter(false), 4000);
+      setTimeout(() => setShowCharacter(false), 8000);
   };
 
   const handleTaskComplete = async (taskId: string) => {
@@ -239,7 +239,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
           ];
           setCharacterMessage(newCardMessages[Math.floor(Math.random() * newCardMessages.length)]);
           setShowCharacter(true);
-          setTimeout(() => setShowCharacter(false), 4000);
+      setTimeout(() => setShowCharacter(false), 8000);
         }
       }
     } catch (error) {
@@ -275,11 +275,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     // Add to paused tasks with elapsed time
     setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
     
-    // Reset commit state to unlock navigation
-    setHasCommittedToTask(false);
-    setNavigationUnlocked(false);
-    setFlowStartTime(null);
-    
     // Update database to paused status
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -297,20 +292,53 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       console.error('Error pausing task:', error);
     }
     
-    const pauseMessages = [
-      `Fine, taking a break from "${task.title}"... I wasn't really in the mood anyway.`,
-      `"${task.title}" can wait. Even I need a breather sometimes.`,
-      `Pausing "${task.title}"... probably for the best, honestly.`,
-      `We'll get back to "${task.title}" when we feel like it. No rush.`
-    ];
-    
-    setCharacterMessage(pauseMessages[Math.floor(Math.random() * pauseMessages.length)]);
-    setShowCharacter(true);
-    setTimeout(() => setShowCharacter(false), 4000);
+    // Find next available task
+    const nextTask = tasks.find((t, index) => 
+      index > currentViewingIndex && 
+      !completedTasks.has(t.id) && 
+      !pausedTasks.has(t.id)
+    );
+
+    if (nextTask) {
+      // Move to next task and restart commitment cycle
+      const nextIndex = tasks.indexOf(nextTask);
+      setCurrentViewingIndex(nextIndex);
+      setActiveCommittedIndex(nextIndex);
+      setHasCommittedToTask(false);
+      setNavigationUnlocked(false);
+      setFlowStartTime(null);
+      
+      const moveOnMessages = [
+        `Fine, moving on to "${nextTask.title}"... this better be more interesting.`,
+        `Next up: "${nextTask.title}". Here we go again...`,
+        `"${nextTask.title}" is next. Let's see if we can actually focus this time.`,
+        `Moving to "${nextTask.title}"... hopefully this goes better.`
+      ];
+      
+      setCharacterMessage(moveOnMessages[Math.floor(Math.random() * moveOnMessages.length)]);
+      setShowCharacter(true);
+      setTimeout(() => setShowCharacter(false), 8000);
+    } else {
+      // No more tasks available - just pause current one
+      setHasCommittedToTask(false);
+      setNavigationUnlocked(false);
+      setFlowStartTime(null);
+      
+      const pauseMessages = [
+        `Fine, taking a break from "${task.title}"... I wasn't really in the mood anyway.`,
+        `"${task.title}" can wait. Even I need a breather sometimes.`,
+        `Pausing "${task.title}"... probably for the best, honestly.`,
+        `We'll get back to "${task.title}" when we feel like it. No rush.`
+      ];
+      
+      setCharacterMessage(pauseMessages[Math.floor(Math.random() * pauseMessages.length)]);
+      setShowCharacter(true);
+      setTimeout(() => setShowCharacter(false), 8000);
+    }
     
     toast({
-      title: "Task Paused",
-      description: `You can continue "${task.title}" later or skip it entirely.`,
+      title: "Task Paused", 
+      description: nextTask ? `Moving on to "${nextTask.title}"` : `You can continue "${task.title}" later or skip it entirely.`,
     });
   };
 
@@ -612,28 +640,30 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                                          Commit to Task
                                        </Button>
                                      ) : (
-                                       // Committed task - show both buttons
-                                       <div className="space-y-2">
-                                         <div className="flex gap-2">
-                                           <Button 
-                                             onClick={() => handleTaskComplete(task.id)}
-                                             size="sm"
-                                             className="flex-1 bg-green-600 text-white hover:bg-green-700"
-                                           >
-                                             <Check className="w-4 h-4 mr-1" />
-                                             Mark Complete
-                                           </Button>
-                                           <Button 
-                                             onClick={() => handleMoveOnForNow(task.id)}
-                                             size="sm"
-                                             variant="outline"
-                                             className="flex-1"
-                                           >
-                                             <Pause className="w-4 h-4 mr-1" />
-                                             Move On For Now
-                                           </Button>
-                                         </div>
-                                       </div>
+                                        // Committed task - show both buttons 
+                                        <div className="space-y-2">
+                                          <div className="flex gap-2">
+                                            <Button 
+                                              onClick={() => handleTaskComplete(task.id)}
+                                              size="sm"
+                                              className="flex-1 bg-green-600 text-white hover:bg-green-700"
+                                            >
+                                              <Check className="w-4 h-4 mr-1" />
+                                              Mark Complete
+                                            </Button>
+                                            {navigationUnlocked && (
+                                              <Button 
+                                                onClick={() => handleMoveOnForNow(task.id)}
+                                                size="sm"
+                                                variant="outline"
+                                                className="flex-1"
+                                              >
+                                                <Pause className="w-4 h-4 mr-1" />
+                                                Move On For Now
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </div>
                                      )
                                    ) : (
                                      <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
@@ -690,7 +720,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                 <div className="text-sm text-muted-foreground">
                   {isNavigationLocked ? (
                     hasCommittedToTask ? (
-                      `Navigation unlocks in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min • Press ↓ to complete`
+                      `Navigation and move-on unlock in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min • Press ↓ to complete`
                     ) : (
                       "Commit to a task to start your focus session • Press ↓ to commit"
                     )
