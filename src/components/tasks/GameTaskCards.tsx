@@ -78,18 +78,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 relative">
-      {/* Flow Progress Ring - Visible border around viewport */}
-      <div 
-        className="fixed inset-2 pointer-events-none z-10 rounded-lg"
-        style={{
-          background: `conic-gradient(from 0deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
-          padding: '3px',
-        }}
-      >
-        <div className="w-full h-full bg-background rounded-lg" />
-      </div>
-
-      <div className="container mx-auto px-4 py-8 relative z-20">
+      <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
@@ -101,10 +90,22 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
 
           {/* Main Card Display */}
           <div className="relative">
-            {/* Current Task Card */}
+            {/* Current Task Card with Progress Ring */}
             <div className="mb-6 flex justify-center">
-              <div className="w-80" style={{ aspectRatio: '63/88' }}>
-                <Card className={`h-full border-2 shadow-xl transition-all duration-300 ${
+              <div className="relative w-80" style={{ aspectRatio: '63/88' }}>
+                {/* Progress Ring around Card */}
+                <div 
+                  className="absolute inset-0 rounded-lg pointer-events-none z-10"
+                  style={{
+                    background: `conic-gradient(from -90deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
+                    padding: '4px',
+                  }}
+                >
+                  <div className="w-full h-full bg-background rounded-lg" />
+                </div>
+                
+                {/* Task Card */}
+                <Card className={`h-full border-2 shadow-xl transition-all duration-300 relative z-20 ${
                   isTaskCompleted 
                     ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
                     : 'border-primary/30 hover:border-primary/50'
@@ -187,7 +188,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               {unlockedCards < tasks.length && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Lock className="w-4 h-4" />
-                  <span>{tasks.length - unlockedCards} more tasks will unlock soon</span>
+                  <span>{tasks.length - unlockedCards} more tasks will unlock in 10 minutes (I'll let you know)</span>
                 </div>
               )}
 
