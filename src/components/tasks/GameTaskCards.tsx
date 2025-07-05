@@ -201,16 +201,18 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                       isTaskCompleted ? '[transform:rotateY(180deg)]' : ''
                     }`} style={{ transformStyle: 'preserve-3d', zIndex: 25 }}>
                       
-                      {/* Progress Ring inside Card - Behind content */}
+                      {/* Progress Ring - 6px thick inner border */}
                       <div 
-                        className="absolute inset-2 rounded-lg pointer-events-none z-[5]"
-                        style={{
-                          background: `conic-gradient(from 225deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
-                          padding: '2px',
-                          animation: flowProgress >= 100 ? 'spin 2s linear infinite' : 'none'
-                        }}
+                        className="absolute inset-0 rounded-lg pointer-events-none z-[5] overflow-hidden"
                       >
-                        <div className="w-full h-full bg-transparent rounded-lg" />
+                         <div 
+                           className="absolute inset-0 rounded-lg"
+                           style={{
+                             background: `conic-gradient(from 315deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
+                             mask: 'radial-gradient(circle, transparent calc(100% - 6px), black calc(100% - 6px), black 100%)',
+                             WebkitMask: 'radial-gradient(circle, transparent calc(100% - 6px), black calc(100% - 6px), black 100%)',
+                           }}
+                         />
                       </div>
                       
                       {/* Front of Card */}
