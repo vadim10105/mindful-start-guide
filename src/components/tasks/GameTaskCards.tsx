@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, Lock, Heart, Clock, Zap, Check, Target } from "lucide-react";
 import { MrIntentCharacter } from "./MrIntentCharacter";
-import { ProgressRing } from "@/components/ui/progress-ring";
+import { ProgressBorder } from "@/components/ui/progress-border";
 
 interface TaskCardData {
   id: string;
@@ -202,13 +202,14 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                       isTaskCompleted ? '[transform:rotateY(180deg)]' : ''
                     }`} style={{ transformStyle: 'preserve-3d', zIndex: 25 }}>
                       
-                      {/* Progress Ring */}
-                      <ProgressRing
+                      {/* Progress Border */}
+                      <ProgressBorder
                         progress={flowProgress / 100}
-                        size={320}
-                        stroke={8}
+                        width={320}
+                        height={447}
+                        stroke={6}
                         color="hsl(var(--primary))"
-                        className="absolute inset-0 pointer-events-none z-[15]"
+                        className="pointer-events-none z-[15]"
                       />
                       
                       {/* Front of Card */}
