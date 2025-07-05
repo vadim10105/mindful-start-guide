@@ -183,16 +183,16 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                 {/* Stacked Card Deck Effect */}
                 <div className="mb-6 flex justify-center">
                   <div className="relative w-80" style={{ aspectRatio: '63/88' }}>
-                    {/* Progress Ring around Card */}
+                    {/* Progress Ring inside Card */}
                     <div 
-                      className="absolute -inset-2 rounded-lg pointer-events-none z-[15]"
+                      className="absolute inset-1 rounded-lg pointer-events-none z-[30]"
                       style={{
-                        background: `conic-gradient(from -90deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
-                        padding: '6px',
+                        background: `conic-gradient(from -135deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
+                        padding: '3px',
                         animation: flowProgress >= 100 ? 'spin 2s linear infinite' : 'none'
                       }}
                     >
-                      <div className="w-full h-full bg-background rounded-lg" />
+                      <div className="w-full h-full bg-card rounded-lg" />
                     </div>
                     
                     {/* Background Cards (Stack Effect) */}
