@@ -3,11 +3,13 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardLibrary } from "@/components/tasks/CardLibrary";
 
 const Index = () => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCardLibrary, setShowCardLibrary] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -79,20 +81,29 @@ const Index = () => {
               <p className="text-muted-foreground">
                 Your personalized task management is ready.
               </p>
-              <div className="flex gap-4">
-                <Button asChild className="flex-1">
-                  <Link to="/settings">Settings</Link>
-                </Button>
-                <Button asChild variant="outline" className="flex-1">
-                  <Link to="/tasks">Start Tasks</Link>
-                </Button>
+              <div className="space-y-3">
+                <div className="flex gap-4">
+                  <Button asChild className="flex-1">
+                    <Link to="/settings">Settings</Link>
+                  </Button>
+                  <Button asChild variant="outline" className="flex-1">
+                    <Link to="/tasks">Start Tasks</Link>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                    }}
+                  >
+                    Logout
+                  </Button>
+                </div>
                 <Button 
-                  variant="ghost" 
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                  }}
+                  onClick={() => setShowCardLibrary(true)}
+                  variant="secondary"
+                  className="w-full"
                 >
-                  Logout
+                  🏆 View Card Collection
                 </Button>
               </div>
             </CardContent>
@@ -113,6 +124,11 @@ const Index = () => {
           </Card>
         )}
       </div>
+      
+      <CardLibrary 
+        isOpen={showCardLibrary} 
+        onClose={() => setShowCardLibrary(false)} 
+      />
     </div>
   );
 };

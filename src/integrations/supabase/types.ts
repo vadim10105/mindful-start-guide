@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      daily_stats: {
+        Row: {
+          cards_collected: number | null
+          created_at: string
+          id: string
+          stat_date: string
+          tasks_completed: number | null
+          total_time_minutes: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cards_collected?: number | null
+          created_at?: string
+          id?: string
+          stat_date: string
+          tasks_completed?: number | null
+          total_time_minutes?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cards_collected?: number | null
+          created_at?: string
+          id?: string
+          stat_date?: string
+          tasks_completed?: number | null
+          total_time_minutes?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -87,6 +120,7 @@ export type Database = {
         Row: {
           ai_priority_score: number | null
           card_position: number
+          collection_added_at: string | null
           completed_at: string | null
           created_at: string
           difficulty: Database["public"]["Enums"]["task_difficulty"] | null
@@ -101,6 +135,7 @@ export type Database = {
           manually_reordered: boolean | null
           source: Database["public"]["Enums"]["task_source"]
           status: Database["public"]["Enums"]["task_status"]
+          time_spent_minutes: number | null
           title: string
           updated_at: string
           user_id: string
@@ -108,6 +143,7 @@ export type Database = {
         Insert: {
           ai_priority_score?: number | null
           card_position?: number
+          collection_added_at?: string | null
           completed_at?: string | null
           created_at?: string
           difficulty?: Database["public"]["Enums"]["task_difficulty"] | null
@@ -122,6 +158,7 @@ export type Database = {
           manually_reordered?: boolean | null
           source?: Database["public"]["Enums"]["task_source"]
           status?: Database["public"]["Enums"]["task_status"]
+          time_spent_minutes?: number | null
           title: string
           updated_at?: string
           user_id: string
@@ -129,6 +166,7 @@ export type Database = {
         Update: {
           ai_priority_score?: number | null
           card_position?: number
+          collection_added_at?: string | null
           completed_at?: string | null
           created_at?: string
           difficulty?: Database["public"]["Enums"]["task_difficulty"] | null
@@ -143,6 +181,7 @@ export type Database = {
           manually_reordered?: boolean | null
           source?: Database["public"]["Enums"]["task_source"]
           status?: Database["public"]["Enums"]["task_status"]
+          time_spent_minutes?: number | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -162,7 +201,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_daily_stats: {
+        Args: {
+          p_user_id: string
+          p_date: string
+          p_tasks_completed?: number
+          p_time_minutes?: number
+          p_cards_collected?: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       task_difficulty: "easy" | "neutral" | "hard"
