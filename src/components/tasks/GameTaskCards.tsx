@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowRight, Lock, Heart, Clock, Zap, Check, Target, Play, Trophy, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Lock, Heart, Clock, Zap, Check, Target, Play, Trophy, RotateCcw, Pause, SkipForward } from "lucide-react";
 import { MrIntentCharacter } from "./MrIntentCharacter";
 import { ProgressBorder } from "@/components/ui/progress-border";
 import { TodaysCollection } from "./TodaysCollection";
@@ -49,6 +49,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     "Ugh, fine... I guess we should probably do something productive. Click 'Commit to Task' if you're feeling ambitious."
   );
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+  const [pausedTasks, setPausedTasks] = useState<Map<string, number>>(new Map()); // taskId -> elapsed time in minutes
   const [hasCommittedToTask, setHasCommittedToTask] = useState(false);
   const [taskStartTimes, setTaskStartTimes] = useState<Record<string, number>>({});
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -257,6 +258,141 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     setCurrentViewingIndex(activeCommittedIndex);
   };
 
+  const handleMoveOnForNow = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Calculate time spent so far
+    const startTime = taskStartTimes[taskId];
+    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0; // in minutes
+    
+    // Stop the progress timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    setFlowProgress(0);
+    
+    // Add to paused tasks with elapsed time
+    setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
+    
+    // Reset commit state to unlock navigation
+    setHasCommittedToTask(false);
+    setNavigationUnlocked(false);
+    setFlowStartTime(null);
+    
+    // Update database to paused status
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('tasks')
+          .update({ 
+            status: 'paused',
+            paused_at: new Date().toISOString(),
+            time_spent_minutes: timeSpent
+          })
+          .eq('id', taskId);
+      }
+    } catch (error) {
+      console.error('Error pausing task:', error);
+    }
+    
+    const pauseMessages = [
+      `Fine, taking a break from "${task.title}"... I wasn't really in the mood anyway.`,
+      `"${task.title}" can wait. Even I need a breather sometimes.`,
+      `Pausing "${task.title}"... probably for the best, honestly.`,
+      `We'll get back to "${task.title}" when we feel like it. No rush.`
+    ];
+    
+    setCharacterMessage(pauseMessages[Math.floor(Math.random() * pauseMessages.length)]);
+    setShowCharacter(true);
+    setTimeout(() => setShowCharacter(false), 4000);
+    
+    toast({
+      title: "Task Paused",
+      description: `You can continue "${task.title}" later or skip it entirely.`,
+    });
+  };
+
+  const handleCarryOn = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const pausedTime = pausedTasks.get(taskId) || 0;
+    
+    // Set up continuation with previous time
+    setHasCommittedToTask(true);
+    setActiveCommittedIndex(currentViewingIndex);
+    setFlowStartTime(Date.now());
+    setFlowProgress(0);
+    setNavigationUnlocked(false);
+    
+    // Update start time accounting for paused time
+    setTaskStartTimes(prev => ({
+      ...prev,
+      [taskId]: Date.now() - (pausedTime * 60000) // Subtract paused time
+    }));
+    
+    // Remove from paused tasks
+    setPausedTasks(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(taskId);
+      return newMap;
+    });
+    
+    const continueMessages = [
+      `Alright, back to "${task.title}"... where were we? Oh right, avoiding it.`,
+      `Continuing with "${task.title}"... hope you're more motivated than I am.`,
+      `"${task.title}" again... fine, let's see if we can actually finish it this time.`,
+      `Back to the grind with "${task.title}"... joy.`
+    ];
+    
+    setCharacterMessage(continueMessages[Math.floor(Math.random() * continueMessages.length)]);
+    setShowCharacter(true);
+    setTimeout(() => setShowCharacter(false), 4000);
+  };
+
+  const handleSkip = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    // Remove from paused tasks
+    setPausedTasks(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(taskId);
+      return newMap;
+    });
+    
+    // Update database to skipped status
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('tasks')
+          .update({ status: 'skipped' })
+          .eq('id', taskId);
+      }
+    } catch (error) {
+      console.error('Error skipping task:', error);
+    }
+    
+    const skipMessages = [
+      `Skipping "${task.title}"... honestly, probably for the best.`,
+      `"${task.title}" is now officially someone else's problem.`,
+      `Goodbye "${task.title}"... it's not you, it's definitely me.`,
+      `"${task.title}" has been eliminated. One less thing to worry about.`
+    ];
+    
+    setCharacterMessage(skipMessages[Math.floor(Math.random() * skipMessages.length)]);
+    setShowCharacter(true);
+    setTimeout(() => setShowCharacter(false), 4000);
+    
+    toast({
+      title: "Task Skipped",
+      description: `"${task.title}" has been removed from your list.`,
+    });
+  };
+
   const isNavigationLocked = hasCommittedToTask && !navigationUnlocked;
   const isViewingDifferentCard = currentViewingIndex !== activeCommittedIndex && hasCommittedToTask;
   const currentTask = tasks[currentViewingIndex];
@@ -312,21 +448,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               Focus on one task at a time. You've got this! 
             </p>
           </div>
-
-          {/* Back to Active Card Button */}
-          {isViewingDifferentCard && (
-            <div className="flex justify-center mb-4">
-              <Button
-                onClick={handleBackToActiveCard}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Back to Active Card
-              </Button>
-            </div>
-          )}
 
             {/* Main Card Display with Swiper */}
             <div className="relative">
@@ -432,43 +553,95 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                                   </Badge>
                                 </div>
 
-                                {/* Task Actions */}
-                                <div className="text-center space-y-2">
-                                  {!completedTasks.has(task.id) ? (
-                                    index !== activeCommittedIndex && hasCommittedToTask ? (
-                                      <div className="text-sm text-muted-foreground">
-                                        You're currently focused on another task
-                                      </div>
-                                    ) : index !== currentViewingIndex ? (
-                                      <div className="text-sm text-muted-foreground">
-                                        Swipe to view this task
-                                      </div>
-                                    ) : !hasCommittedToTask || index !== activeCommittedIndex ? (
-                                      <Button 
-                                        onClick={handleCommitToCurrentTask}
-                                        size="sm"
-                                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                                      >
-                                        <Play className="w-4 h-4 mr-2" />
-                                        Commit to Task
-                                      </Button>
-                                    ) : (
-                                      <Button 
-                                        onClick={() => handleTaskComplete(task.id)}
-                                        size="sm"
-                                        className="w-full bg-green-600 text-white hover:bg-green-700"
-                                      >
-                                        <Check className="w-4 h-4 mr-2" />
-                                        Mark Complete
-                                      </Button>
-                                    )
-                                  ) : (
-                                    <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                                      <Check className="w-4 h-4" />
-                                      <span className="font-medium text-sm">Completed!</span>
-                                    </div>
-                                  )}
-                                </div>
+                                 {/* Task Actions */}
+                                 <div className="text-center space-y-2">
+                                   {!completedTasks.has(task.id) ? (
+                                     pausedTasks.has(task.id) ? (
+                                       // Paused task buttons
+                                       <div className="space-y-2">
+                                         <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                           Paused • {formatTime(pausedTasks.get(task.id) || 0)} spent
+                                         </div>
+                                         <div className="flex gap-2">
+                                           <Button 
+                                             onClick={() => handleCarryOn(task.id)}
+                                             size="sm"
+                                             className="flex-1 bg-amber-500 text-white hover:bg-amber-600"
+                                           >
+                                             <Play className="w-4 h-4 mr-1" />
+                                             Carry On
+                                           </Button>
+                                           <Button 
+                                             onClick={() => handleSkip(task.id)}
+                                             size="sm"
+                                             variant="outline"
+                                             className="flex-1"
+                                           >
+                                             <SkipForward className="w-4 h-4 mr-1" />
+                                             Skip
+                                           </Button>
+                                         </div>
+                                       </div>
+                                     ) : index !== activeCommittedIndex && hasCommittedToTask ? (
+                                       // Show back to active card button inside other cards
+                                       <div className="space-y-2">
+                                         <div className="text-xs text-muted-foreground">
+                                           Currently active: {tasks[activeCommittedIndex]?.title}
+                                         </div>
+                                         <Button
+                                           onClick={handleBackToActiveCard}
+                                           variant="outline"
+                                           size="sm"
+                                           className="w-full flex items-center gap-2"
+                                         >
+                                           <RotateCcw className="w-4 h-4" />
+                                           Back to Active Card
+                                         </Button>
+                                       </div>
+                                     ) : index !== currentViewingIndex ? (
+                                       <div className="text-sm text-muted-foreground">
+                                         Swipe to view this task
+                                       </div>
+                                     ) : !hasCommittedToTask || index !== activeCommittedIndex ? (
+                                       <Button 
+                                         onClick={handleCommitToCurrentTask}
+                                         size="sm"
+                                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                                       >
+                                         <Play className="w-4 h-4 mr-2" />
+                                         Commit to Task
+                                       </Button>
+                                     ) : (
+                                       // Committed task - show both buttons
+                                       <div className="space-y-2">
+                                         <div className="flex gap-2">
+                                           <Button 
+                                             onClick={() => handleTaskComplete(task.id)}
+                                             size="sm"
+                                             className="flex-1 bg-green-600 text-white hover:bg-green-700"
+                                           >
+                                             <Check className="w-4 h-4 mr-1" />
+                                             Mark Complete
+                                           </Button>
+                                           <Button 
+                                             onClick={() => handleMoveOnForNow(task.id)}
+                                             size="sm"
+                                             variant="outline"
+                                             className="flex-1"
+                                           >
+                                             <Pause className="w-4 h-4 mr-1" />
+                                             Move On For Now
+                                           </Button>
+                                         </div>
+                                       </div>
+                                     )
+                                   ) : (
+                                     <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                                       <Check className="w-4 h-4" />
+                                       <span className="font-medium text-sm">Completed!</span>
+                                     </div>
+                                   )}
+                                 </div>
                               </CardContent>
                             </div>
                           </Card>
@@ -537,6 +710,8 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                       ? 'bg-primary scale-125'
                       : completedTasks.has(tasks[index].id)
                       ? 'bg-green-500'
+                      : pausedTasks.has(tasks[index].id)
+                      ? 'bg-amber-500'
                       : index === activeCommittedIndex && hasCommittedToTask
                       ? 'bg-primary/60 border-2 border-primary'
                       : 'bg-muted border-2 border-muted-foreground/30'

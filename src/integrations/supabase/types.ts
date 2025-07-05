@@ -133,6 +133,7 @@ export type Database = {
           is_quick: boolean | null
           is_urgent: boolean | null
           manually_reordered: boolean | null
+          paused_at: string | null
           source: Database["public"]["Enums"]["task_source"]
           status: Database["public"]["Enums"]["task_status"]
           time_spent_minutes: number | null
@@ -156,6 +157,7 @@ export type Database = {
           is_quick?: boolean | null
           is_urgent?: boolean | null
           manually_reordered?: boolean | null
+          paused_at?: string | null
           source?: Database["public"]["Enums"]["task_source"]
           status?: Database["public"]["Enums"]["task_status"]
           time_spent_minutes?: number | null
@@ -179,6 +181,7 @@ export type Database = {
           is_quick?: boolean | null
           is_urgent?: boolean | null
           manually_reordered?: boolean | null
+          paused_at?: string | null
           source?: Database["public"]["Enums"]["task_source"]
           status?: Database["public"]["Enums"]["task_status"]
           time_spent_minutes?: number | null
@@ -215,7 +218,7 @@ export type Database = {
     Enums: {
       task_difficulty: "easy" | "neutral" | "hard"
       task_source: "brain_dump" | "manual" | "ai"
-      task_status: "active" | "completed" | "skipped"
+      task_status: "active" | "completed" | "skipped" | "paused"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -333,7 +336,7 @@ export const Constants = {
     Enums: {
       task_difficulty: ["easy", "neutral", "hard"],
       task_source: ["brain_dump", "manual", "ai"],
-      task_status: ["active", "completed", "skipped"],
+      task_status: ["active", "completed", "skipped", "paused"],
     },
   },
 } as const
