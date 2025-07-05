@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
+import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 
-type FlowStep = 'input' | 'processing' | 'review' | 'prioritized' | 'cards';
+type FlowStep = 'input' | 'processing' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
 
 interface ExtractedTask {
   title: string;
@@ -414,7 +416,7 @@ const Tasks = () => {
         description: `${taggedTasks.length} tasks saved`,
       });
 
-      setCurrentStep('cards');
+      setCurrentStep('game-loading');
     } catch (error) {
       console.error('Error saving tasks:', error);
       toast({
@@ -440,7 +442,7 @@ const Tasks = () => {
         description: `${tasksToSave.length} prioritized tasks saved`,
       });
 
-      setCurrentStep('cards');
+      setCurrentStep('game-loading');
     } catch (error) {
       console.error('Error saving prioritized tasks:', error);
       toast({
@@ -719,27 +721,38 @@ const Tasks = () => {
           </Card>
         )}
 
-        {/* Cards Step */}
-        {currentStep === 'cards' && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <div className="space-y-4">
-                <Check className="h-12 w-12 mx-auto text-green-500" />
-                <h3 className="text-xl font-semibold">Tasks Created Successfully!</h3>
-                <p className="text-muted-foreground">
-                  Your tasks have been organized and are ready to work on.
-                </p>
-                <div className="flex gap-4 justify-center">
-                  <Button onClick={resetFlow} variant="outline">
-                    Create More Tasks
-                  </Button>
-                  <Button onClick={() => window.location.href = '/tasks/cards'}>
-                    Start Working
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Game Loading Step */}
+        {currentStep === 'game-loading' && (
+          <GameLoadingScreen
+            taskCount={prioritizedTasks.length || taggedTasks.length}
+            onLoadingComplete={() => setCurrentStep('game-cards')}
+          />
+        )}
+
+        {/* Game Cards Step */}
+        {currentStep === 'game-cards' && (
+          <GameTaskCards
+            tasks={prioritizedTasks.length > 0 ? prioritizedTasks : taggedTasks.map((task, index) => ({
+              id: task.id,
+              title: task.title,
+              priority_score: index + 1,
+              explanation: `Task ${index + 1} in your manual order`,
+              is_liked: task.is_liked,
+              is_urgent: task.is_urgent,
+              is_quick: task.is_quick,
+              ai_effort: 'medium' as const
+            }))}
+            onComplete={() => {
+              toast({
+                title: "Session Complete!",
+                description: "Great work on focusing through your tasks!",
+              });
+              resetFlow();
+            }}
+            onTaskComplete={(taskId) => {
+              console.log('Task completed:', taskId);
+            }}
+          />
         )}
       </div>
     </div>
