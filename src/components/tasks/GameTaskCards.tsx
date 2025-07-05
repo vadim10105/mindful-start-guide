@@ -57,6 +57,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const [navigationUnlocked, setNavigationUnlocked] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout>();
+  const swiperRef = useRef<any>(null);
   const { toast } = useToast();
 
   // Calculate flow progress (0-100) based on 20-minute commitment periods
@@ -263,6 +264,35 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const isTaskCompleted = currentTask ? completedTasks.has(currentTask.id) : false;
   const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (!isNavigationLocked && swiperRef.current) {
+          e.preventDefault();
+          if (e.key === 'ArrowLeft') {
+            swiperRef.current.slidePrev();
+          } else if (e.key === 'ArrowRight') {
+            swiperRef.current.slideNext();
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const currentTask = tasks[currentViewingIndex];
+        if (!currentTask) return;
+        
+        if (isTaskCommitted && !completedTasks.has(currentTask.id)) {
+          handleTaskComplete(currentTask.id);
+        } else if (!hasCommittedToTask || currentViewingIndex !== activeCommittedIndex) {
+          handleCommitToCurrentTask();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentViewingIndex, activeCommittedIndex, hasCommittedToTask, isNavigationLocked, isTaskCommitted, completedTasks]);
+
   const formatTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
@@ -303,9 +333,13 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               <div className="mb-6 flex justify-center">
                 <div className="w-80" style={{ aspectRatio: '63/88' }}>
                   <Swiper
+                    ref={swiperRef}
                     effect="cards"
                     grabCursor={true}
                     modules={[EffectCards]}
+                    onSwiper={(swiper) => {
+                      swiperRef.current = swiper;
+                    }}
                     cardsEffect={{
                       perSlideOffset: 8,
                       perSlideRotate: 2,
@@ -483,12 +517,12 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                 <div className="text-sm text-muted-foreground">
                   {isNavigationLocked ? (
                     hasCommittedToTask ? (
-                      `Navigation unlocks in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min`
+                      `Navigation unlocks in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min • Press ↓ to complete`
                     ) : (
-                      "Commit to a task to start your focus session"
+                      "Commit to a task to start your focus session • Press ↓ to commit"
                     )
                   ) : (
-                    "Swipe or drag to navigate between tasks"
+                    "Swipe, use arrow keys (←/→), or press ↓ to commit"
                   )}
                 </div>
               </div>
