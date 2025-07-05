@@ -70,14 +70,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     };
   }, [flowStartTime, unlockedCards, tasks.length, hasShownUnlockMessage, currentCardIndex, tasks]);
 
-  const handleCardNavigation = (direction: 'prev' | 'next') => {
-    if (direction === 'next' && currentCardIndex < unlockedCards - 1) {
-      setCurrentCardIndex(prev => prev + 1);
-    } else if (direction === 'prev' && currentCardIndex > 0) {
-      setCurrentCardIndex(prev => prev - 1);
-    }
-  };
-
   const handleTaskCommit = (taskId: string) => {
     const taskIndex = tasks.findIndex(t => t.id === taskId);
     setCurrentCardIndex(taskIndex);
@@ -191,16 +183,16 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                 {/* Stacked Card Deck Effect */}
                 <div className="mb-6 flex justify-center">
                   <div className="relative w-80" style={{ aspectRatio: '63/88' }}>
-                     {/* Progress Ring around Card */}
-                     <div 
-                       className="absolute inset-0 rounded-lg pointer-events-none z-[15]"
-                       style={{
-                         background: `conic-gradient(from -90deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
-                         padding: '4px',
-                       }}
-                     >
-                       <div className="w-full h-full bg-transparent rounded-lg" />
-                     </div>
+                    {/* Progress Ring around Card */}
+                    <div 
+                      className="absolute inset-0 rounded-lg pointer-events-none z-[15]"
+                      style={{
+                        background: `conic-gradient(from -90deg, hsl(var(--primary)) 0deg, hsl(var(--primary)) ${flowProgress * 3.6}deg, transparent ${flowProgress * 3.6}deg, transparent 360deg)`,
+                        padding: '4px',
+                      }}
+                    >
+                      <div className="w-full h-full bg-transparent rounded-lg" />
+                    </div>
                     
                     {/* Background Cards (Stack Effect) */}
                     {!completedTasks.has(currentTask?.id) && [...Array(Math.min(3, tasks.length - 1))].map((_, i) => (
@@ -214,114 +206,116 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                       />
                     ))}
                     
-                     {/* Current Task Card */}
-                     <div className={`relative z-[25] transition-transform duration-700 ${
-                       isTaskCompleted ? 'transform [transform:rotateY(180deg)]' : ''
-                     }`} style={{ transformStyle: 'preserve-3d' }}>
-                       
-                       {/* Front of Card */}
-                       <Card className={`h-full border-2 shadow-xl transition-all duration-300 ${
-                         isTaskCompleted 
-                           ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
-                           : 'border-primary/30 hover:border-primary/50'
-                       }`} style={{ backfaceVisibility: 'hidden' }}>
-                         <CardHeader className="text-center pb-4 flex-shrink-0">
-                           <div className="flex items-center justify-center gap-2 mb-4">
-                             <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
-                               {currentCardIndex + 1}
-                             </div>
-                             <div className="text-sm text-muted-foreground">
-                               of {tasks.length}
-                             </div>
-                           </div>
-                           <CardTitle className="text-lg leading-tight">
-                             {currentTask?.title || 'Loading task...'}
-                           </CardTitle>
-                         </CardHeader>
-                        
-                         <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
-                           {/* Task Tags */}
-                           <div className="flex flex-wrap gap-1 justify-center">
-                             {currentTask?.is_liked && (
-                               <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
-                                 <Heart className="w-3 h-3 mr-1" />
-                                 Love
-                               </Badge>
-                             )}
-                             {currentTask?.is_urgent && (
-                               <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-300">
-                                 <Clock className="w-3 h-3 mr-1" />
-                                 Urgent
-                               </Badge>
-                             )}
-                             {currentTask?.is_quick && (
-                               <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-300 border border-green-300">
-                                 <Zap className="w-3 h-3 mr-1" />
-                                 Quick
-                               </Badge>
-                             )}
-                             <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
-                               AI: {currentTask?.ai_effort || 'medium'} effort
-                             </Badge>
-                           </div>
+                    {/* Current Task Card */}
+                    <div className={`absolute inset-0 transition-transform duration-700 ${
+                      isTaskCompleted ? '[transform:rotateY(180deg)]' : ''
+                    }`} style={{ transformStyle: 'preserve-3d', zIndex: 25 }}>
+                      
+                      {/* Front of Card */}
+                      <Card className={`absolute inset-0 border-2 shadow-xl transition-all duration-300 bg-card text-card-foreground ${
+                        isTaskCompleted 
+                          ? 'border-green-500' 
+                          : 'border-primary/30 hover:border-primary/50'
+                      }`} style={{ backfaceVisibility: 'hidden' }}>
+                        <div className="h-full flex flex-col">
+                          <CardHeader className="text-center pb-4 flex-shrink-0">
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                              <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                                {currentCardIndex + 1}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                of {tasks.length}
+                              </div>
+                            </div>
+                            <CardTitle className="text-lg leading-tight text-foreground">
+                              {currentTask?.title || 'Loading task...'}
+                            </CardTitle>
+                          </CardHeader>
+                          
+                          <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
+                            {/* Task Tags */}
+                            <div className="flex flex-wrap gap-1 justify-center">
+                              {currentTask?.is_liked && (
+                                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
+                                  <Heart className="w-3 h-3 mr-1" />
+                                  Love
+                                </Badge>
+                              )}
+                              {currentTask?.is_urgent && (
+                                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-300">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Urgent
+                                </Badge>
+                              )}
+                              {currentTask?.is_quick && (
+                                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-300 border border-green-300">
+                                  <Zap className="w-3 h-3 mr-1" />
+                                  Quick
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
+                                AI: {currentTask?.ai_effort || 'medium'} effort
+                              </Badge>
+                            </div>
 
-                           {/* Task Actions */}
-                           <div className="text-center">
-                             {currentTask && !isTaskCompleted ? (
-                               <Button 
-                                 onClick={() => handleTaskComplete(currentTask.id)}
-                                 size="sm"
-                                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                               >
-                                 <Check className="w-4 h-4 mr-2" />
-                                 Mark Complete
-                               </Button>
-                             ) : isTaskCompleted ? (
-                               <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                                 <Check className="w-4 h-4" />
-                                 <span className="font-medium text-sm">Completed!</span>
-                               </div>
-                             ) : (
-                               <div className="text-sm text-muted-foreground">Loading...</div>
-                             )}
-                           </div>
-                         </CardContent>
+                            {/* Task Actions */}
+                            <div className="text-center">
+                              {currentTask && !isTaskCompleted ? (
+                                <Button 
+                                  onClick={() => handleTaskComplete(currentTask.id)}
+                                  size="sm"
+                                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                                >
+                                  <Check className="w-4 h-4 mr-2" />
+                                  Mark Complete
+                                </Button>
+                              ) : isTaskCompleted ? (
+                                <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                                  <Check className="w-4 h-4" />
+                                  <span className="font-medium text-sm">Completed!</span>
+                                </div>
+                              ) : (
+                                <div className="text-sm text-muted-foreground">Loading...</div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </div>
                       </Card>
 
-                       {/* Back of Card (Sunset Image) */}
-                       {isTaskCompleted && currentTask && (
-                         <div 
-                           className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)]"
-                           style={{ 
-                             backfaceVisibility: 'hidden',
-                             background: `linear-gradient(45deg, rgba(251,146,60,0.8), rgba(249,115,22,0.8)), url('${sunsetImages[currentCardIndex % sunsetImages.length]}') center/cover`
-                           }}
-                         >
-                           <div className="h-full flex flex-col justify-between p-6 text-white">
-                             <div className="text-center">
-                               <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
-                               <p className="text-sm opacity-90">{currentTask.title}</p>
-                             </div>
-                             
-                             <div className="text-center space-y-4">
-                               <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
-                                 <p className="text-sm mb-2">🌅 Beautiful work!</p>
-                                 <p className="text-xs opacity-75">You've earned this sunset moment</p>
-                               </div>
-                               
-                               <Button 
-                                 onClick={() => {
-                                   console.log('Adding card to collection:', currentTask.id);
-                                 }}
-                                 size="sm"
-                                 className="w-full bg-white/20 hover:bg-white/30 border border-white/30"
-                               >
-                                 Add to Collection
-                               </Button>
-                             </div>
-                           </div>
-                         </div>
-                       )}
+                      {/* Back of Card (Sunset Image) */}
+                      {isTaskCompleted && currentTask && (
+                        <div 
+                          className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)]"
+                          style={{ 
+                            backfaceVisibility: 'hidden',
+                            background: `linear-gradient(45deg, rgba(251,146,60,0.8), rgba(249,115,22,0.8)), url('${sunsetImages[currentCardIndex % sunsetImages.length]}') center/cover`
+                          }}
+                        >
+                          <div className="h-full flex flex-col justify-between p-6 text-white">
+                            <div className="text-center">
+                              <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
+                              <p className="text-sm opacity-90">{currentTask.title}</p>
+                            </div>
+                            
+                            <div className="text-center space-y-4">
+                              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+                                <p className="text-sm mb-2">🌅 Beautiful work!</p>
+                                <p className="text-xs opacity-75">You've earned this sunset moment</p>
+                              </div>
+                              
+                              <Button 
+                                onClick={() => {
+                                  console.log('Adding card to collection:', currentTask.id);
+                                }}
+                                size="sm"
+                                className="w-full bg-white/20 hover:bg-white/30 border border-white/30"
+                              >
+                                Add to Collection
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
