@@ -310,6 +310,9 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       setNavigationUnlocked(false);
       setFlowStartTime(null);
       
+      // Animate swipe to next card
+      swiperRef.current?.slideTo(nextIndex);
+      
       const moveOnMessages = [
         `Fine, moving on to "${nextTask.title}"... this better be more interesting.`,
         `Next up: "${nextTask.title}". Here we go again...`,

@@ -147,7 +147,7 @@ export const TaskActions = ({
             className="flex-1"
           >
             <Pause className="w-4 h-4 mr-1" />
-            Move On For Now
+            Move On
           </Button>
         )}
       </div>
