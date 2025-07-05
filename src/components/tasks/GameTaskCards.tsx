@@ -427,7 +427,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
-  const isNavigationLocked = hasCommittedToTask && !navigationUnlocked;
+  const isNavigationLocked = !hasCommittedToTask || (hasCommittedToTask && !navigationUnlocked);
   const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   return (
