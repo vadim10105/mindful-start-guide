@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Toggle } from "@/components/ui/toggle";
 import { Heart, Clock, Zap, GripVertical } from "lucide-react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -34,12 +33,12 @@ export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) =
     <div 
       ref={setNodeRef} 
       style={style} 
-      {...attributes} 
-      {...listeners} 
-      className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors select-none cursor-grab"
+      className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors select-none"
     >
-      {/* Drag Handle (visual only now) */}
-      <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+      {/* Drag Handle */}
+      <div {...listeners} {...attributes} className="flex-shrink-0 cursor-grab">
+        <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+      </div>
       
       {/* Task Number */}
       <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
@@ -54,74 +53,39 @@ export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) =
       </div>
       
       {/* Tag Controls */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={`liked-${index}`}
-            checked={isLiked}
-            onCheckedChange={(checked) => setIsLiked(checked === true)}
-            className="data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500"
-          />
-          <Label 
-            htmlFor={`liked-${index}`} 
-            className="text-xs flex items-center gap-1 cursor-pointer"
-          >
-            <Heart className="h-3 w-3" />
-            Love
-          </Label>
-        </div>
+      <div className="flex items-center gap-2">
+        <Toggle
+          pressed={isLiked}
+          onPressedChange={(pressed) => setIsLiked(pressed)}
+          aria-label="Toggle love"
+          onClick={(e) => e.stopPropagation()} // Prevent drag from triggering
+          className={`data-[state=on]:bg-rose-500 data-[state=on]:text-white ${isLiked ? 'bg-rose-500 text-white' : ''} hover:bg-rose-200`}
+        >
+          <Heart className="h-4 w-4" />
+        </Toggle>
         
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={`urgent-${index}`}
-            checked={isUrgent}
-            onCheckedChange={(checked) => setIsUrgent(checked === true)}
-            className="data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
-          />
-          <Label 
-            htmlFor={`urgent-${index}`} 
-            className="text-xs flex items-center gap-1 cursor-pointer"
-          >
-            <Clock className="h-3 w-3" />
-            Urgent
-          </Label>
-        </div>
+        <Toggle
+          pressed={isUrgent}
+          onPressedChange={(pressed) => setIsUrgent(pressed)}
+          aria-label="Toggle urgent"
+          onClick={(e) => e.stopPropagation()} // Prevent drag from triggering
+          className={`data-[state=on]:bg-orange-500 data-[state=on]:text-white ${isUrgent ? 'bg-orange-500 text-white' : ''} hover:bg-orange-200`}
+        >
+          <Clock className="h-4 w-4" />
+        </Toggle>
         
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={`quick-${index}`}
-            checked={isQuick}
-            onCheckedChange={(checked) => setIsQuick(checked === true)}
-            className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-          />
-          <Label 
-            htmlFor={`quick-${index}`} 
-            className="text-xs flex items-center gap-1 cursor-pointer"
-          >
-            <Zap className="h-3 w-3" />
-            Quick
-          </Label>
-        </div>
+        <Toggle
+          pressed={isQuick}
+          onPressedChange={(pressed) => setIsQuick(pressed)}
+          aria-label="Toggle quick"
+          onClick={(e) => e.stopPropagation()} // Prevent drag from triggering
+          className={`data-[state=on]:bg-amber-500 data-[state=on]:text-white ${isQuick ? 'bg-amber-500 text-white' : ''} hover:bg-amber-200`}
+        >
+          <Zap className="h-4 w-4" />
+        </Toggle>
       </div>
       
-      {/* Visual Tags - No Emojis */}
-      <div className="flex gap-1">
-        {isLiked && (
-          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-100 text-rose-700">
-            Love
-          </Badge>
-        )}
-        {isUrgent && (
-          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700">
-            Urgent
-          </Badge>
-        )}
-        {isQuick && (
-          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-100 text-green-700">
-            Quick
-          </Badge>
-        )}
-      </div>
+      
     </div>
   );
 };

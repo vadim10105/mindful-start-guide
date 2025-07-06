@@ -242,6 +242,29 @@ export const TaggingPage = () => {
     }
   };
 
+  const handleTaskUpdate = useCallback((index: number, updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => {
+    setTaggedTasks(prev => {
+      const updated = [...prev];
+      const existingIndex = updated.findIndex(t => t.id === `temp-${index}`);
+      const newTask: Task = {
+        id: `temp-${index}`,
+        title: reviewedTasks[index],
+        status: 'active',
+        is_liked: updatedTask.is_liked,
+        is_urgent: updatedTask.is_urgent,
+        is_quick: updatedTask.is_quick,
+        card_position: index + 1
+      };
+      
+      if (existingIndex >= 0) {
+        updated[existingIndex] = newTask;
+      } else {
+        updated.push(newTask);
+      }
+      return updated;
+    });
+  }, [reviewedTasks]);
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -285,34 +308,13 @@ export const TaggingPage = () => {
               >
                 <div className="space-y-3">
                   {reviewedTasks.map((task, index) => (
-                <TaskListItem
-                  key={task}
-                  task={task}
-                  index={index}
-                  onTaskUpdate={(updatedTask) => {
-                    setTaggedTasks(prev => {
-                      const updated = [...prev];
-                      const existingIndex = updated.findIndex(t => t.id === `temp-${index}`);
-                      const newTask: Task = {
-                        id: `temp-${index}`,
-                        title: task,
-                        status: 'active',
-                        is_liked: updatedTask.is_liked,
-                        is_urgent: updatedTask.is_urgent,
-                        is_quick: updatedTask.is_quick,
-                        card_position: index + 1
-                      };
-                      
-                      if (existingIndex >= 0) {
-                        updated[existingIndex] = newTask;
-                      } else {
-                        updated.push(newTask);
-                      }
-                      return updated;
-                    });
-                  }}
-                />
-              ))}
+                    <TaskListItem
+                      key={task}
+                      task={task}
+                      index={index}
+                      onTaskUpdate={(updatedTask) => handleTaskUpdate(index, updatedTask)}
+                    />
+                  ))}
                 </div>
               </SortableContext>
             </DndContext>
