@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { MrIntentCharacter } from "./MrIntentCharacter";
 import { TodaysCollection } from "./TodaysCollection";
-import { TaskSwiper } from "./TaskSwiper";
+import { TaskSwiper, SwiperRef } from "./TaskSwiper";
 import { NavigationDots } from "./NavigationDots";
 import { CompletionModal } from "./CompletionModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +52,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const [navigationUnlocked, setNavigationUnlocked] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout>();
-  const swiperRef = useRef<any>(null);
+  const swiperRef = useRef<SwiperRef>(null);
   const { toast } = useToast();
 
   // Calculate flow progress (0-100) based on 20-minute commitment periods
@@ -90,38 +90,10 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [flowStartTime, navigationUnlocked, hasCommittedToTask]);
+  }, [flowStartTime, navigationUnlocked, hasCommittedToTask, activeCommittedIndex, tasks]);
 
   // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        if (!isNavigationLocked && swiperRef.current) {
-          e.preventDefault();
-          if (e.key === 'ArrowLeft') {
-            swiperRef.current.slidePrev();
-          } else if (e.key === 'ArrowRight') {
-            swiperRef.current.slideNext();
-          }
-        }
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        const currentTask = tasks[currentViewingIndex];
-        if (!currentTask) return;
-        
-        if (isTaskCommitted && !completedTasks.has(currentTask.id)) {
-          handleTaskComplete(currentTask.id);
-        } else if (!hasCommittedToTask || currentViewingIndex !== activeCommittedIndex) {
-          handleCommitToCurrentTask();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentViewingIndex, activeCommittedIndex, hasCommittedToTask, completedTasks]);
-
-  const handleCommitToCurrentTask = () => {
+  const handleCommitToCurrentTask = useCallback(() => {
     const currentTask = tasks[currentViewingIndex];
     if (!currentTask) return;
     
@@ -146,9 +118,9 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     setCharacterMessage(lazyMessages[Math.floor(Math.random() * lazyMessages.length)]);
     setShowCharacter(true);
     setTimeout(() => setShowCharacter(false), 8000);
-  };
+  }, [currentViewingIndex, tasks]);
 
-  const handleTaskComplete = async (taskId: string) => {
+  const handleTaskComplete = useCallback(async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -194,7 +166,38 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     }
     
     onTaskComplete?.(taskId);
-  };
+  }, [onTaskComplete, taskStartTimes, tasks]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isNavigationLockedLocal = !hasCommittedToTask || (hasCommittedToTask && !navigationUnlocked);
+      const isTaskCommittedLocal = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (!isNavigationLockedLocal && swiperRef.current) {
+          e.preventDefault();
+          if (e.key === 'ArrowLeft') {
+            swiperRef.current.slidePrev();
+          } else if (e.key === 'ArrowRight') {
+            swiperRef.current.slideNext();
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const currentTask = tasks[currentViewingIndex];
+        if (!currentTask) return;
+
+        if (isTaskCommittedLocal && !completedTasks.has(currentTask.id)) {
+          handleTaskComplete(currentTask.id);
+        } else if (!hasCommittedToTask || currentViewingIndex !== activeCommittedIndex) {
+          handleCommitToCurrentTask();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentViewingIndex, activeCommittedIndex, hasCommittedToTask, completedTasks, navigationUnlocked, tasks, handleCommitToCurrentTask, handleTaskComplete]);
 
   const handleAddToCollection = async () => {
     if (!lastCompletedTask) return;
@@ -425,8 +428,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
-  const isNavigationLocked = !hasCommittedToTask || (hasCommittedToTask && !navigationUnlocked);
-  const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10">
@@ -451,7 +453,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               hasCommittedToTask={hasCommittedToTask}
               completedTasks={completedTasks}
               pausedTasks={pausedTasks}
-              isNavigationLocked={isNavigationLocked}
+              isNavigationLocked={!hasCommittedToTask || (hasCommittedToTask && !navigationUnlocked)}
               flowProgress={flowProgress}
               sunsetImages={sunsetImages}
               navigationUnlocked={navigationUnlocked}
@@ -470,7 +472,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
             {/* Navigation Status */}
             <div className="text-center mb-6">
               <div className="text-sm text-muted-foreground">
-                {isNavigationLocked ? (
+                {(!hasCommittedToTask || (hasCommittedToTask && !navigationUnlocked)) ? (
                   hasCommittedToTask ? (
                     `Navigation and move-on unlock in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min • Press ↓ to complete`
                   ) : (

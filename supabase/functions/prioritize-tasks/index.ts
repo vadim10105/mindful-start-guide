@@ -41,7 +41,7 @@ interface ScoredTask extends TaskInput {
   position: number;
 }
 
-function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: number; breakdown: any } {
+function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: number; breakdown: ScoredTask['scoreBreakdown'] } {
   // a. BaseCategoryScore
   const categoryRating = profile.categoryRatings[task.inferred.category] || 'Neutral';
   const baseCategoryScore = categoryRating === 'Loved' ? 3 : categoryRating === 'Neutral' ? 0 : -2;
