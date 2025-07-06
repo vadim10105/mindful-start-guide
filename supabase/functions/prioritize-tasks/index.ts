@@ -59,11 +59,17 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
     if (task.tags.quick) liveTagScore += 2;
     if (task.tags.urgent) liveTagScore += 1;
     if (task.tags.disliked) liveTagScore -= 3;
+    // New rules for Quick Win
+    if (task.inferred.complexity === 'high') liveTagScore -= 1;
+    if (task.inferred.importance === 'high') liveTagScore += 1;
   } else { // eatTheFrog
     if (task.tags.liked) liveTagScore += 2;
     if (task.tags.quick) liveTagScore += 1;
     if (task.tags.urgent) liveTagScore += 3;
     if (task.tags.disliked) liveTagScore -= 2;
+    // New rules for Eat the Frog
+    if (task.inferred.complexity === 'high') liveTagScore += 2;
+    if (task.inferred.importance === 'high') liveTagScore += 3;
   }
 
   // e. EnergyAdjust

@@ -9,7 +9,6 @@ interface TaskListItemProps {
   task: string;
   index: number;
   onTaskUpdate: (updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => void;
-  // onReorder is no longer directly used by TaskListItem, but by the parent DndContext
 }
 
 export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) => {
@@ -24,7 +23,6 @@ export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) =
     transition,
   };
 
-  // Update parent whenever any tag changes
   useEffect(() => {
     onTaskUpdate({ is_liked: isLiked, is_urgent: isUrgent, is_quick: isQuick });
   }, [isLiked, isUrgent, isQuick, onTaskUpdate]);
@@ -84,8 +82,6 @@ export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) =
           <Zap className="h-4 w-4" />
         </Toggle>
       </div>
-      
-      
     </div>
   );
 };
