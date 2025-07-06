@@ -3,18 +3,27 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Clock, Zap, GripVertical } from "lucide-react";
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TaskListItemProps {
   task: string;
   index: number;
   onTaskUpdate: (updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => void;
-  onReorder: (dragIndex: number, hoverIndex: number) => void;
+  // onReorder is no longer directly used by TaskListItem, but by the parent DndContext
 }
 
-export const TaskListItem = ({ task, index, onTaskUpdate, onReorder }: TaskListItemProps) => {
+export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
   const [isQuick, setIsQuick] = useState(false);
+
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   // Update parent whenever any tag changes
   useEffect(() => {
@@ -22,9 +31,16 @@ export const TaskListItem = ({ task, index, onTaskUpdate, onReorder }: TaskListI
   }, [isLiked, isUrgent, isQuick, onTaskUpdate]);
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors">
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...attributes} 
+      className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors"
+    >
       {/* Drag Handle */}
-      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab hover:text-foreground" />
+      <div {...listeners} className="flex-shrink-0 cursor-grab">
+        <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+      </div>
       
       {/* Task Number */}
       <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">

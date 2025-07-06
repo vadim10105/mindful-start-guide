@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, Shuffle, ArrowRight, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TaskListItem } from "@/components/tasks/TaskListItem";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
 interface ExtractedTask {
   title: string;
@@ -52,6 +54,11 @@ export const TaggingPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor)
+  );
+
   useEffect(() => {
     const storedTasks = localStorage.getItem('extractedTasks');
     if (storedTasks) {
@@ -84,14 +91,15 @@ export const TaggingPage = () => {
     getUser();
   }, [navigate]);
 
-  const handleReorder = useCallback((dragIndex: number, hoverIndex: number) => {
-    setReviewedTasks(prevTasks => {
-      const newTasks = [...prevTasks];
-      const draggedTask = newTasks[dragIndex];
-      newTasks.splice(dragIndex, 1);
-      newTasks.splice(hoverIndex, 0, draggedTask);
-      return newTasks;
-    });
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setReviewedTasks((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over?.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   }, []);
 
   const prioritizeTasks = async () => {
@@ -266,13 +274,21 @@ export const TaggingPage = () => {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              {reviewedTasks.map((task, index) => (
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={reviewedTasks}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3">
+                  {reviewedTasks.map((task, index) => (
                 <TaskListItem
-                  key={index}
+                  key={task}
                   task={task}
                   index={index}
-                  onReorder={handleReorder}
                   onTaskUpdate={(updatedTask) => {
                     setTaggedTasks(prev => {
                       const updated = [...prev];
@@ -297,7 +313,9 @@ export const TaggingPage = () => {
                   }}
                 />
               ))}
-            </div>
+                </div>
+              </SortableContext>
+            </DndContext>
             
             {/* Direct Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
