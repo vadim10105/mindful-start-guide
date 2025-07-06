@@ -35,12 +35,11 @@ export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) =
       ref={setNodeRef} 
       style={style} 
       {...attributes} 
-      className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors"
+      {...listeners} 
+      className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors select-none cursor-grab"
     >
-      {/* Drag Handle */}
-      <div {...listeners} className="flex-shrink-0 cursor-grab">
-        <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-      </div>
+      {/* Drag Handle (visual only now) */}
+      <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
       
       {/* Task Number */}
       <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
