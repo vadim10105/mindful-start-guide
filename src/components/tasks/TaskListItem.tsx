@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Toggle } from "@/components/ui/toggle";
-import { Heart, Clock, Zap, GripVertical } from "lucide-react";
+import { Heart, AlertCircle, Zap, GripVertical } from "lucide-react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 interface TaskListItemProps {
   task: string;
   index: number;
-  onTaskUpdate: (updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => void;
+  onTaskUpdate: (taskId: string, updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => void;
 }
 
 export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) => {
@@ -16,7 +15,7 @@ export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) =
   const [isUrgent, setIsUrgent] = useState(false);
   const [isQuick, setIsQuick] = useState(false);
 
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -24,18 +23,19 @@ export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) =
   };
 
   useEffect(() => {
-    onTaskUpdate({ is_liked: isLiked, is_urgent: isUrgent, is_quick: isQuick });
-  }, [isLiked, isUrgent, isQuick, onTaskUpdate]);
+    onTaskUpdate(task, { is_liked: isLiked, is_urgent: isUrgent, is_quick: isQuick });
+  }, [isLiked, isUrgent, isQuick, onTaskUpdate, task]);
 
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
-      className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors select-none"
+      {...attributes}
+      className="flex items-center gap-4 p-4 bg-card border rounded-lg select-none touch-none"
     >
       {/* Drag Handle */}
-      <div {...listeners} {...attributes} className="flex-shrink-0 cursor-grab">
-        <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+      <div {...listeners} className="flex-shrink-0 cursor-grab">
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
       </div>
       
       {/* Task Number */}
@@ -54,30 +54,27 @@ export const TaskListItem = ({ task, index, onTaskUpdate }: TaskListItemProps) =
       <div className="flex items-center gap-2">
         <Toggle
           pressed={isLiked}
-          onPressedChange={(pressed) => setIsLiked(pressed)}
+          onPressedChange={setIsLiked}
           aria-label="Toggle love"
-          onClick={(e) => e.stopPropagation()} // Prevent drag from triggering
-          className={`data-[state=on]:bg-rose-500 data-[state=on]:text-white ${isLiked ? 'bg-rose-500 text-white' : ''} hover:bg-rose-200`}
+          className="data-[state=on]:bg-rose-500 data-[state=on]:text-white hover:bg-rose-600/90"
         >
           <Heart className="h-4 w-4" />
         </Toggle>
         
         <Toggle
           pressed={isUrgent}
-          onPressedChange={(pressed) => setIsUrgent(pressed)}
+          onPressedChange={setIsUrgent}
           aria-label="Toggle urgent"
-          onClick={(e) => e.stopPropagation()} // Prevent drag from triggering
-          className={`data-[state=on]:bg-orange-500 data-[state=on]:text-white ${isUrgent ? 'bg-orange-500 text-white' : ''} hover:bg-orange-200`}
+          className="data-[state=on]:bg-orange-500 data-[state=on]:text-white hover:bg-orange-600/90"
         >
-          <Clock className="h-4 w-4" />
+          <AlertCircle className="h-4 w-4" />
         </Toggle>
         
         <Toggle
           pressed={isQuick}
-          onPressedChange={(pressed) => setIsQuick(pressed)}
+          onPressedChange={setIsQuick}
           aria-label="Toggle quick"
-          onClick={(e) => e.stopPropagation()} // Prevent drag from triggering
-          className={`data-[state=on]:bg-amber-500 data-[state=on]:text-white ${isQuick ? 'bg-amber-500 text-white' : ''} hover:bg-amber-200`}
+          className="data-[state=on]:bg-amber-500 data-[state=on]:text-white hover:bg-amber-600/90"
         >
           <Zap className="h-4 w-4" />
         </Toggle>
