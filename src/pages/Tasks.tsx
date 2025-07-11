@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical } from "lucide-react";
+import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
@@ -83,73 +83,27 @@ const TaskListItem = ({ task, index, onTaskUpdate, onReorder }: TaskListItemProp
       </div>
       
       {/* Tag Controls */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={`liked-${index}`}
-            checked={isLiked}
-            onCheckedChange={(checked) => setIsLiked(checked === true)}
-            className="data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500"
-          />
-          <Label 
-            htmlFor={`liked-${index}`} 
-            className="text-xs flex items-center gap-1 cursor-pointer"
-          >
-            <Heart className="h-3 w-3" />
-            Love
-          </Label>
-        </div>
+      <div className="flex items-center gap-2">
+        <Heart
+          className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+            isLiked ? 'text-red-500 fill-red-500' : 'text-gray-300 hover:text-red-400'
+          }`}
+          onClick={() => setIsLiked(!isLiked)}
+        />
         
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={`urgent-${index}`}
-            checked={isUrgent}
-            onCheckedChange={(checked) => setIsUrgent(checked === true)}
-            className="data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
-          />
-          <Label 
-            htmlFor={`urgent-${index}`} 
-            className="text-xs flex items-center gap-1 cursor-pointer"
-          >
-            <Clock className="h-3 w-3" />
-            Urgent
-          </Label>
-        </div>
+        <AlertTriangle
+          className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+            isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300 hover:text-yellow-400'
+          }`}
+          onClick={() => setIsUrgent(!isUrgent)}
+        />
         
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={`quick-${index}`}
-            checked={isQuick}
-            onCheckedChange={(checked) => setIsQuick(checked === true)}
-            className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-          />
-          <Label 
-            htmlFor={`quick-${index}`} 
-            className="text-xs flex items-center gap-1 cursor-pointer"
-          >
-            <Zap className="h-3 w-3" />
-            Quick
-          </Label>
-        </div>
-      </div>
-      
-      {/* Visual Tags - No Emojis */}
-      <div className="flex gap-1">
-        {isLiked && (
-          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-100 text-rose-700">
-            Love
-          </Badge>
-        )}
-        {isUrgent && (
-          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700">
-            Urgent
-          </Badge>
-        )}
-        {isQuick && (
-          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-100 text-green-700">
-            Quick
-          </Badge>
-        )}
+        <Zap
+          className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+            isQuick ? 'text-green-500 fill-green-500' : 'text-gray-300 hover:text-green-400'
+          }`}
+          onClick={() => setIsQuick(!isQuick)}
+        />
       </div>
     </div>
   );
