@@ -44,11 +44,10 @@ const Auth = () => {
           description: "We've sent you a confirmation link to complete your registration.",
         });
       }
-    } catch (error: unknown) {
-      const err = error as Error;
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: err.message || "Failed to create account. Please try again.",
+        description: error.message || "Failed to create account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -83,11 +82,10 @@ const Auth = () => {
         });
         navigate('/');
       }
-    } catch (error: unknown) {
-      const err = error as Error;
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: err.message || "Failed to sign in. Please try again.",
+        description: error.message || "Failed to sign in. Please try again.",
         variant: "destructive",
       });
     } finally {

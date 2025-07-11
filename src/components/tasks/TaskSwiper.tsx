@@ -1,12 +1,9 @@
 import { forwardRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import type { Swiper as SwiperCore } from 'swiper';
 import { EffectCards } from 'swiper/modules';
 import { TaskCard } from './TaskCard';
 import 'swiper/css';
 import 'swiper/css/effect-cards';
-
-export type SwiperRef = SwiperCore;
 
 interface TaskCardData {
   id: string;
@@ -42,7 +39,7 @@ interface TaskSwiperProps {
   formatTime: (minutes: number) => string;
 }
 
-export const TaskSwiper = forwardRef<SwiperRef, TaskSwiperProps>(({
+export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   tasks,
   currentViewingIndex,
   activeCommittedIndex,
@@ -68,6 +65,7 @@ export const TaskSwiper = forwardRef<SwiperRef, TaskSwiperProps>(({
     <div className="mb-6 flex justify-center">
       <div className="w-80" style={{ aspectRatio: '63/88' }}>
         <Swiper
+          ref={ref}
           effect="cards"
           grabCursor={true}
           modules={[EffectCards]}
@@ -85,7 +83,7 @@ export const TaskSwiper = forwardRef<SwiperRef, TaskSwiperProps>(({
           allowSlideNext={!isNavigationLocked}
           allowSlidePrev={!isNavigationLocked}
           key={currentViewingIndex} // Force re-render when index changes
-          initialSlide={currentViewingIndex} // Always start at 0 since we're re-rendering
+          initialSlide={0} // Always start at 0 since we're re-rendering
           className="w-full h-full"
         >
           {tasks.map((task, index) => (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +61,7 @@ export const TaskSwipeCards = ({ preferences, onChange }: TaskSwipeCardsProps) =
   const completed = Object.keys(preferences).length;
   const total = taskTypes.length;
 
-  const handleRating = useCallback((rating: "liked" | "disliked" | "neutral") => {
+  const handleRating = (rating: "liked" | "disliked" | "neutral") => {
     if (!currentTask) return;
 
     const newPreferences = {
@@ -74,7 +74,7 @@ export const TaskSwipeCards = ({ preferences, onChange }: TaskSwipeCardsProps) =
     if (currentIndex < taskTypes.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
-  }, [currentIndex, currentTask, onChange, preferences]);
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -93,7 +93,7 @@ export const TaskSwipeCards = ({ preferences, onChange }: TaskSwipeCardsProps) =
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRating]);
+  }, [currentIndex]);
 
   // Touch/mouse events for swipe simulation
   const handleTouchStart = (e: React.TouchEvent) => {

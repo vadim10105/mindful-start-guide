@@ -1,7 +1,5 @@
 import type { Config } from "tailwindcss";
 
-import tailwindcssAnimate from "tailwindcss-animate";
-
 export default {
 	darkMode: ["class"],
 	content: [
@@ -54,33 +52,15 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				dark: {
-					card: 'hsl(var(--card-dark))',
-					background: 'hsl(var(--background-dark))',
-					foreground: 'hsl(var(--foreground-dark))',
-					primary: 'hsl(var(--primary-dark))',
-					'primary-foreground': 'hsl(var(--primary-foreground-dark))',
-					secondary: 'hsl(var(--secondary-dark))',
-					'secondary-foreground': 'hsl(var(--secondary-foreground-dark))',
-					destructive: 'hsl(var(--destructive-dark))',
-					'destructive-foreground': 'hsl(var(--destructive-foreground-dark))',
-					muted: 'hsl(var(--muted-dark))',
-					'muted-foreground': 'hsl(var(--muted-foreground-dark))',
-					accent: 'hsl(var(--accent-dark))',
-					'accent-foreground': 'hsl(var(--accent-foreground-dark))',
-					popover: 'hsl(var(--popover-dark))',
-					'popover-foreground': 'hsl(var(--popover-foreground-dark))',
-					border: 'hsl(var(--border-dark))',
-					input: 'hsl(var(--input-dark))',
-					ring: 'hsl(var(--ring-dark))',
-					sidebar: 'hsl(var(--sidebar-dark))',
-					'sidebar-foreground': 'hsl(var(--sidebar-foreground-dark))',
-					'sidebar-primary': 'hsl(var(--sidebar-primary-dark))',
-					'sidebar-primary-foreground': 'hsl(var(--sidebar-primary-foreground-dark))',
-					'sidebar-accent': 'hsl(var(--sidebar-accent-dark))',
-					'sidebar-accent-foreground': 'hsl(var(--sidebar-accent-foreground-dark))',
-					'sidebar-border': 'hsl(var(--sidebar-border-dark))',
-					'sidebar-ring': 'hsl(var(--sidebar-ring-dark))',
+				sidebar: {
+					DEFAULT: 'hsl(var(--sidebar-background))',
+					foreground: 'hsl(var(--sidebar-foreground))',
+					primary: 'hsl(var(--sidebar-primary))',
+					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+					accent: 'hsl(var(--sidebar-accent))',
+					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+					border: 'hsl(var(--sidebar-border))',
+					ring: 'hsl(var(--sidebar-ring))'
 				}
 			},
 			borderRadius: {
@@ -112,5 +92,5 @@ export default {
 			}
 		}
 	},
-	plugins: [tailwindcssAnimate],
+	plugins: [require("tailwindcss-animate")],
 } satisfies Config;

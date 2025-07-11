@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,41 +49,17 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
     'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=600&fit=crop',
   ];
 
-  const calculateLibraryStats = useCallback((cards: CollectedCard[]) => {
-    const totalCards = cards.length;
-    const totalTimeMinutes = cards.reduce((sum, card) => sum + card.timeSpentMinutes, 0);
-    const totalTimeHours = Math.round(totalTimeMinutes / 60 * 10) / 10;
-    const averageTimePerCard = totalCards > 0 ? Math.round(totalTimeMinutes / totalCards) : 0;
-    
-    // Calculate unique days
-    const uniqueDates = new Set(cards.map(card => 
-      new Date(card.completedAt).toDateString()
-    ));
-    const totalDays = uniqueDates.size;
-
-    // Determine favorite category based on tags
-    let favoriteCategory = 'Mixed Tasks';
-    const likedCount = cards.filter(c => c.isLiked).length;
-    const urgentCount = cards.filter(c => c.isUrgent).length;
-    const quickCount = cards.filter(c => c.isQuick).length;
-    
-    const maxCount = Math.max(likedCount, urgentCount, quickCount);
-    if (maxCount > 0) {
-      if (likedCount === maxCount) favoriteCategory = 'Loved Tasks';
-      else if (urgentCount === maxCount) favoriteCategory = 'Urgent Tasks';
-      else if (quickCount === maxCount) favoriteCategory = 'Quick Tasks';
+  useEffect(() => {
+    if (isOpen) {
+      fetchCollectedCards();
     }
+  }, [isOpen]);
 
-    setLibraryStats({
-      totalCards,
-      totalDays,
-      totalTimeHours,
-      averageTimePerCard,
-      favoriteCategory
-    });
-  }, []);
+  useEffect(() => {
+    filterAndSortCards();
+  }, [collectedCards, searchTerm, sortBy]);
 
-  const fetchCollectedCards = useCallback(async () => {
+  const fetchCollectedCards = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -122,9 +98,43 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
     } finally {
       setLoading(false);
     }
-  }, [toast, calculateLibraryStats]);
+  };
 
-  const filterAndSortCards = useCallback(() => {
+  const calculateLibraryStats = (cards: CollectedCard[]) => {
+    const totalCards = cards.length;
+    const totalTimeMinutes = cards.reduce((sum, card) => sum + card.timeSpentMinutes, 0);
+    const totalTimeHours = Math.round(totalTimeMinutes / 60 * 10) / 10;
+    const averageTimePerCard = totalCards > 0 ? Math.round(totalTimeMinutes / totalCards) : 0;
+    
+    // Calculate unique days
+    const uniqueDates = new Set(cards.map(card => 
+      new Date(card.completedAt).toDateString()
+    ));
+    const totalDays = uniqueDates.size;
+
+    // Determine favorite category based on tags
+    let favoriteCategory = 'Mixed Tasks';
+    const likedCount = cards.filter(c => c.isLiked).length;
+    const urgentCount = cards.filter(c => c.isUrgent).length;
+    const quickCount = cards.filter(c => c.isQuick).length;
+    
+    const maxCount = Math.max(likedCount, urgentCount, quickCount);
+    if (maxCount > 0) {
+      if (likedCount === maxCount) favoriteCategory = 'Loved Tasks';
+      else if (urgentCount === maxCount) favoriteCategory = 'Urgent Tasks';
+      else if (quickCount === maxCount) favoriteCategory = 'Quick Tasks';
+    }
+
+    setLibraryStats({
+      totalCards,
+      totalDays,
+      totalTimeHours,
+      averageTimePerCard,
+      favoriteCategory
+    });
+  };
+
+  const filterAndSortCards = () => {
     let filtered = [...collectedCards];
 
     // Filter by search term
@@ -149,17 +159,7 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
     });
 
     setFilteredCards(filtered);
-  }, [collectedCards, searchTerm, sortBy]);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchCollectedCards();
-    }
-  }, [isOpen, fetchCollectedCards]);
-
-  useEffect(() => {
-    filterAndSortCards();
-  }, [filterAndSortCards]);
+  };
 
   const formatTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
