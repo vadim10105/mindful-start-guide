@@ -68,7 +68,6 @@ export const TaskSwiper = forwardRef<SwiperRef, TaskSwiperProps>(({
     <div className="mb-6 flex justify-center">
       <div className="w-80" style={{ aspectRatio: '63/88' }}>
         <Swiper
-          ref={ref}
           effect="cards"
           grabCursor={true}
           modules={[EffectCards]}

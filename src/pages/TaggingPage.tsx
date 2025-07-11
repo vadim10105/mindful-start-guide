@@ -137,8 +137,8 @@ const TaggingPageContent = ({ reviewedTasks, setReviewedTasks }) => {
             
             {/* Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
-                <Button onClick={() => {}} disabled={isProcessing} className="h-24 flex-col gap-2" size="lg"><Shuffle className="h-6 w-6" /><div className="text-center"><div className="font-semibold">Shuffle Button</div><div className="text-xs opacity-90">AI prioritizes based on tags</div></div></Button>
-                <Button onClick={() => {}} variant="outline" className="h-24 flex-col gap-2" size="lg"><Brain className="h-6 w-6" /><div className="text-center"><div className="font-semibold">Start in Order</div><div className="text-xs opacity-90">Keep current order</div></div></Button>
+                <Button onClick={() => navigate('/game')} disabled={isProcessing} className="h-24 flex-col gap-2" size="lg"><Shuffle className="h-6 w-6" /><div className="text-center"><div className="font-semibold">Shuffle Button</div><div className="text-xs opacity-90">AI prioritizes based on tags</div></div></Button>
+                <Button onClick={() => navigate('/game')} variant="outline" className="h-24 flex-col gap-2" size="lg"><Brain className="h-6 w-6" /><div className="text-center"><div className="font-semibold">Start in Order</div><div className="text-xs opacity-90">Keep current order</div></div></Button>
             </div>
           </CardContent>
         </Card>
