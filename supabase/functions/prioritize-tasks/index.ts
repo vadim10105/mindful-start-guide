@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface TaskInput {
-  id: string;
+  id?: string;
   text: string;
   tags: {
     liked?: boolean;
@@ -18,14 +18,14 @@ interface TaskInput {
   inferred: {
     complexity: 'low' | 'medium' | 'high';
     importance: 'low' | 'medium' | 'high';
-    category: 'Creative' | 'Analytical+Technical' | 'DeepWork' | 'Admin+Life' | 'Chores' | 'Social' | 'Reflective';
+    category: string;
   };
 }
 
 interface UserProfile {
   startPreference: 'quickWin' | 'eatTheFrog';
   energyState: 'low' | 'high';
-  categoryRatings: Record<string, 'Loved' | 'Neutral' | 'Disliked'>;
+  categoryRatings: Record<string, number | 'Loved' | 'Neutral' | 'Disliked'>;
 }
 
 interface ScoredTask extends TaskInput {
@@ -42,8 +42,31 @@ interface ScoredTask extends TaskInput {
 }
 
 function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: number; breakdown: ScoredTask['scoreBreakdown'] } {
+  // Map category to expected categories
+  const categoryMap: Record<string, string> = {
+    'work': 'Analytical+Technical',
+    'personal': 'Admin+Life',
+    'health': 'Chores',
+    'learning': 'DeepWork',
+    'maintenance': 'Chores',
+    'social': 'Social',
+    'creative': 'Creative',
+    'financial': 'Admin+Life'
+  };
+  
+  const mappedCategory = categoryMap[task.inferred.category] || task.inferred.category;
+
+  // Convert numeric ratings to string categories
+  const convertRating = (rating: number | string): 'Loved' | 'Neutral' | 'Disliked' => {
+    if (typeof rating === 'string') return rating as 'Loved' | 'Neutral' | 'Disliked';
+    if (rating >= 0.8) return 'Loved';
+    if (rating >= 0.5) return 'Neutral';
+    return 'Disliked';
+  };
+
   // a. BaseCategoryScore
-  const categoryRating = profile.categoryRatings[task.inferred.category] || 'Neutral';
+  const rawRating = profile.categoryRatings[mappedCategory] || profile.categoryRatings[task.inferred.category] || 0.7;
+  const categoryRating = convertRating(rawRating);
   const baseCategoryScore = categoryRating === 'Loved' ? 3 : categoryRating === 'Neutral' ? 0 : -2;
 
   // b. AutoComplexity
@@ -52,24 +75,18 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
   // c. AutoImportance
   const autoImportance = task.inferred.importance === 'high' ? 2 : task.inferred.importance === 'medium' ? 1 : -1;
 
-  // d. LiveTagScore
+  // d. LiveTagScore (exact rules as specified)
   let liveTagScore = 0;
   if (profile.startPreference === 'quickWin') {
     if (task.tags.liked) liveTagScore += 3;
     if (task.tags.quick) liveTagScore += 2;
     if (task.tags.urgent) liveTagScore += 1;
     if (task.tags.disliked) liveTagScore -= 3;
-    // New rules for Quick Win
-    if (task.inferred.complexity === 'high') liveTagScore -= 1;
-    if (task.inferred.importance === 'high') liveTagScore += 1;
   } else { // eatTheFrog
     if (task.tags.liked) liveTagScore += 2;
     if (task.tags.quick) liveTagScore += 1;
     if (task.tags.urgent) liveTagScore += 3;
     if (task.tags.disliked) liveTagScore -= 2;
-    // New rules for Eat the Frog
-    if (task.inferred.complexity === 'high') liveTagScore += 2;
-    if (task.inferred.importance === 'high') liveTagScore += 3;
   }
 
   // e. EnergyAdjust
@@ -349,18 +366,26 @@ serve(async (req) => {
   }
 
   try {
-    const { tasks, userProfile } = await req.json();
+    const { tasks, profile } = await req.json();
 
     console.log('Received prioritization request:', { 
-      taskCount: tasks.length, 
-      startPreference: userProfile.startPreference 
+      taskCount: tasks?.length || 0, 
+      startPreference: profile?.startPreference,
+      profile: profile,
+      tasks: tasks
     });
 
+    // Add IDs to tasks if missing
+    const tasksWithIds = tasks.map((task: TaskInput, index: number) => ({
+      ...task,
+      id: task.id || `task-${Date.now()}-${index}`
+    }));
+
     // Default profile values if not provided
-    const profile: UserProfile = {
-      startPreference: userProfile.startPreference || 'quickWin',
-      energyState: userProfile.energyState || 'high',
-      categoryRatings: userProfile.categoryRatings || {
+    const processedProfile: UserProfile = {
+      startPreference: profile?.startPreference || 'quickWin',
+      energyState: profile?.energyState || 'high',
+      categoryRatings: profile?.categoryRatings || {
         'Creative': 'Neutral',
         'Analytical+Technical': 'Neutral',
         'DeepWork': 'Neutral',
@@ -373,31 +398,37 @@ serve(async (req) => {
 
     let orderedTasks: ScoredTask[];
 
-    if (profile.startPreference === 'quickWin') {
-      orderedTasks = applyQuickWinRules(tasks, profile);
+    if (processedProfile.startPreference === 'quickWin') {
+      orderedTasks = applyQuickWinRules(tasksWithIds, processedProfile);
     } else {
-      orderedTasks = applyEatTheFrogRules(tasks, profile);
+      orderedTasks = applyEatTheFrogRules(tasksWithIds, processedProfile);
     }
 
     console.log('Prioritization completed:', {
-      inputTasks: tasks.length,
+      inputTasks: tasksWithIds.length,
       outputTasks: orderedTasks.length,
-      strategy: profile.startPreference
+      strategy: processedProfile.startPreference
     });
 
     return new Response(JSON.stringify({
       orderedTasks,
-      strategy: profile.startPreference,
-      profileUsed: profile
+      strategy: processedProfile.startPreference,
+      profileUsed: processedProfile
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in prioritize-tasks function:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      requestBody: await req.text().catch(() => 'Could not read request body')
+    });
     return new Response(JSON.stringify({ 
       error: error.message,
-      details: 'Failed to prioritize tasks'
+      details: 'Failed to prioritize tasks',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
