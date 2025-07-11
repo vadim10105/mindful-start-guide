@@ -4,7 +4,7 @@ import { MrIntentCharacter } from "./MrIntentCharacter";
 import { TodaysCollection } from "./TodaysCollection";
 import { TaskSwiper } from "./TaskSwiper";
 import { NavigationDots } from "./NavigationDots";
-import { CompletionModal } from "./CompletionModal";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import confetti from "canvas-confetti";
@@ -46,7 +46,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const [pausedTasks, setPausedTasks] = useState<Map<string, number>>(new Map());
   const [hasCommittedToTask, setHasCommittedToTask] = useState(false);
   const [taskStartTimes, setTaskStartTimes] = useState<Record<string, number>>({});
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [lastCompletedTask, setLastCompletedTask] = useState<{id: string, title: string, timeSpent: number} | null>(null);
   const [todaysCompletedTasks, setTodaysCompletedTasks] = useState<CompletedTask[]>([]);
   const [navigationUnlocked, setNavigationUnlocked] = useState(false);
@@ -259,8 +258,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       setShowCharacter(true);
       setTimeout(() => setShowCharacter(false), 8000);
     }
-    
-    setShowCompletionModal(false);
   };
 
   const handleBackToActiveCard = () => {
@@ -462,7 +459,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               onCarryOn={handleCarryOn}
               onSkip={handleSkip}
               onBackToActive={handleBackToActiveCard}
-              onShowCompletionModal={() => setShowCompletionModal(true)}
+              
               onAddToCollection={handleAddToCollection}
               formatTime={formatTime}
             />
@@ -504,17 +501,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         </div>
       </div>
 
-      {/* Completion Modal */}
-      {lastCompletedTask && (
-        <CompletionModal
-          isOpen={showCompletionModal}
-          onClose={() => setShowCompletionModal(false)}
-          taskTitle={lastCompletedTask.title}
-          timeSpent={lastCompletedTask.timeSpent}
-          onAddToCollection={handleAddToCollection}
-          formatTime={formatTime}
-        />
-      )}
 
       {/* Today's Collection */}
       <TodaysCollection 
@@ -522,7 +508,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         isVisible={todaysCompletedTasks.length > 0}
       />
 
-      {/* Character */}
+      {/* Mr Intent Character */}
       {showCharacter && (
         <MrIntentCharacter
           message={characterMessage}

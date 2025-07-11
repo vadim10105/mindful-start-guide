@@ -34,7 +34,7 @@ interface TaskCardProps {
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
-  onShowCompletionModal: () => void;
+  
   onAddToCollection: () => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
@@ -59,7 +59,7 @@ export const TaskCard = ({
   onCarryOn,
   onSkip,
   onBackToActive,
-  onShowCompletionModal,
+  
   onAddToCollection,
   navigationUnlocked,
   formatTime
