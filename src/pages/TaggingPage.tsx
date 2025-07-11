@@ -75,6 +75,7 @@ const DropZone = ({ id, icon: Icon, side, active, isOver }) => {
 const TaggingPageContent = ({ reviewedTasks, setReviewedTasks }) => {
   const [taggedTasks, setTaggedTasks] = useState<Task[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { active, over } = useDndContext();
@@ -84,7 +85,29 @@ const TaggingPageContent = ({ reviewedTasks, setReviewedTasks }) => {
     if (storedTasks) {
       setReviewedTasks(JSON.parse(storedTasks).map(t => t.title));
     }
-  }, [navigate, setReviewedTasks]); // Added setReviewedTasks to dependency array
+    
+    // Load user profile for prioritization
+    const loadUserProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('task_start_preference, task_preferences, peak_energy_time, lowest_energy_time')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profile) {
+            setUserProfile(profile);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    };
+    
+    loadUserProfile();
+  }, [navigate, setReviewedTasks]);
 
   const handleTaskUpdate = useCallback((taskId: string, updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => {
     setTaggedTasks(prev => {
@@ -108,6 +131,96 @@ const TaggingPageContent = ({ reviewedTasks, setReviewedTasks }) => {
       return updated;
     });
   }, [reviewedTasks]);
+
+  const collectAllTasks = useCallback(() => {
+    // Get all tasks from storage with their tags applied
+    const storedTasks = localStorage.getItem('extractedTasks');
+    if (!storedTasks) return [];
+    
+    const extractedTasks: ExtractedTask[] = JSON.parse(storedTasks);
+    
+    return extractedTasks.map((task, index) => {
+      const taggedTask = taggedTasks.find(t => t.title === task.title);
+      return {
+        id: task.title,
+        title: task.title,
+        estimated_urgency: task.estimated_urgency,
+        estimated_effort: task.estimated_effort,
+        is_liked: taggedTask?.is_liked || false,
+        is_urgent: taggedTask?.is_urgent || false,
+        is_quick: taggedTask?.is_quick || false,
+        position: index + 1
+      };
+    });
+  }, [taggedTasks]);
+
+  const handlePrioritizeAndNavigate = useCallback(async (strategy: 'shuffle' | 'order') => {
+    setIsProcessing(true);
+    
+    try {
+      const allTasks = collectAllTasks();
+      if (allTasks.length === 0) {
+        toast({ 
+          title: "No tasks found", 
+          description: "Please add some tasks first.",
+          variant: "destructive"
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Use default profile if none loaded
+      const profile = userProfile || {
+        task_start_preference: strategy === 'shuffle' ? 'quick_wins' : 'eat_the_frog',
+        task_preferences: {},
+        peak_energy_time: 'morning',
+        lowest_energy_time: 'afternoon'
+      };
+
+      const { data, error } = await supabase.functions.invoke('prioritize-tasks', {
+        body: {
+          tasks: allTasks,
+          profile: profile
+        }
+      });
+
+      if (error) {
+        console.error('Prioritization error:', error);
+        toast({ 
+          title: "Prioritization failed", 
+          description: "Using current order instead.",
+          variant: "destructive"
+        });
+        
+        // Fallback: create simple prioritized tasks
+        const fallbackTasks: PrioritizedTask[] = allTasks.map((task, index) => ({
+          id: task.id,
+          title: task.title,
+          priority_score: strategy === 'shuffle' ? Math.random() * 100 : 100 - index,
+          explanation: 'Using current order due to prioritization error',
+          is_liked: task.is_liked,
+          is_urgent: task.is_urgent,
+          is_quick: task.is_quick,
+          ai_effort: task.estimated_effort
+        }));
+        
+        localStorage.setItem('prioritizedTasks', JSON.stringify(fallbackTasks));
+      } else {
+        localStorage.setItem('prioritizedTasks', JSON.stringify(data.prioritizedTasks));
+      }
+
+      navigate('/game');
+    } catch (error) {
+      console.error('Error during prioritization:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to prioritize tasks. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [collectAllTasks, userProfile, navigate, toast]);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -137,8 +250,35 @@ const TaggingPageContent = ({ reviewedTasks, setReviewedTasks }) => {
             
             {/* Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
-                <Button onClick={() => navigate('/game')} disabled={isProcessing} className="h-24 flex-col gap-2" size="lg"><Shuffle className="h-6 w-6" /><div className="text-center"><div className="font-semibold">Shuffle Button</div><div className="text-xs opacity-90">AI prioritizes based on tags</div></div></Button>
-                <Button onClick={() => navigate('/game')} variant="outline" className="h-24 flex-col gap-2" size="lg"><Brain className="h-6 w-6" /><div className="text-center"><div className="font-semibold">Start in Order</div><div className="text-xs opacity-90">Keep current order</div></div></Button>
+                <Button 
+                  onClick={() => handlePrioritizeAndNavigate('shuffle')} 
+                  disabled={isProcessing} 
+                  className="h-24 flex-col gap-2" 
+                  size="lg"
+                >
+                  <Shuffle className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold">
+                      {isProcessing ? 'Prioritizing...' : 'Shuffle Button'}
+                    </div>
+                    <div className="text-xs opacity-90">AI prioritizes based on tags</div>
+                  </div>
+                </Button>
+                <Button 
+                  onClick={() => handlePrioritizeAndNavigate('order')} 
+                  disabled={isProcessing}
+                  variant="outline" 
+                  className="h-24 flex-col gap-2" 
+                  size="lg"
+                >
+                  <Brain className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-semibold">
+                      {isProcessing ? 'Prioritizing...' : 'Start in Order'}
+                    </div>
+                    <div className="text-xs opacity-90">Keep current order</div>
+                  </div>
+                </Button>
             </div>
           </CardContent>
         </Card>
