@@ -10,6 +10,25 @@ import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVe
 import { useToast } from "@/hooks/use-toast";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type FlowStep = 'input' | 'processing' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
 
@@ -60,15 +79,41 @@ const TaskListItem = ({ task, index, onTaskUpdate, onReorder }: TaskListItemProp
   const [isUrgent, setIsUrgent] = useState(false);
   const [isQuick, setIsQuick] = useState(false);
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `task-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   // Update parent whenever any tag changes
   useEffect(() => {
     onTaskUpdate({ is_liked: isLiked, is_urgent: isUrgent, is_quick: isQuick });
   }, [isLiked, isUrgent, isQuick, onTaskUpdate]);
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors">
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors ${
+        isDragging ? 'opacity-50' : ''
+      }`}
+    >
       {/* Drag Handle */}
-      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab hover:text-foreground" />
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab hover:cursor-grabbing"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+      </div>
       
       {/* Task Number */}
       <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
@@ -120,6 +165,13 @@ const Tasks = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState(null);
   const { toast } = useToast();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     const getUser = async () => {
@@ -224,6 +276,19 @@ const Tasks = () => {
     newTasks.splice(dragIndex, 1);
     newTasks.splice(hoverIndex, 0, draggedTask);
     setReviewedTasks(newTasks);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = reviewedTasks.findIndex((_, index) => `task-${index}` === active.id);
+      const newIndex = reviewedTasks.findIndex((_, index) => `task-${index}` === over?.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setReviewedTasks((items) => arrayMove(items, oldIndex, newIndex));
+      }
+    }
   };
 
   const prioritizeTasks = async () => {
@@ -344,6 +409,21 @@ const Tasks = () => {
   };
 
   const handleManualOrder = async () => {
+    // Update tagged tasks with the current order before saving
+    const orderedTaggedTasks = reviewedTasks.map((taskTitle, index) => {
+      const existingTask = taggedTasks.find(t => t.title === taskTitle);
+      return {
+        id: `temp-${index}`,
+        title: taskTitle,
+        status: 'active' as const,
+        is_liked: existingTask?.is_liked || false,
+        is_urgent: existingTask?.is_urgent || false,
+        is_quick: existingTask?.is_quick || false,
+        card_position: index + 1
+      };
+    });
+    
+    setTaggedTasks(orderedTaggedTasks);
     await saveTasks();
   };
 
@@ -351,15 +431,19 @@ const Tasks = () => {
     if (!user) return;
 
     try {
-      const tasksToSave = taggedTasks.map((task, index) => ({
-        title: task.title,
-        user_id: user.id,
-        source: 'brain_dump' as const,
-        is_liked: task.is_liked,
-        is_urgent: task.is_urgent,
-        is_quick: task.is_quick,
-        card_position: index + 1
-      }));
+      // Create tasks based on the current order in reviewedTasks
+      const tasksToSave = reviewedTasks.map((taskTitle, index) => {
+        const existingTask = taggedTasks.find(t => t.title === taskTitle);
+        return {
+          title: taskTitle,
+          user_id: user.id,
+          source: 'brain_dump' as const,
+          is_liked: existingTask?.is_liked || false,
+          is_urgent: existingTask?.is_urgent || false,
+          is_quick: existingTask?.is_quick || false,
+          card_position: index + 1 // Use the order from reviewedTasks
+        };
+      });
 
       const { error } = await supabase
         .from('tasks')
@@ -369,7 +453,7 @@ const Tasks = () => {
 
       toast({
         title: "Success!",
-        description: `${taggedTasks.length} tasks saved`,
+        description: `${tasksToSave.length} tasks saved in order`,
       });
 
       setCurrentStep('game-loading');
@@ -510,38 +594,49 @@ const Tasks = () => {
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
-                {reviewedTasks.map((task, index) => (
-                  <TaskListItem
-                    key={index}
-                    task={task}
-                    index={index}
-                    onReorder={handleReorder}
-                    onTaskUpdate={(updatedTask) => {
-                      setTaggedTasks(prev => {
-                        const updated = [...prev];
-                        const existingIndex = updated.findIndex(t => t.id === `temp-${index}`);
-                        const newTask: Task = {
-                          id: `temp-${index}`,
-                          title: task,
-                          status: 'active',
-                          is_liked: updatedTask.is_liked,
-                          is_urgent: updatedTask.is_urgent,
-                          is_quick: updatedTask.is_quick,
-                          card_position: index + 1
-                        };
-                        
-                        if (existingIndex >= 0) {
-                          updated[existingIndex] = newTask;
-                        } else {
-                          updated.push(newTask);
-                        }
-                        return updated;
-                      });
-                    }}
-                  />
-                ))}
-              </div>
+              <DndContext 
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext 
+                  items={reviewedTasks.map((_, index) => `task-${index}`)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {reviewedTasks.map((task, index) => (
+                      <TaskListItem
+                        key={`task-${index}`}
+                        task={task}
+                        index={index}
+                        onReorder={handleReorder}
+                        onTaskUpdate={(updatedTask) => {
+                          setTaggedTasks(prev => {
+                            const updated = [...prev];
+                            const existingIndex = updated.findIndex(t => t.title === task);
+                            const newTask: Task = {
+                              id: `temp-${index}`,
+                              title: task,
+                              status: 'active',
+                              is_liked: updatedTask.is_liked,
+                              is_urgent: updatedTask.is_urgent,
+                              is_quick: updatedTask.is_quick,
+                              card_position: index + 1
+                            };
+                            
+                            if (existingIndex >= 0) {
+                              updated[existingIndex] = newTask;
+                            } else {
+                              updated.push(newTask);
+                            }
+                            return updated;
+                          });
+                        }}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
               
               {/* Direct Action Buttons */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
