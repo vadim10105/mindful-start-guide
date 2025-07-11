@@ -28,8 +28,13 @@ const GamePage = () => {
 
   useEffect(() => {
     const storedTasks = localStorage.getItem('prioritizedTasks');
-    if (storedTasks) {
-      setPrioritizedTasks(JSON.parse(storedTasks));
+    if (storedTasks && storedTasks !== 'undefined' && storedTasks !== 'null') {
+      try {
+        setPrioritizedTasks(JSON.parse(storedTasks));
+      } catch (error) {
+        console.error('Failed to parse stored tasks:', error);
+        localStorage.removeItem('prioritizedTasks');
+      }
     } else {
       toast({
         title: "No tasks found",
