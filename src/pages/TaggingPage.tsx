@@ -169,18 +169,85 @@ const TaggingPageContent = ({ reviewedTasks, setReviewedTasks }) => {
         return;
       }
 
-      // Use default profile if none loaded
-      const profile = userProfile || {
+      // Transform profile data to match edge function expectations
+      const rawProfile = userProfile || {
         task_start_preference: strategy === 'shuffle' ? 'quick_wins' : 'eat_the_frog',
         task_preferences: {},
         peak_energy_time: 'morning',
         lowest_energy_time: 'afternoon'
       };
 
+      // Calculate current energy state
+      const currentHour = new Date().getHours();
+      const peakHour = rawProfile.peak_energy_time === 'morning' ? 9 : 
+                      rawProfile.peak_energy_time === 'afternoon' ? 14 : 
+                      rawProfile.peak_energy_time === 'evening' ? 19 : 9;
+      const energyState = Math.abs(currentHour - peakHour) <= 3 ? 'high' : 'low';
+
+      // Transform profile to expected format
+      const transformedProfile = {
+        startPreference: rawProfile.task_start_preference === 'quick_wins' ? 'quickWin' : 'eatTheFrog',
+        energyState: energyState as 'low' | 'high',
+        categoryRatings: {
+          work: 0.8,
+          personal: 0.7,
+          health: 0.9,
+          learning: 0.6,
+          maintenance: 0.5,
+          social: 0.7,
+          creative: 0.8,
+          financial: 0.9
+        }
+      };
+
+      // Transform tasks to match edge function expectations
+      const transformedTasks = allTasks.map(task => {
+        // Map effort to complexity
+        const complexityMap = {
+          'quick': 'low' as const,
+          'medium': 'medium' as const,
+          'long': 'high' as const
+        };
+
+        // Map urgency to importance
+        const importanceMap = {
+          'low': 'low' as const,
+          'medium': 'medium' as const,
+          'high': 'high' as const
+        };
+
+        // Assign category based on task content
+        const assignCategory = (title: string): string => {
+          const lowerTitle = title.toLowerCase();
+          if (lowerTitle.includes('work') || lowerTitle.includes('meeting') || lowerTitle.includes('email')) return 'work';
+          if (lowerTitle.includes('exercise') || lowerTitle.includes('health') || lowerTitle.includes('workout')) return 'health';
+          if (lowerTitle.includes('learn') || lowerTitle.includes('study') || lowerTitle.includes('course')) return 'learning';
+          if (lowerTitle.includes('clean') || lowerTitle.includes('organize') || lowerTitle.includes('fix')) return 'maintenance';
+          if (lowerTitle.includes('friend') || lowerTitle.includes('family') || lowerTitle.includes('call')) return 'social';
+          if (lowerTitle.includes('create') || lowerTitle.includes('write') || lowerTitle.includes('design')) return 'creative';
+          if (lowerTitle.includes('money') || lowerTitle.includes('budget') || lowerTitle.includes('invest')) return 'financial';
+          return 'personal';
+        };
+
+        return {
+          text: task.title,
+          tags: {
+            liked: task.is_liked || false,
+            urgent: task.is_urgent || false,
+            quick: task.is_quick || false
+          },
+          inferred: {
+            complexity: complexityMap[task.estimated_effort] || 'medium',
+            importance: importanceMap[task.estimated_urgency] || 'medium',
+            category: assignCategory(task.title)
+          }
+        };
+      });
+
       const { data, error } = await supabase.functions.invoke('prioritize-tasks', {
         body: {
-          tasks: allTasks,
-          profile: profile
+          tasks: transformedTasks,
+          profile: transformedProfile
         }
       });
 
