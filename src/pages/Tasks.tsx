@@ -295,7 +295,6 @@ const Tasks = () => {
     // Create task input format for the edge function
     const taskInputs = reviewedTasks.map((taskTitle, index) => {
       const taggedTask = taggedTasks.find(t => t.title === taskTitle);
-      const extractedTask = extractedTasks.find(t => t.title === taskTitle);
       
       return {
         id: `temp-${index}`,
@@ -307,10 +306,6 @@ const Tasks = () => {
           disliked: taggedTask?.is_disliked || false
         },
         inferred: {
-          complexity: extractedTask?.estimated_effort === 'quick' ? 'low' : 
-                     extractedTask?.estimated_effort === 'long' ? 'high' : 'medium',
-          importance: extractedTask?.estimated_urgency === 'low' ? 'low' :
-                     extractedTask?.estimated_urgency === 'high' ? 'high' : 'medium',
           category: 'Admin+Life' // Default category - we'll enhance this later
         }
       };
@@ -355,7 +350,7 @@ const Tasks = () => {
         is_liked: task.tags.liked,
         is_urgent: task.tags.urgent,
         is_quick: task.tags.quick,
-        ai_effort: task.inferred.complexity
+        ai_effort: 'medium'
       }));
 
       return prioritizedTasks;

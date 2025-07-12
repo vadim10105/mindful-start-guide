@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
@@ -16,8 +17,8 @@ interface TaskInput {
     disliked?: boolean;
   };
   inferred: {
-    complexity: 'low' | 'medium' | 'high';
-    importance: 'low' | 'medium' | 'high';
+    complexity?: 'low' | 'medium' | 'high'; // Made optional since we're not using it
+    importance?: 'low' | 'medium' | 'high'; // Made optional since we're not using it
     category: 'Creative' | 'Analytical+Technical' | 'DeepWork' | 'Admin+Life' | 'Chores' | 'Social' | 'Reflective';
   };
 }
@@ -32,8 +33,6 @@ interface ScoredTask extends TaskInput {
   totalScore: number;
   scoreBreakdown: {
     baseCategoryScore: number;
-    autoComplexity: number;
-    autoImportance: number;
     liveTagScore: number;
     energyAdjust: number;
   };
@@ -46,13 +45,7 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
   const categoryRating = profile.categoryRatings[task.inferred.category] || 'Neutral';
   const baseCategoryScore = categoryRating === 'Loved' ? 3 : categoryRating === 'Neutral' ? 0 : -2;
 
-  // b. AutoComplexity
-  const autoComplexity = task.inferred.complexity === 'high' ? 2 : task.inferred.complexity === 'medium' ? 1 : -1;
-
-  // c. AutoImportance
-  const autoImportance = task.inferred.importance === 'high' ? 2 : task.inferred.importance === 'medium' ? 1 : -1;
-
-  // d. LiveTagScore
+  // b. LiveTagScore
   let liveTagScore = 0;
   if (profile.startPreference === 'quickWin') {
     if (task.tags.liked) liveTagScore += 3;
@@ -66,28 +59,21 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
     if (task.tags.disliked) liveTagScore -= 2;
   }
 
-  // e. EnergyAdjust
+  // c. EnergyAdjust (simplified without complexity)
   let energyAdjust = 0;
   if (profile.energyState === 'low') {
     if (task.tags.quick) energyAdjust += 1;
     if (task.tags.liked) energyAdjust += 1;
-    // For QuickWin users with low energy, further penalize high complexity (total -2)
-    if (task.inferred.complexity === 'high') {
-      energyAdjust -= (profile.startPreference === 'quickWin') ? 2 : 1;
-    }
   } else { // high energy
     if (task.tags.urgent) energyAdjust += 1;
-    if (task.inferred.complexity === 'high') energyAdjust += 1;
   }
 
-  const totalScore = baseCategoryScore + autoComplexity + autoImportance + liveTagScore + energyAdjust;
+  const totalScore = baseCategoryScore + liveTagScore + energyAdjust;
 
   return {
     score: totalScore,
     breakdown: {
       baseCategoryScore,
-      autoComplexity,
-      autoImportance,
       liveTagScore,
       energyAdjust
     }
@@ -110,27 +96,27 @@ function applyQuickWinRules(tasks: TaskInput[], profile: UserProfile): ScoredTas
   const orderedTasks: ScoredTask[] = [];
   const remainingTasks = [...scoredTasks];
 
-  // MomentumBuffer (Tasks 1-2): Pure Quick+LowComplexity tasks
-  const quickLowTasks = remainingTasks
-    .filter(t => t.tags.quick && t.inferred.complexity === 'low')
+  // MomentumBuffer (Tasks 1-2): Quick tasks (removed complexity requirement)
+  const quickTasks = remainingTasks
+    .filter(t => t.tags.quick)
     .sort((a, b) => b.totalScore - a.totalScore);
   
-  for (let i = 0; i < Math.min(2, quickLowTasks.length); i++) {
-    const task = quickLowTasks[i];
+  for (let i = 0; i < Math.min(2, quickTasks.length); i++) {
+    const task = quickTasks[i];
     task.rulePlacement = `MomentumBuffer (${i + 1})`;
     task.position = orderedTasks.length + 1;
     orderedTasks.push(task);
     remainingTasks.splice(remainingTasks.indexOf(task), 1);
   }
 
-  // Fill remaining momentum slots with highest Liked tasks of moderate or lower complexity
+  // Fill remaining momentum slots with highest Liked tasks
   if (orderedTasks.length < 2) {
-    const likedModerateOrLowerTasks = remainingTasks
-      .filter(t => t.tags.liked && (t.inferred.complexity === 'low' || t.inferred.complexity === 'medium'))
+    const likedTasks = remainingTasks
+      .filter(t => t.tags.liked)
       .sort((a, b) => b.totalScore - a.totalScore);
     
-    for (let i = 0; i < Math.min(2 - orderedTasks.length, likedModerateOrLowerTasks.length); i++) {
-      const task = likedModerateOrLowerTasks[i];
+    for (let i = 0; i < Math.min(2 - orderedTasks.length, likedTasks.length); i++) {
+      const task = likedTasks[i];
       task.rulePlacement = `MomentumBuffer Fill (${orderedTasks.length + 1})`;
       task.position = orderedTasks.length + 1;
       orderedTasks.push(task);
@@ -157,21 +143,14 @@ function applyQuickWinRules(tasks: TaskInput[], profile: UserProfile): ScoredTas
     remainingTasks.splice(remainingTasks.indexOf(boosterTask), 1);
   }
 
-  // EarlyPhase (Tasks 4-5): Apply additional penalty to Disliked+HighComplexity, prefer Quick or Liked
-  const earlyPhaseEligible = remainingTasks.map(task => {
-    // Apply additional penalty for Disliked+HighComplexity tasks in early phase
-    const earlyPhasePenalty = (task.tags.disliked && task.inferred.complexity === 'high') ? -1 : 0;
-    return {
-      ...task,
-      adjustedScore: task.totalScore + earlyPhasePenalty
-    };
-  }).sort((a, b) => {
+  // EarlyPhase (Tasks 4-5): Prefer Quick or Liked tasks (removed complexity penalties)
+  const earlyPhaseEligible = remainingTasks.sort((a, b) => {
     // Prefer Quick or Liked tasks first
     const aPreference = (a.tags.quick || a.tags.liked) ? 1 : 0;
     const bPreference = (b.tags.quick || b.tags.liked) ? 1 : 0;
     if (aPreference !== bPreference) return bPreference - aPreference;
-    // Then by adjusted score
-    return b.adjustedScore - a.adjustedScore;
+    // Then by score
+    return b.totalScore - a.totalScore;
   });
   
   for (let i = 0; i < Math.min(2, earlyPhaseEligible.length) && orderedTasks.length < 5; i++) {
@@ -223,13 +202,13 @@ function applyQuickWinRules(tasks: TaskInput[], profile: UserProfile): ScoredTas
     }
   }
 
-  // Ensure ending on easy/neutral task
+  // Ensure ending on easy/neutral task (based on category rating only)
   const lastTask = orderedTasks[orderedTasks.length - 1];
-  if (lastTask && lastTask.inferred.complexity === 'high') {
-    // Find an easy task to swap with
+  if (lastTask && profile.categoryRatings[lastTask.inferred.category] === 'Disliked') {
+    // Find a neutral or loved task to swap with
     const easyTaskIndex = orderedTasks.findIndex(t => 
-      t.inferred.complexity === 'low' || 
-      (t.inferred.complexity === 'medium' && profile.categoryRatings[t.inferred.category] === 'Neutral')
+      profile.categoryRatings[t.inferred.category] === 'Neutral' || 
+      profile.categoryRatings[t.inferred.category] === 'Loved'
     );
     
     if (easyTaskIndex !== -1 && easyTaskIndex < orderedTasks.length - 1) {
@@ -267,15 +246,15 @@ function applyEatTheFrogRules(tasks: TaskInput[], profile: UserProfile): ScoredT
     return acc;
   }, {} as Record<string, ScoredTask[]>);
 
-  // Sort each category by descending (urgent+importance+complexity) score
+  // Sort each category by descending urgency score only (removed importance and complexity)
   Object.values(tasksByCategory).forEach(categoryTasks => {
     categoryTasks.sort((a, b) => {
-      const aUrgentScore = (a.tags.urgent ? 3 : 0) + 
-                          (a.inferred.importance === 'high' ? 2 : a.inferred.importance === 'medium' ? 1 : 0) +
-                          (a.inferred.complexity === 'high' ? 2 : a.inferred.complexity === 'medium' ? 1 : 0);
-      const bUrgentScore = (b.tags.urgent ? 3 : 0) + 
-                          (b.inferred.importance === 'high' ? 2 : b.inferred.importance === 'medium' ? 1 : 0) +
-                          (b.inferred.complexity === 'high' ? 2 : b.inferred.complexity === 'medium' ? 1 : 0);
+      const aUrgentScore = (a.tags.urgent ? 3 : 0);
+      const bUrgentScore = (b.tags.urgent ? 3 : 0);
+      // If urgency is the same, use total score
+      if (aUrgentScore === bUrgentScore) {
+        return b.totalScore - a.totalScore;
+      }
       return bUrgentScore - aUrgentScore;
     });
   });
@@ -313,13 +292,13 @@ function applyEatTheFrogRules(tasks: TaskInput[], profile: UserProfile): ScoredT
     }
   }
 
-  // Ensure ending on easy/neutral task (Universal Rule)
+  // Ensure ending on easy/neutral task (based on category rating only)
   const lastTask = orderedTasks[orderedTasks.length - 1];
-  if (lastTask && lastTask.inferred.complexity === 'high') {
-    // Find an easy task to swap with
+  if (lastTask && profile.categoryRatings[lastTask.inferred.category] === 'Disliked') {
+    // Find a neutral or loved task to swap with
     const easyTaskIndex = orderedTasks.findIndex(t => 
-      t.inferred.complexity === 'low' || 
-      (t.inferred.complexity === 'medium' && profile.categoryRatings[t.inferred.category] === 'Neutral')
+      profile.categoryRatings[t.inferred.category] === 'Neutral' || 
+      profile.categoryRatings[t.inferred.category] === 'Loved'
     );
     
     if (easyTaskIndex !== -1 && easyTaskIndex < orderedTasks.length - 1) {
