@@ -45,8 +45,8 @@ export const ArchiveDropZone = ({
         </Button>
       </div>
 
-      {/* Drop Zone */}
-      {!isCollapsed && (
+      {/* Drop Zone - Only show when no archived tasks */}
+      {!isCollapsed && archivedCount === 0 && (
         <div
           ref={setNodeRef}
           className={`
@@ -65,6 +65,14 @@ export const ArchiveDropZone = ({
             Archived tasks will be stored for future reference
           </p>
         </div>
+      )}
+
+      {/* Invisible drop zone when tasks exist - for drag functionality */}
+      {!isCollapsed && archivedCount > 0 && (
+        <div
+          ref={setNodeRef}
+          className="h-0 w-full"
+        />
       )}
     </div>
   );
