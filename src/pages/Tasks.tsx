@@ -70,15 +70,14 @@ interface UserProfile {
 interface TaskListItemProps {
   task: string;
   index: number;
-  onTaskUpdate: (updatedTask: { is_liked?: boolean; is_urgent?: boolean; is_quick?: boolean }) => void;
+  isLiked: boolean;
+  isUrgent: boolean;
+  isQuick: boolean;
+  onTagUpdate: (tag: 'liked' | 'urgent' | 'quick', value: boolean) => void;
   onReorder: (dragIndex: number, hoverIndex: number) => void;
 }
 
-const TaskListItem = ({ task, index, onTaskUpdate, onReorder }: TaskListItemProps) => {
-  const [isLiked, setIsLiked] = useState(false);
-  const [isUrgent, setIsUrgent] = useState(false);
-  const [isQuick, setIsQuick] = useState(false);
-
+const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, onReorder }: TaskListItemProps) => {
   const {
     attributes,
     listeners,
@@ -86,17 +85,12 @@ const TaskListItem = ({ task, index, onTaskUpdate, onReorder }: TaskListItemProp
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `task-${index}` });
+  } = useSortable({ id: task });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
-
-  // Update parent whenever any tag changes
-  useEffect(() => {
-    onTaskUpdate({ is_liked: isLiked, is_urgent: isUrgent, is_quick: isQuick });
-  }, [isLiked, isUrgent, isQuick, onTaskUpdate]);
 
   return (
     <div 
@@ -133,21 +127,21 @@ const TaskListItem = ({ task, index, onTaskUpdate, onReorder }: TaskListItemProp
           className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
             isLiked ? 'text-red-500 fill-red-500' : 'text-gray-300 hover:text-red-400'
           }`}
-          onClick={() => setIsLiked(!isLiked)}
+          onClick={() => onTagUpdate('liked', !isLiked)}
         />
         
         <AlertTriangle
           className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
             isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300 hover:text-yellow-400'
           }`}
-          onClick={() => setIsUrgent(!isUrgent)}
+          onClick={() => onTagUpdate('urgent', !isUrgent)}
         />
         
         <Zap
           className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
             isQuick ? 'text-green-500 fill-green-500' : 'text-gray-300 hover:text-green-400'
           }`}
-          onClick={() => setIsQuick(!isQuick)}
+          onClick={() => onTagUpdate('quick', !isQuick)}
         />
       </div>
     </div>
@@ -160,6 +154,7 @@ const Tasks = () => {
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
   const [reviewedTasks, setReviewedTasks] = useState<string[]>([]);
   const [taggedTasks, setTaggedTasks] = useState<Task[]>([]);
+  const [taskTags, setTaskTags] = useState<Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }>>({});
   const [prioritizedTasks, setPrioritizedTasks] = useState<PrioritizedTask[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -282,8 +277,8 @@ const Tasks = () => {
     const { active, over } = event;
 
     if (active.id !== over?.id) {
-      const oldIndex = reviewedTasks.findIndex((_, index) => `task-${index}` === active.id);
-      const newIndex = reviewedTasks.findIndex((_, index) => `task-${index}` === over?.id);
+      const oldIndex = reviewedTasks.findIndex((task) => task === active.id);
+      const newIndex = reviewedTasks.findIndex((task) => task === over?.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
         setReviewedTasks((items) => arrayMove(items, oldIndex, newIndex));
@@ -411,14 +406,14 @@ const Tasks = () => {
   const handleManualOrder = async () => {
     // Update tagged tasks with the current order before saving
     const orderedTaggedTasks = reviewedTasks.map((taskTitle, index) => {
-      const existingTask = taggedTasks.find(t => t.title === taskTitle);
+      const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
       return {
         id: `temp-${index}`,
         title: taskTitle,
         status: 'active' as const,
-        is_liked: existingTask?.is_liked || false,
-        is_urgent: existingTask?.is_urgent || false,
-        is_quick: existingTask?.is_quick || false,
+        is_liked: tags.isLiked,
+        is_urgent: tags.isUrgent,
+        is_quick: tags.isQuick,
         card_position: index + 1
       };
     });
@@ -433,14 +428,14 @@ const Tasks = () => {
     try {
       // Create tasks based on the current order in reviewedTasks
       const tasksToSave = reviewedTasks.map((taskTitle, index) => {
-        const existingTask = taggedTasks.find(t => t.title === taskTitle);
+        const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
         return {
           title: taskTitle,
           user_id: user.id,
           source: 'brain_dump' as const,
-          is_liked: existingTask?.is_liked || false,
-          is_urgent: existingTask?.is_urgent || false,
-          is_quick: existingTask?.is_quick || false,
+          is_liked: tags.isLiked,
+          is_urgent: tags.isUrgent,
+          is_quick: tags.isQuick,
           card_position: index + 1 // Use the order from reviewedTasks
         };
       });
@@ -600,40 +595,33 @@ const Tasks = () => {
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext 
-                  items={reviewedTasks.map((_, index) => `task-${index}`)}
+                  items={reviewedTasks}
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-3">
-                    {reviewedTasks.map((task, index) => (
-                      <TaskListItem
-                        key={`task-${index}`}
-                        task={task}
-                        index={index}
-                        onReorder={handleReorder}
-                        onTaskUpdate={(updatedTask) => {
-                          setTaggedTasks(prev => {
-                            const updated = [...prev];
-                            const existingIndex = updated.findIndex(t => t.title === task);
-                            const newTask: Task = {
-                              id: `temp-${index}`,
-                              title: task,
-                              status: 'active',
-                              is_liked: updatedTask.is_liked,
-                              is_urgent: updatedTask.is_urgent,
-                              is_quick: updatedTask.is_quick,
-                              card_position: index + 1
-                            };
-                            
-                            if (existingIndex >= 0) {
-                              updated[existingIndex] = newTask;
-                            } else {
-                              updated.push(newTask);
-                            }
-                            return updated;
-                          });
-                        }}
-                      />
-                    ))}
+                    {reviewedTasks.map((task, index) => {
+                      const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                      return (
+                        <TaskListItem
+                          key={task}
+                          task={task}
+                          index={index}
+                          isLiked={tags.isLiked}
+                          isUrgent={tags.isUrgent}
+                          isQuick={tags.isQuick}
+                          onReorder={handleReorder}
+                          onTagUpdate={(tag, value) => {
+                            setTaskTags(prev => ({
+                              ...prev,
+                              [task]: {
+                                ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
+                              }
+                            }));
+                          }}
+                        />
+                      );
+                    })}
                   </div>
                 </SortableContext>
               </DndContext>
