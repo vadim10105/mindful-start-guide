@@ -9,7 +9,6 @@ interface TaskCardData {
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
-  ai_effort: 'quick' | 'medium' | 'long';
 }
 
 interface TaskActionsProps {

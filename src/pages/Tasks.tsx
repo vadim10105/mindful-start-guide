@@ -57,7 +57,6 @@ interface PrioritizedTask {
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
-  ai_effort: 'quick' | 'medium' | 'long';
 }
 
 interface UserProfile {
@@ -351,8 +350,7 @@ const Tasks = () => {
         explanation: `${task.rulePlacement} • Score: ${task.totalScore} (Base: ${task.scoreBreakdown.baseCategoryScore}, Tags: ${task.scoreBreakdown.liveTagScore}, Energy: ${task.scoreBreakdown.energyAdjust})`,
         is_liked: task.tags.liked,
         is_urgent: task.tags.urgent,
-        is_quick: task.tags.quick,
-        ai_effort: 'medium'
+        is_quick: task.tags.quick
       }));
 
       return prioritizedTasks;
@@ -367,8 +365,7 @@ const Tasks = () => {
         explanation: "Fallback prioritization - edge function unavailable",
         is_liked: false,
         is_urgent: false,
-        is_quick: false,
-        ai_effort: 'medium'
+        is_quick: false
       }));
     }
   };
@@ -707,9 +704,6 @@ const Tasks = () => {
                               Quick
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-xs">
-                            AI: {task.ai_effort} effort
-                          </Badge>
                         </div>
                         
                         {/* Explanation */}
@@ -775,8 +769,7 @@ const Tasks = () => {
               explanation: `Task ${index + 1} in your manual order`,
               is_liked: task.is_liked,
               is_urgent: task.is_urgent,
-              is_quick: task.is_quick,
-              ai_effort: 'medium' as const
+              is_quick: task.is_quick
             }))}
             onComplete={() => {
               toast({

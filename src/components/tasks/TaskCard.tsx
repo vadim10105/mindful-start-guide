@@ -12,7 +12,6 @@ interface TaskCardData {
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
-  ai_effort: 'quick' | 'medium' | 'long';
 }
 
 interface TaskCardProps {
@@ -134,9 +133,6 @@ export const TaskCard = ({
                   Quick
                 </Badge>
               )}
-              <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
-                AI: {task.ai_effort || 'medium'} effort
-              </Badge>
             </div>
 
             {/* Task Actions */}
