@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { TaskCard } from './TaskCard';
@@ -7,18 +8,9 @@ import 'swiper/css';
 import 'swiper/css/creative-effect';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useToast } from '@/hooks/use-toast';
 
-import SwiperCore, {
-  CreativeEffect,
-  Pagination,
-  Navigation,
-  Mousewheel,
-  Keyboard,
-} from 'swiper';
-
-SwiperCore.use([CreativeEffect, Pagination, Navigation, Mousewheel, Keyboard]);
+import { CreativeEffect, Pagination, Navigation, Mousewheel, Keyboard } from 'swiper/modules';
 
 interface TaskSwiperProps {
   tasks: TaskCardData[];
@@ -64,8 +56,6 @@ export const TaskSwiper = ({
   formatTime
 }: TaskSwiperProps) => {
   const swiperRef = useRef<any>(null);
-  const supabase = useSupabaseClient();
-  const session = useSession();
   const { toast } = useToast();
 
   const handleSwipeToTask = (index: number) => {
@@ -88,6 +78,7 @@ export const TaskSwiper = ({
       }}
       navigation={true}
       modules={[CreativeEffect, Pagination, Navigation, Mousewheel, Keyboard]}
+      effect={'creative'}
       creativeEffect={{
         prev: {
           shadow: true,

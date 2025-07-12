@@ -1,9 +1,9 @@
+
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { TaskCard } from "./TaskCard";
-import { CompleteTaskModal } from "./CompleteTaskModal";
 import { NavigationDots } from "./NavigationDots";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { useProgress } from "@/hooks/use-progress";
@@ -13,17 +13,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/scrollbar';
 
-import SwiperCore, {
-  Navigation,
-  Pagination,
-  Scrollbar,
-  A11y,
-  EffectFade,
-  Virtual,
-  Mousewheel,
-} from 'swiper';
-
-SwiperCore.use([Navigation, Pagination, Scrollbar, A11y, EffectFade, Virtual, Mousewheel]);
+import { Navigation, Pagination, Scrollbar, A11y, EffectFade, Virtual, Mousewheel } from 'swiper/modules';
 
 interface TaskCardData {
   id: string;
@@ -45,7 +35,6 @@ const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCardsProps
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [completedTasks, setCompletedTasks] = useState(new Set<string>());
   const [pausedTasks, setPausedTasks] = useState(new Map<string, number>());
-  const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
   const [committedTaskIndex, setCommittedTaskIndex] = useState<number | null>(null);
   const [hasCommittedToTask, setHasCommittedToTask] = useState(false);
   const [navigationUnlocked, setNavigationUnlocked] = useState(false);
@@ -97,13 +86,11 @@ const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCardsProps
     setCompletedTasks(prev => new Set(prev).add(taskId));
     setHasCommittedToTask(false);
     setNavigationUnlocked(true);
-    setIsCompletionModalOpen(true);
     setFlowProgress(100);
     resetFlow();
     onTaskComplete(taskId);
 
     setTimeout(() => {
-      setIsCompletionModalOpen(false);
       moveToNextTask();
     }, 2000);
   };
@@ -226,6 +213,7 @@ const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCardsProps
             onSwiper={(swiper) => console.log(swiper)}
             virtual
             mousewheel
+            modules={[Navigation, Pagination, Scrollbar, A11y, EffectFade, Virtual, Mousewheel]}
           >
             {internalTasks.map((task, index) => (
               <SwiperSlide key={task.id}>
@@ -260,15 +248,12 @@ const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCardsProps
       </div>
 
       <NavigationDots
-        taskCount={tasks.length}
-        currentIndex={currentTaskIndex}
-        onDotClick={handleSwipeToTask}
-        navigationUnlocked={navigationUnlocked}
-      />
-
-      <CompleteTaskModal
-        isOpen={isCompletionModalOpen}
-        onClose={() => setIsCompletionModalOpen(false)}
+        tasks={internalTasks}
+        currentViewingIndex={currentTaskIndex}
+        activeCommittedIndex={committedTaskIndex || 0}
+        hasCommittedToTask={hasCommittedToTask}
+        completedTasks={completedTasks}
+        pausedTasks={pausedTasks}
       />
     </div>
   );
