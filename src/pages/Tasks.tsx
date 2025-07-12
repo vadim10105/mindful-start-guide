@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import { TaskManager } from "@/components/tasks/TaskManager";
+import { ArchiveDropZone } from "@/components/tasks/ArchiveDropZone";
 import {
   DndContext,
   closestCenter,
@@ -19,6 +20,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -159,6 +161,9 @@ const Tasks = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState(null);
+  const [archivedTasks, setArchivedTasks] = useState<string[]>([]);
+  const [isArchiveCollapsed, setIsArchiveCollapsed] = useState(false);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -263,6 +268,8 @@ const Tasks = () => {
     setExtractedTasks([]);
     setReviewedTasks([]);
     setTaggedTasks([]);
+    setArchivedTasks([]);
+    setIsArchiveCollapsed(false);
   };
 
   const handleReorder = (dragIndex: number, hoverIndex: number) => {
@@ -273,9 +280,43 @@ const Tasks = () => {
     setReviewedTasks(newTasks);
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggedTaskId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setDraggedTaskId(null);
 
+    if (!over) return;
+
+    // Handle archive zone drop
+    if (over.id === 'archive-zone') {
+      const taskToArchive = active.id as string;
+      if (reviewedTasks.includes(taskToArchive)) {
+        setReviewedTasks(prev => prev.filter(task => task !== taskToArchive));
+        setArchivedTasks(prev => [...prev, taskToArchive]);
+        toast({
+          title: "Task Archived",
+          description: `"${taskToArchive}" moved to archive`,
+        });
+      }
+      return;
+    }
+
+    // Handle archive task restoration
+    if (archivedTasks.includes(active.id as string) && over.id !== 'archive-zone') {
+      const taskToRestore = active.id as string;
+      setArchivedTasks(prev => prev.filter(task => task !== taskToRestore));
+      setReviewedTasks(prev => [...prev, taskToRestore]);
+      toast({
+        title: "Task Restored",
+        description: `"${taskToRestore}" restored from archive`,
+      });
+      return;
+    }
+
+    // Handle regular reordering
     if (active.id !== over?.id) {
       const oldIndex = reviewedTasks.findIndex((task) => task === active.id);
       const newIndex = reviewedTasks.findIndex((task) => task === over?.id);
@@ -597,6 +638,7 @@ const Tasks = () => {
               <DndContext 
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext 
@@ -629,6 +671,44 @@ const Tasks = () => {
                     })}
                   </div>
                 </SortableContext>
+                
+                {/* Archive Drop Zone */}
+                <ArchiveDropZone 
+                  isCollapsed={isArchiveCollapsed}
+                  onToggle={() => setIsArchiveCollapsed(!isArchiveCollapsed)}
+                  archivedCount={archivedTasks.length}
+                  isDragOver={draggedTaskId !== null}
+                />
+                
+                {/* Archived Tasks Display */}
+                {!isArchiveCollapsed && archivedTasks.length > 0 && (
+                  <div className="space-y-3 pt-4">
+                    {archivedTasks.map((task, index) => {
+                      const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                      return (
+                        <div key={task} className="opacity-60">
+                          <TaskListItem
+                            task={task}
+                            index={index}
+                            isLiked={tags.isLiked}
+                            isUrgent={tags.isUrgent}
+                            isQuick={tags.isQuick}
+                            onReorder={() => {}} // No reordering in archive
+                            onTagUpdate={(tag, value) => {
+                              setTaskTags(prev => ({
+                                ...prev,
+                                [task]: {
+                                  ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                  [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
+                                }
+                              }));
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </DndContext>
               
               {/* Direct Action Buttons */}
@@ -727,6 +807,38 @@ const Tasks = () => {
                 ))}
               </div>
               
+              {/* Archive Drop Zone for Prioritized Tasks */}
+              <ArchiveDropZone 
+                isCollapsed={isArchiveCollapsed}
+                onToggle={() => setIsArchiveCollapsed(!isArchiveCollapsed)}
+                archivedCount={archivedTasks.length}
+                isDragOver={false}
+              />
+              
+              {/* Archived Tasks Display */}
+              {!isArchiveCollapsed && archivedTasks.length > 0 && (
+                <div className="space-y-4 pt-4">
+                  <h4 className="font-medium text-muted-foreground">Archived Tasks</h4>
+                  <div className="space-y-3 opacity-60">
+                    {archivedTasks.map((task, index) => {
+                      const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                      return (
+                        <div key={task} className="p-4 bg-muted/30 border border-dashed rounded-lg">
+                          <div className="flex items-center gap-4">
+                            <div className="flex-shrink-0 w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-muted-foreground">{task}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+               
               {/* Action Buttons */}
               <div className="flex gap-4 pt-6">
                 <Button 
