@@ -289,21 +289,23 @@ const Tasks = () => {
   const prioritizeTasks = async () => {
     console.log('Starting task prioritization...');
     console.log('User profile:', userProfile);
-    console.log('Tagged tasks:', taggedTasks);
-    console.log('Extracted tasks:', extractedTasks);
+    console.log('Task tags state:', taskTags);
+    console.log('Reviewed tasks:', reviewedTasks);
 
-    // Create task input format for the edge function
+    // Create task input format for the edge function using taskTags state instead of taggedTasks
     const taskInputs = reviewedTasks.map((taskTitle, index) => {
-      const taggedTask = taggedTasks.find(t => t.title === taskTitle);
+      const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+      
+      console.log(`Task "${taskTitle}" tags:`, tags);
       
       return {
         id: `temp-${index}`,
         text: taskTitle,
         tags: {
-          liked: taggedTask?.is_liked || false,
-          urgent: taggedTask?.is_urgent || false,
-          quick: taggedTask?.is_quick || false,
-          disliked: taggedTask?.is_disliked || false
+          liked: tags.isLiked,
+          urgent: tags.isUrgent,
+          quick: tags.isQuick,
+          disliked: false // We don't have disliked in the UI currently
         },
         inferred: {
           category: 'Admin+Life' // Default category - we'll enhance this later
