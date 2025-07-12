@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle } from "lucide-react";
+import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
+import { TaskManager } from "@/components/tasks/TaskManager";
 import {
   DndContext,
   closestCenter,
@@ -30,7 +31,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type FlowStep = 'input' | 'processing' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
+type FlowStep = 'manage' | 'input' | 'processing' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
 
 interface ExtractedTask {
   title: string;
@@ -148,7 +149,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
 };
 
 const Tasks = () => {
-  const [currentStep, setCurrentStep] = useState<FlowStep>('input');
+  const [currentStep, setCurrentStep] = useState<FlowStep>('manage');
   const [brainDumpText, setBrainDumpText] = useState("");
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
   const [reviewedTasks, setReviewedTasks] = useState<string[]>([]);
@@ -487,12 +488,14 @@ const Tasks = () => {
       <div className={`${currentStep === 'game-cards' ? 'w-full' : 'max-w-4xl mx-auto'} space-y-6`}>
         
         {/* Header with Back Button */}
-        <div className="flex items-center gap-4">
-          {currentStep !== 'input' && (
+        {currentStep !== 'manage' && (
+          <div className="flex items-center gap-4">
             <Button
               onClick={() => {
                 if (currentStep === 'prioritized') {
                   setCurrentStep('review');
+                } else if (currentStep === 'input') {
+                  setCurrentStep('manage');
                 } else {
                   setCurrentStep('input');
                 }
@@ -504,14 +507,22 @@ const Tasks = () => {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-          )}
-          <div className="text-center space-y-4 flex-1">
-            <h1 className="text-3xl font-bold">Task Creation</h1>
-            <p className="text-muted-foreground">
-              Transform your thoughts into organized, prioritized tasks
-            </p>
+            <div className="text-center space-y-4 flex-1">
+              <h1 className="text-3xl font-bold">Task Creation</h1>
+              <p className="text-muted-foreground">
+                Transform your thoughts into organized, prioritized tasks
+              </p>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Task Management Step */}
+        {currentStep === 'manage' && (
+          <TaskManager
+            onBack={() => window.history.back()}
+            onCreateNew={() => setCurrentStep('input')}
+          />
+        )}
 
         {/* Input Step */}
         {currentStep === 'input' && (

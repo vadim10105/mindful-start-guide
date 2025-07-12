@@ -82,21 +82,29 @@ const Index = () => {
                 Your personalized task management is ready.
               </p>
               <div className="space-y-3">
-                <div className="flex gap-4">
-                  <Button asChild className="flex-1">
-                    <Link to="/settings">Settings</Link>
-                  </Button>
-                  <Button asChild variant="outline" className="flex-1">
-                    <Link to="/tasks">Start Tasks</Link>
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                    }}
-                  >
-                    Logout
-                  </Button>
+                <div className="space-y-3">
+                  <div className="flex gap-4">
+                    <Button asChild className="flex-1">
+                      <Link to="/tasks">Start Tasks</Link>
+                    </Button>
+                    <Button asChild variant="outline" className="flex-1">
+                      <Link to="/archive">📦 Archive</Link>
+                    </Button>
+                  </div>
+                  <div className="flex gap-4">
+                    <Button asChild variant="ghost" className="flex-1">
+                      <Link to="/settings">Settings</Link>
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="flex-1"
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                      }}
+                    >
+                      Logout
+                    </Button>
+                  </div>
                 </div>
                 <Button 
                   onClick={() => setShowCardLibrary(true)}
