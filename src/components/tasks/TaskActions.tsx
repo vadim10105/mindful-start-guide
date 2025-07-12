@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Play, Pause, SkipForward, RotateCcw } from "lucide-react";
+import { Check, Play, ArrowRight, SkipForward, ArrowLeft, Archive } from "lucide-react";
 
 interface TaskCardData {
   id: string;
@@ -26,6 +26,7 @@ interface TaskActionsProps {
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
+  onArchive?: (taskId: string) => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
 }
@@ -45,110 +46,113 @@ export const TaskActions = ({
   onCarryOn,
   onSkip,
   onBackToActive,
+  onArchive,
   navigationUnlocked,
   formatTime
 }: TaskActionsProps) => {
-  if (isCompleted) {
+  // Show archive button for completed tasks
+  if (isCompleted && onArchive) {
     return (
-      <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-        <Check className="w-4 h-4" />
-        <span className="font-medium text-sm">Completed!</span>
+      <div className="space-y-3">
+        <Button
+          onClick={() => onArchive(task.id)}
+          variant="outline"
+          size="sm"
+          className="w-full border-primary/30 hover:border-primary/50"
+        >
+          <Archive className="w-4 h-4 mr-2" />
+          Archive Task
+        </Button>
+      </div>
+    );
+  }
+
+  // Existing logic for non-completed tasks
+  if (!isActiveCommitted && hasCommittedToTask) {
+    return (
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground text-center">
+          Task {activeCommittedIndex + 1} is currently active
+        </p>
+        {navigationUnlocked && (
+          <Button
+            onClick={onBackToActive}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Active
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  if (!hasCommittedToTask) {
+    return (
+      <div className="space-y-3">
+        <Button
+          onClick={onCommit}
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+          size="lg"
+        >
+          <Play className="w-4 h-4 mr-2" />
+          Start Task
+        </Button>
       </div>
     );
   }
 
   if (isPaused) {
     return (
-      <div className="space-y-2">
-        <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-          Paused • {formatTime(pausedTime)} spent
+      <div className="space-y-3">
+        <div className="text-center">
+          <p className="text-sm font-medium text-muted-foreground">
+            Paused for {formatTime(pausedTime)}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
+        <div className="grid grid-cols-2 gap-2">
+          <Button
             onClick={() => onCarryOn(task.id)}
             size="sm"
-            className="flex-1 bg-amber-500 text-white hover:bg-amber-600"
+            className="bg-primary hover:bg-primary/90"
           >
             <Play className="w-4 h-4 mr-1" />
-            Carry On
+            Resume
           </Button>
-          <Button 
-            onClick={() => onSkip(task.id)}
-            size="sm"
-            variant="outline"
-            className="flex-1"
-          >
-            <SkipForward className="w-4 h-4 mr-1" />
-            Skip
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isActiveCommitted && hasCommittedToTask) {
-    return (
-      <div className="space-y-2">
-        <div className="text-xs text-muted-foreground">
-          Currently active: Task {activeCommittedIndex + 1}
-        </div>
-        <Button
-          onClick={onBackToActive}
-          variant="outline"
-          size="sm"
-          className="w-full flex items-center gap-2"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Back to Active Card
-        </Button>
-      </div>
-    );
-  }
-
-  if (!isCurrentTask) {
-    return (
-      <div className="text-sm text-muted-foreground">
-        Swipe to view this task
-      </div>
-    );
-  }
-
-  if (!hasCommittedToTask || !isActiveCommitted) {
-    return (
-      <Button 
-        onClick={onCommit}
-        size="sm"
-        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-      >
-        <Play className="w-4 h-4 mr-2" />
-        Commit to Task
-      </Button>
-    );
-  }
-
-  // Committed task - show both buttons 
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <Button 
-          onClick={() => onComplete(task.id)}
-          size="sm"
-          className="flex-1 bg-green-600 text-white hover:bg-green-700"
-        >
-          <Check className="w-4 h-4 mr-1" />
-          Mark Complete
-        </Button>
-        {navigationUnlocked && (
-          <Button 
+          <Button
             onClick={() => onMoveOn(task.id)}
-            size="sm"
             variant="outline"
-            className="flex-1"
+            size="sm"
           >
-            <Pause className="w-4 h-4 mr-1" />
+            <ArrowRight className="w-4 h-4 mr-1" />
             Move On
           </Button>
-        )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          onClick={() => onComplete(task.id)}
+          size="sm"
+          className="bg-green-600 hover:bg-green-700 text-white"
+        >
+          <Check className="w-4 h-4 mr-1" />
+          Done!
+        </Button>
+        <Button
+          onClick={() => onSkip(task.id)}
+          variant="outline"
+          size="sm"
+        >
+          <SkipForward className="w-4 h-4 mr-1" />
+          Skip
+        </Button>
       </div>
     </div>
   );

@@ -1,122 +1,137 @@
-import { forwardRef } from 'react';
+import React, { useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCards } from 'swiper/modules';
 import { TaskCard } from './TaskCard';
-import 'swiper/css';
-import 'swiper/css/effect-cards';
+import { TaskCardData } from '@/types';
 
-interface TaskCardData {
-  id: string;
-  title: string;
-  priority_score: number;
-  explanation: string;
-  is_liked?: boolean;
-  is_urgent?: boolean;
-  is_quick?: boolean;
-}
+import 'swiper/css';
+import 'swiper/css/creative-effect';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useToast } from '@/hooks/use-toast';
+
+import SwiperCore, {
+  CreativeEffect,
+  Pagination,
+  Navigation,
+  Mousewheel,
+  Keyboard,
+} from 'swiper';
+
+SwiperCore.use([CreativeEffect, Pagination, Navigation, Mousewheel, Keyboard]);
 
 interface TaskSwiperProps {
   tasks: TaskCardData[];
-  currentViewingIndex: number;
-  activeCommittedIndex: number;
-  hasCommittedToTask: boolean;
+  currentIndex: number;
   completedTasks: Set<string>;
   pausedTasks: Map<string, number>;
-  isNavigationLocked: boolean;
+  committedTaskIndex: number | null;
+  hasCommittedToTask: boolean;
   flowProgress: number;
-  sunsetImages: string[];
   navigationUnlocked: boolean;
-  onSlideChange: (activeIndex: number) => void;
+  sunsetImageUrl: string;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
   onMoveOn: (taskId: string) => void;
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
-  
+  onArchive?: (taskId: string) => void;
   onAddToCollection: () => void;
+  onSwipeToTask: (index: number) => void;
   formatTime: (minutes: number) => string;
 }
 
-export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
+export const TaskSwiper = ({
   tasks,
-  currentViewingIndex,
-  activeCommittedIndex,
-  hasCommittedToTask,
+  currentIndex,
   completedTasks,
   pausedTasks,
-  isNavigationLocked,
+  committedTaskIndex,
+  hasCommittedToTask,
   flowProgress,
-  sunsetImages,
   navigationUnlocked,
-  onSlideChange,
+  sunsetImageUrl,
   onCommit,
   onComplete,
   onMoveOn,
   onCarryOn,
   onSkip,
   onBackToActive,
-  
+  onArchive,
   onAddToCollection,
+  onSwipeToTask,
   formatTime
-}, ref) => {
-  return (
-    <div className="mb-6 flex justify-center">
-      <div className="w-80" style={{ aspectRatio: '63/88' }}>
-        <Swiper
-          ref={ref}
-          effect="cards"
-          grabCursor={true}
-          modules={[EffectCards]}
-          cardsEffect={{
-            perSlideOffset: 8,
-            perSlideRotate: 2,
-            rotate: true,
-            slideShadows: true,
-          }}
-          onSlideChange={(swiper) => {
-            if (!isNavigationLocked) {
-              onSlideChange(swiper.activeIndex);
-            }
-          }}
-          allowSlideNext={!isNavigationLocked}
-          allowSlidePrev={!isNavigationLocked}
-          key={currentViewingIndex} // Force re-render when index changes
-          initialSlide={currentViewingIndex} // Start at the current viewing index
-          className="w-full h-full"
-        >
-          {tasks.map((task, index) => (
-            <SwiperSlide key={task.id}>
-              <TaskCard
-                task={task}
-                index={index}
-                totalTasks={tasks.length}
-                isCompleted={completedTasks.has(task.id)}
-                isPaused={pausedTasks.has(task.id)}
-                pausedTime={pausedTasks.get(task.id) || 0}
-                isActiveCommitted={index === activeCommittedIndex}
-                hasCommittedToTask={hasCommittedToTask}
-                isCurrentTask={index === currentViewingIndex}
-                activeCommittedIndex={activeCommittedIndex}
-                flowProgress={flowProgress}
-                sunsetImageUrl={sunsetImages[index % sunsetImages.length]}
-                onCommit={onCommit}
-                onComplete={onComplete}
-                onMoveOn={onMoveOn}
-                onCarryOn={onCarryOn}
-                onSkip={onSkip}
-                onBackToActive={onBackToActive}
-                
-                onAddToCollection={onAddToCollection}
-                navigationUnlocked={navigationUnlocked}
-                formatTime={formatTime}
-              />
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </div>
-    </div>
-  );
-});
+}: TaskSwiperProps) => {
+  const swiperRef = useRef<any>(null);
+  const supabase = useSupabaseClient();
+  const session = useSession();
+  const { toast } = useToast();
 
-TaskSwiper.displayName = 'TaskSwiper';
+  const handleSwipeToTask = (index: number) => {
+    if (swiperRef.current && swiperRef.current.swiper) {
+      swiperRef.current.swiper.slideTo(index);
+    }
+  };
+
+  return (
+    <Swiper
+      spaceBetween={50}
+      slidesPerView={1}
+      loop={false}
+      mousewheel={true}
+      keyboard={{
+        enabled: true,
+      }}
+      pagination={{
+        clickable: true,
+      }}
+      navigation={true}
+      modules={[CreativeEffect, Pagination, Navigation, Mousewheel, Keyboard]}
+      creativeEffect={{
+        prev: {
+          shadow: true,
+          translate: ['-120%', 0, -500],
+        },
+        next: {
+          shadow: true,
+          translate: ['120%', 0, -500],
+        },
+      }}
+      className="mySwiper"
+      onSlideChange={(swiper) => {
+        onSwipeToTask(swiper.activeIndex);
+      }}
+      ref={swiperRef}
+    >
+      {tasks.map((task, index) => (
+        <SwiperSlide key={task.id}>
+          <TaskCard
+            task={task}
+            index={index}
+            totalTasks={tasks.length}
+            isCompleted={completedTasks.has(task.id)}
+            isPaused={pausedTasks.has(task.id)}
+            pausedTime={pausedTasks.get(task.id) || 0}
+            isActiveCommitted={committedTaskIndex === index}
+            hasCommittedToTask={hasCommittedToTask}
+            isCurrentTask={currentIndex === index}
+            activeCommittedIndex={committedTaskIndex || 0}
+            flowProgress={flowProgress}
+            sunsetImageUrl={sunsetImageUrl}
+            onCommit={onCommit}
+            onComplete={onComplete}
+            onMoveOn={onMoveOn}
+            onCarryOn={onCarryOn}
+            onSkip={onSkip}
+            onBackToActive={onBackToActive}
+            onArchive={onArchive}
+            onAddToCollection={onAddToCollection}
+            navigationUnlocked={navigationUnlocked}
+            formatTime={formatTime}
+          />
+        </SwiperSlide>
+      ))}
+    </Swiper>
+  );
+};
