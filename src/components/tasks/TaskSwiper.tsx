@@ -1,116 +1,122 @@
-
-import React, { useRef } from 'react';
+import { forwardRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { EffectCards } from 'swiper/modules';
 import { TaskCard } from './TaskCard';
-import { TaskCardData } from '@/types';
-
 import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
-import { useToast } from '@/hooks/use-toast';
+import 'swiper/css/effect-cards';
 
-import { Pagination, Navigation, Mousewheel, Keyboard } from 'swiper/modules';
+interface TaskCardData {
+  id: string;
+  title: string;
+  priority_score: number;
+  explanation: string;
+  is_liked?: boolean;
+  is_urgent?: boolean;
+  is_quick?: boolean;
+}
 
 interface TaskSwiperProps {
   tasks: TaskCardData[];
-  currentIndex: number;
+  currentViewingIndex: number;
+  activeCommittedIndex: number;
+  hasCommittedToTask: boolean;
   completedTasks: Set<string>;
   pausedTasks: Map<string, number>;
-  committedTaskIndex: number | null;
-  hasCommittedToTask: boolean;
+  isNavigationLocked: boolean;
   flowProgress: number;
+  sunsetImages: string[];
   navigationUnlocked: boolean;
-  sunsetImageUrl: string;
+  onSlideChange: (activeIndex: number) => void;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
   onMoveOn: (taskId: string) => void;
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
-  onArchive?: (taskId: string) => void;
+  
   onAddToCollection: () => void;
-  onSwipeToTask: (index: number) => void;
   formatTime: (minutes: number) => string;
 }
 
-export const TaskSwiper = ({
+export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   tasks,
-  currentIndex,
+  currentViewingIndex,
+  activeCommittedIndex,
+  hasCommittedToTask,
   completedTasks,
   pausedTasks,
-  committedTaskIndex,
-  hasCommittedToTask,
+  isNavigationLocked,
   flowProgress,
+  sunsetImages,
   navigationUnlocked,
-  sunsetImageUrl,
+  onSlideChange,
   onCommit,
   onComplete,
   onMoveOn,
   onCarryOn,
   onSkip,
   onBackToActive,
-  onArchive,
+  
   onAddToCollection,
-  onSwipeToTask,
   formatTime
-}: TaskSwiperProps) => {
-  const swiperRef = useRef<any>(null);
-  const { toast } = useToast();
-
-  const handleSwipeToTask = (index: number) => {
-    if (swiperRef.current && swiperRef.current.swiper) {
-      swiperRef.current.swiper.slideTo(index);
-    }
-  };
-
+}, ref) => {
   return (
-    <Swiper
-      spaceBetween={50}
-      slidesPerView={1}
-      loop={false}
-      mousewheel={true}
-      keyboard={{
-        enabled: true,
-      }}
-      pagination={{
-        clickable: true,
-      }}
-      navigation={true}
-      modules={[Pagination, Navigation, Mousewheel, Keyboard]}
-      className="mySwiper"
-      onSlideChange={(swiper) => {
-        onSwipeToTask(swiper.activeIndex);
-      }}
-      ref={swiperRef}
-    >
-      {tasks.map((task, index) => (
-        <SwiperSlide key={task.id}>
-          <TaskCard
-            task={task}
-            index={index}
-            totalTasks={tasks.length}
-            isCompleted={completedTasks.has(task.id)}
-            isPaused={pausedTasks.has(task.id)}
-            pausedTime={pausedTasks.get(task.id) || 0}
-            isActiveCommitted={committedTaskIndex === index}
-            hasCommittedToTask={hasCommittedToTask}
-            isCurrentTask={currentIndex === index}
-            activeCommittedIndex={committedTaskIndex || 0}
-            flowProgress={flowProgress}
-            sunsetImageUrl={sunsetImageUrl}
-            onCommit={onCommit}
-            onComplete={onComplete}
-            onMoveOn={onMoveOn}
-            onCarryOn={onCarryOn}
-            onSkip={onSkip}
-            onBackToActive={onBackToActive}
-            onArchive={onArchive}
-            onAddToCollection={onAddToCollection}
-            navigationUnlocked={navigationUnlocked}
-            formatTime={formatTime}
-          />
-        </SwiperSlide>
-      ))}
-    </Swiper>
+    <div className="mb-6 flex justify-center">
+      <div className="w-80" style={{ aspectRatio: '63/88' }}>
+        <Swiper
+          ref={ref}
+          effect="cards"
+          grabCursor={true}
+          modules={[EffectCards]}
+          cardsEffect={{
+            perSlideOffset: 8,
+            perSlideRotate: 2,
+            rotate: true,
+            slideShadows: true,
+          }}
+          onSlideChange={(swiper) => {
+            if (!isNavigationLocked) {
+              onSlideChange(swiper.activeIndex);
+            }
+          }}
+          allowSlideNext={!isNavigationLocked}
+          allowSlidePrev={!isNavigationLocked}
+          key={currentViewingIndex} // Force re-render when index changes
+          initialSlide={currentViewingIndex} // Start at the current viewing index
+          className="w-full h-full"
+        >
+          {tasks.map((task, index) => (
+            <SwiperSlide key={task.id}>
+              <TaskCard
+                task={task}
+                index={index}
+                totalTasks={tasks.length}
+                isCompleted={completedTasks.has(task.id)}
+                isPaused={pausedTasks.has(task.id)}
+                pausedTime={pausedTasks.get(task.id) || 0}
+                isActiveCommitted={index === activeCommittedIndex}
+                hasCommittedToTask={hasCommittedToTask}
+                isCurrentTask={index === currentViewingIndex}
+                activeCommittedIndex={activeCommittedIndex}
+                flowProgress={flowProgress}
+                sunsetImageUrl={sunsetImages[index % sunsetImages.length]}
+                onCommit={onCommit}
+                onComplete={onComplete}
+                onMoveOn={onMoveOn}
+                onCarryOn={onCarryOn}
+                onSkip={onSkip}
+                onBackToActive={onBackToActive}
+                
+                onAddToCollection={onAddToCollection}
+                navigationUnlocked={navigationUnlocked}
+                formatTime={formatTime}
+              />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
+    </div>
   );
-};
+});
+
+TaskSwiper.displayName = 'TaskSwiper';

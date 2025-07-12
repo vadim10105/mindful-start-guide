@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Clock, Zap, Check } from "lucide-react";
@@ -34,7 +33,7 @@ interface TaskCardProps {
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
-  onArchive?: (taskId: string) => void;
+  
   onAddToCollection: () => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
@@ -59,7 +58,7 @@ export const TaskCard = ({
   onCarryOn,
   onSkip,
   onBackToActive,
-  onArchive,
+  
   onAddToCollection,
   navigationUnlocked,
   formatTime
@@ -152,7 +151,6 @@ export const TaskCard = ({
               onCarryOn={onCarryOn}
               onSkip={onSkip}
               onBackToActive={onBackToActive}
-              onArchive={onArchive}
               navigationUnlocked={navigationUnlocked}
               formatTime={formatTime}
             />

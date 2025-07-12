@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
-import GameTaskCards from "@/components/tasks/GameTaskCards";
+import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import {
   DndContext,
   closestCenter,
