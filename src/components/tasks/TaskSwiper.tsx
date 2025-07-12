@@ -5,12 +5,11 @@ import { TaskCard } from './TaskCard';
 import { TaskCardData } from '@/types';
 
 import 'swiper/css';
-import 'swiper/css/creative-effect';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import { useToast } from '@/hooks/use-toast';
 
-import { CreativeEffect, Pagination, Navigation, Mousewheel, Keyboard } from 'swiper/modules';
+import { Pagination, Navigation, Mousewheel, Keyboard } from 'swiper/modules';
 
 interface TaskSwiperProps {
   tasks: TaskCardData[];
@@ -77,18 +76,7 @@ export const TaskSwiper = ({
         clickable: true,
       }}
       navigation={true}
-      modules={[CreativeEffect, Pagination, Navigation, Mousewheel, Keyboard]}
-      effect={'creative'}
-      creativeEffect={{
-        prev: {
-          shadow: true,
-          translate: ['-120%', 0, -500],
-        },
-        next: {
-          shadow: true,
-          translate: ['120%', 0, -500],
-        },
-      }}
+      modules={[Pagination, Navigation, Mousewheel, Keyboard]}
       className="mySwiper"
       onSlideChange={(swiper) => {
         onSwipeToTask(swiper.activeIndex);
