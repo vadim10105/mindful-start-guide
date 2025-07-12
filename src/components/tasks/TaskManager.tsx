@@ -15,6 +15,7 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -127,6 +128,22 @@ const TaskItem = ({ task, index, onTagUpdate, isArchived = false }: TaskItemProp
           onClick={() => onTagUpdate(task.id, 'quick', !task.is_quick)}
         />
       </div>
+    </div>
+  );
+};
+
+// Droppable wrapper component for the main task list
+const Droppable = ({ children, id }: { children: React.ReactNode; id: string }) => {
+  const { isOver, setNodeRef } = useDroppable({ id });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`transition-colors rounded-lg ${
+        isOver ? 'bg-primary/10 border-2 border-primary border-dashed' : ''
+      }`}
+    >
+      {children}
     </div>
   );
 };
@@ -256,8 +273,8 @@ export const TaskManager = ({ onBack, onCreateNew }: TaskManagerProps) => {
         return;
       }
 
-      // Handle restore from archive
-      if (over.id && archivedTasks.find(t => t.id === String(over.id))) {
+      // Handle restore from archive - when dragging archived task to main list
+      if (over.id === 'main-task-list') {
         const taskToRestore = archivedTasks.find(t => t.id === String(active.id));
         if (taskToRestore) {
           const { error } = await supabase
@@ -265,7 +282,8 @@ export const TaskManager = ({ onBack, onCreateNew }: TaskManagerProps) => {
             .update({ 
               archived_at: null,
               archive_position: null,
-              status: 'active'
+              status: 'active',
+              card_position: tasks.length + 1 // Add to end of main list
             })
             .eq('id', String(active.id));
 
@@ -366,21 +384,23 @@ export const TaskManager = ({ onBack, onCreateNew }: TaskManagerProps) => {
                 </Button>
               </div>
             ) : (
-              <SortableContext 
-                items={tasks.map(t => t.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-3">
-                  {tasks.map((task, index) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      index={index}
-                      onTagUpdate={handleTagUpdate}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
+              <Droppable id="main-task-list">
+                <SortableContext 
+                  items={tasks.map(t => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {tasks.map((task, index) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        index={index}
+                        onTagUpdate={handleTagUpdate}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </Droppable>
             )}
           </CardContent>
         </Card>

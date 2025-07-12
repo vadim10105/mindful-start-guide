@@ -21,6 +21,7 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -145,6 +146,61 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
           }`}
           onClick={() => onTagUpdate('quick', !isQuick)}
         />
+      </div>
+    </div>
+  );
+};
+
+// Droppable wrapper component
+const Droppable = ({ children, id }: { children: React.ReactNode; id: string }) => {
+  const { isOver, setNodeRef } = useDroppable({ id });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`transition-colors rounded-lg ${
+        isOver ? 'bg-primary/10 border-2 border-primary border-dashed p-2' : ''
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
+
+// Draggable archived task item
+const ArchiveTaskItem = ({ id, task, index }: { id: string; task: string; index: number }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className={`p-4 bg-muted/30 border border-dashed rounded-lg cursor-grab hover:cursor-grabbing ${
+        isDragging ? 'opacity-50' : ''
+      }`}
+      {...attributes}
+      {...listeners}
+    >
+      <div className="flex items-center gap-4">
+        <div className="flex-shrink-0 w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm">
+          {index + 1}
+        </div>
+        <div className="flex-1">
+          <p className="text-sm text-muted-foreground">{task}</p>
+        </div>
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
       </div>
     </div>
   );
@@ -296,6 +352,7 @@ const Tasks = () => {
       if (reviewedTasks.includes(taskToArchive)) {
         setReviewedTasks(prev => prev.filter(task => task !== taskToArchive));
         setArchivedTasks(prev => [...prev, taskToArchive]);
+        setIsArchiveCollapsed(false); // Show archived tasks
         toast({
           title: "Task Archived",
           description: `"${taskToArchive}" moved to archive`,
@@ -304,20 +361,22 @@ const Tasks = () => {
       return;
     }
 
-    // Handle archive task restoration
-    if (archivedTasks.includes(active.id as string) && over.id !== 'archive-zone') {
-      const taskToRestore = active.id as string;
-      setArchivedTasks(prev => prev.filter(task => task !== taskToRestore));
-      setReviewedTasks(prev => [...prev, taskToRestore]);
-      toast({
-        title: "Task Restored",
-        description: `"${taskToRestore}" restored from archive`,
-      });
+    // Handle restoration from archive - when dropping archived task on main list
+    if (over.id === 'main-task-list') {
+      const archivedTaskId = String(active.id).replace('archived-', '');
+      if (archivedTasks.includes(archivedTaskId)) {
+        setArchivedTasks(prev => prev.filter(task => task !== archivedTaskId));
+        setReviewedTasks(prev => [...prev, archivedTaskId]);
+        toast({
+          title: "Task Restored",
+          description: `"${archivedTaskId}" restored from archive`,
+        });
+      }
       return;
     }
 
-    // Handle regular reordering
-    if (active.id !== over?.id) {
+    // Handle regular reordering in main list
+    if (active.id !== over?.id && reviewedTasks.includes(active.id as string)) {
       const oldIndex = reviewedTasks.findIndex((task) => task === active.id);
       const newIndex = reviewedTasks.findIndex((task) => task === over?.id);
 
@@ -641,36 +700,38 @@ const Tasks = () => {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               >
-                <SortableContext 
-                  items={reviewedTasks}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-3">
-                    {reviewedTasks.map((task, index) => {
-                      const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
-                      return (
-                        <TaskListItem
-                          key={task}
-                          task={task}
-                          index={index}
-                          isLiked={tags.isLiked}
-                          isUrgent={tags.isUrgent}
-                          isQuick={tags.isQuick}
-                          onReorder={handleReorder}
-                          onTagUpdate={(tag, value) => {
-                            setTaskTags(prev => ({
-                              ...prev,
-                              [task]: {
-                                ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
-                                [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
-                              }
-                            }));
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                </SortableContext>
+                <Droppable id="main-task-list">
+                  <SortableContext 
+                    items={reviewedTasks}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {reviewedTasks.map((task, index) => {
+                        const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                        return (
+                          <TaskListItem
+                            key={task}
+                            task={task}
+                            index={index}
+                            isLiked={tags.isLiked}
+                            isUrgent={tags.isUrgent}
+                            isQuick={tags.isQuick}
+                            onReorder={handleReorder}
+                            onTagUpdate={(tag, value) => {
+                              setTaskTags(prev => ({
+                                ...prev,
+                                [task]: {
+                                  ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                  [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
+                                }
+                              }));
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </SortableContext>
+                </Droppable>
                 
                 {/* Archive Drop Zone */}
                 <ArchiveDropZone 
@@ -682,31 +743,25 @@ const Tasks = () => {
                 
                 {/* Archived Tasks Display */}
                 {!isArchiveCollapsed && archivedTasks.length > 0 && (
-                  <div className="space-y-3 pt-4">
-                    {archivedTasks.map((task, index) => {
-                      const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
-                      return (
-                        <div key={task} className="opacity-60">
-                          <TaskListItem
-                            task={task}
-                            index={index}
-                            isLiked={tags.isLiked}
-                            isUrgent={tags.isUrgent}
-                            isQuick={tags.isQuick}
-                            onReorder={() => {}} // No reordering in archive
-                            onTagUpdate={(tag, value) => {
-                              setTaskTags(prev => ({
-                                ...prev,
-                                [task]: {
-                                  ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
-                                  [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
-                                }
-                              }));
-                            }}
-                          />
+                  <div className="space-y-4 pt-4">
+                    <h4 className="font-medium text-muted-foreground">Archived Tasks</h4>
+                    <Droppable id="archived-task-list">
+                      <SortableContext 
+                        items={archivedTasks.map(task => `archived-${task}`)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-3 opacity-60">
+                          {archivedTasks.map((task, index) => (
+                            <ArchiveTaskItem 
+                              key={`archived-${task}`}
+                              id={`archived-${task}`}
+                              task={task}
+                              index={index}
+                            />
+                          ))}
                         </div>
-                      );
-                    })}
+                      </SortableContext>
+                    </Droppable>
                   </div>
                 )}
               </DndContext>
