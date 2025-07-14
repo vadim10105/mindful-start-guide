@@ -555,7 +555,7 @@ const Tasks = () => {
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <Card className="border-2 border-dashed border-muted-foreground/30">
+          <Card className="border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl min-w-[500px]">
             <CardHeader className="text-center">
               <p className="text-foreground text-lg text-center leading-relaxed">
                 Type what's on your mind.<br />
