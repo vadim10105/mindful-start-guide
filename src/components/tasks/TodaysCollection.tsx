@@ -96,14 +96,13 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                     <div 
                       className="absolute inset-0 bg-cover bg-center"
                       style={{ 
-                        backgroundImage: `linear-gradient(45deg, rgba(251,146,60,0.8), rgba(249,115,22,0.8)), url('${task.sunsetImageUrl}')` 
+                        backgroundImage: `url('${task.sunsetImageUrl}')` 
                       }}
                     />
-                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="absolute inset-0 bg-black/40" />
                     
                     <CardContent className="relative h-full flex flex-col justify-between p-4 text-white">
                       <div className="text-center">
-                        <div className="text-lg">🌅</div>
                       </div>
                       
                       <div className="space-y-2">
