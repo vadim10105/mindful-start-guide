@@ -98,15 +98,15 @@ export const TaskCard = ({
               }`}>
                 {index + 1}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-card-foreground/70">
                 of {totalTasks}
               </div>
             </div>
-            <CardTitle className="text-lg leading-tight text-foreground">
+            <CardTitle className="text-lg leading-tight text-card-foreground">
               {task.title}
             </CardTitle>
             {!isActiveCommitted && hasCommittedToTask && (
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs text-card-foreground/70 mt-2">
                 (Currently active: Task {activeCommittedIndex + 1})
               </p>
             )}
@@ -116,19 +116,19 @@ export const TaskCard = ({
             {/* Task Tags */}
             <div className="flex flex-wrap gap-1 justify-center">
               {task.is_liked && (
-                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
+                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-300">
                   <Heart className="w-3 h-3 mr-1" />
                   Love
                 </Badge>
               )}
               {task.is_urgent && (
-                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-300">
+                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-300 border border-orange-300">
                   <Clock className="w-3 h-3 mr-1" />
                   Urgent
                 </Badge>
               )}
               {task.is_quick && (
-                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-300 border border-green-300">
+                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-300 border border-green-300">
                   <Zap className="w-3 h-3 mr-1" />
                   Quick
                 </Badge>

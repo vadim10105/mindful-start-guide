@@ -50,7 +50,7 @@ export const TaskActions = ({
 }: TaskActionsProps) => {
   if (isCompleted) {
     return (
-      <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+      <div className="flex items-center justify-center gap-2 text-green-400">
         <Check className="w-4 h-4" />
         <span className="font-medium text-sm">Completed!</span>
       </div>
@@ -60,7 +60,7 @@ export const TaskActions = ({
   if (isPaused) {
     return (
       <div className="space-y-2">
-        <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+        <div className="text-xs text-amber-400 font-medium">
           Paused • {formatTime(pausedTime)} spent
         </div>
         <div className="flex gap-2">
@@ -89,7 +89,7 @@ export const TaskActions = ({
   if (!isActiveCommitted && hasCommittedToTask) {
     return (
       <div className="space-y-2">
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-card-foreground/70">
           Currently active: Task {activeCommittedIndex + 1}
         </div>
         <Button
@@ -107,7 +107,7 @@ export const TaskActions = ({
 
   if (!isCurrentTask) {
     return (
-      <div className="text-sm text-muted-foreground">
+      <div className="text-sm text-card-foreground/70">
         Swipe to view this task
       </div>
     );
