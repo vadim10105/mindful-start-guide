@@ -630,12 +630,11 @@ const Tasks = () => {
         {currentStep === 'review' && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                Task List - Add Tags ({reviewedTasks.length} tasks)
+              <CardTitle>
+                Add some tags… or don't. I'll figure it out.
               </CardTitle>
               <p className="text-muted-foreground">
-                Review your tasks, add tags, and drag to reorder
+                Tag anything that might be fun, urgent or quick.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
