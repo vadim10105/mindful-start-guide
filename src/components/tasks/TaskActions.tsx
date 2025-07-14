@@ -121,7 +121,7 @@ export const TaskActions = ({
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
       >
         <Play className="w-4 h-4 mr-2" />
-        Commit to Task
+        Play this card
       </Button>
     );
   }

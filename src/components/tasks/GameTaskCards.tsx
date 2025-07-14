@@ -39,7 +39,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const [flowStartTime, setFlowStartTime] = useState<number | null>(null);
   const [showCharacter, setShowCharacter] = useState(true);
   const [characterMessage, setCharacterMessage] = useState(
-    "Ugh, fine... I guess we should probably do something productive. Click 'Commit to Task' if you're feeling ambitious."
+    "Ugh, fine... I guess we should probably do something productive. Click 'Play this card' if you're feeling ambitious."
   );
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
   const [pausedTasks, setPausedTasks] = useState<Map<string, number>>(new Map());
@@ -459,9 +459,9 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               <div className="text-sm text-muted-foreground">
                 {isNavigationLocked ? (
                   hasCommittedToTask ? (
-                    `Navigation and move-on unlock in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} min • Press ↓ to complete`
+                     `Navigation unlocks in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} minutes. Focus first, swipe later.`
                   ) : (
-                    "Commit to a task to start your focus session • Press ↓ to commit"
+                    "Start your focus session by playing this card."
                   )
                 ) : (
                   "Swipe, use arrow keys (←/→), or press ↓ to commit"
