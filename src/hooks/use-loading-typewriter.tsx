@@ -33,17 +33,15 @@ export const useLoadingTypewriter = (isActive: boolean) => {
 
     let timeout: NodeJS.Timeout;
 
-    // Typing phase
-    if (currentText.length < currentMessage.length) {
-      timeout = setTimeout(() => {
-        setCurrentText(currentMessage.slice(0, currentText.length + 1));
-      }, 80); // Faster typing speed
+    // Just show the full message immediately, then change to next message
+    if (currentText !== currentMessage) {
+      setCurrentText(currentMessage);
     } else {
-      // Message complete, pause before next message
+      // Message is showing, pause then switch to next
       timeout = setTimeout(() => {
         setCurrentMessageIndex((prev) => (prev + 1) % loadingMessages.length);
         setCurrentText('');
-      }, 2000); // Brief pause between messages
+      }, 2000); // Pause before next message
     }
 
     return () => clearTimeout(timeout);
