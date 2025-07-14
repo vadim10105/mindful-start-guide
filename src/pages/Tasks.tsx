@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTypewriter } from "@/hooks/use-typewriter";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -77,6 +78,19 @@ interface TaskListItemProps {
   onReorder: (dragIndex: number, hoverIndex: number) => void;
   onDelete: (index: number) => void;
 }
+
+const TypewriterPlaceholder = () => {
+  const { text, showCursor } = useTypewriter();
+  
+  return (
+    <div className="absolute top-0 left-0 w-full h-full p-3 text-muted-foreground pointer-events-none flex items-start">
+      <span className="text-base leading-relaxed">
+        {text}
+        {showCursor && <span className="animate-pulse">|</span>}
+      </span>
+    </div>
+  );
+};
 
 const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, onReorder, onDelete }: TaskListItemProps) => {
   const {
@@ -549,13 +563,15 @@ const Tasks = () => {
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Textarea
-                placeholder="Let it all out... thoughts, tasks, ideas, anything!\n\nFor example:\nNeed to call mom about dinner this weekend, also grocery shopping for the party, fix that leaky faucet that's been bugging me, send the quarterly report to Sarah by Friday, maybe clean the garage this weekend if I have time..."
-                value={brainDumpText}
-                onChange={(e) => setBrainDumpText(e.target.value)}
-                className="min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
-                rows={12}
-              />
+              <div className="relative">
+                <Textarea
+                  value={brainDumpText}
+                  onChange={(e) => setBrainDumpText(e.target.value)}
+                  className="min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
+                  rows={12}
+                />
+                {!brainDumpText && <TypewriterPlaceholder />}
+              </div>
               <Button 
                 onClick={handleBrainDumpSubmit}
                 disabled={!brainDumpText.trim() || isProcessing}
