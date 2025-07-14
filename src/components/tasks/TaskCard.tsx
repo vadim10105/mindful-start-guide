@@ -171,7 +171,7 @@ export const TaskCard = ({
             }}
           />
           <div className="absolute inset-0 bg-black/40 rounded-lg" />
-          <div className="h-full flex flex-col justify-between p-6 text-white">
+          <div className="relative h-full flex flex-col justify-between p-6 text-white z-10">
             <div className="text-center">
               <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
               <p className="text-sm opacity-90">{task.title}</p>
