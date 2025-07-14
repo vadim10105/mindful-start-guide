@@ -601,14 +601,16 @@ const Tasks = () => {
 
         {/* Processing Step */}
         {currentStep === 'processing' && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <div className="space-y-4">
+          <Card className="min-h-[240px]">
+            <CardContent className="py-12 text-center h-full flex items-center justify-center">
+              <div className="space-y-4 w-full max-w-md">
                 <Brain className="h-12 w-12 mx-auto animate-pulse text-primary" />
-                <h3 className="text-xl font-semibold">
-                  {loadingText}
-                  {showLoadingCursor && <span className="animate-pulse">|</span>}
-                </h3>
+                <div className="min-h-[3rem] flex items-center justify-center">
+                  <h3 className="text-xl font-semibold">
+                    {loadingText}
+                    {showLoadingCursor && <span className="animate-pulse">|</span>}
+                  </h3>
+                </div>
                 <p className="text-muted-foreground">
                   Mr. Intent is working his magic...
                 </p>
