@@ -503,7 +503,7 @@ const Tasks = () => {
         </Button>
       )}
       
-      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input' || currentStep === 'review') ? 'max-w-4xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-4xl mx-auto'} space-y-6`}>
+      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input' || currentStep === 'review' || currentStep === 'processing') ? 'max-w-4xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-4xl mx-auto'} space-y-6`}>
 
         {/* Input Step */}
         {currentStep === 'input' && (
