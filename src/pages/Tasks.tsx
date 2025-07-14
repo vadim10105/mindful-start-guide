@@ -506,10 +506,6 @@ const Tasks = () => {
             </Button>
           )}
           <div className="text-center space-y-4 flex-1">
-            <h1 className="text-3xl font-bold">Task Creation</h1>
-            <p className="text-muted-foreground">
-              Transform your thoughts into organized, prioritized tasks
-            </p>
           </div>
         </div>
 
