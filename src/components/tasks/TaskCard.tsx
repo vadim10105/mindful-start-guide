@@ -102,15 +102,15 @@ export const TaskCard = ({
               }`}>
                 {index + 1}
               </div>
-              <div className="text-sm text-card-foreground/70">
+              <div className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
                 of {totalTasks}
               </div>
             </div>
-            <CardTitle className="text-lg leading-tight text-card-foreground">
+            <CardTitle className="text-lg leading-tight" style={{ color: 'hsl(48 100% 96%)' }}>
               {task.title}
             </CardTitle>
             {!isActiveCommitted && hasCommittedToTask && (
-              <p className="text-xs text-card-foreground/70 mt-2">
+              <p className="text-xs mt-2" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
                 (Currently active: Task {activeCommittedIndex + 1})
               </p>
             )}
