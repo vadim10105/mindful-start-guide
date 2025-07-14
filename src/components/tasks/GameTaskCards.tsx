@@ -99,6 +99,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        console.log('Arrow key pressed:', e.key, 'isNavigationLocked:', isNavigationLocked, 'isInitialLoad:', isInitialLoad, 'hasCommittedToTask:', hasCommittedToTask, 'navigationUnlocked:', navigationUnlocked);
         if (!isNavigationLocked && swiperRef.current) {
           e.preventDefault();
           if (e.key === 'ArrowLeft') {
