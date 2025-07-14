@@ -685,7 +685,7 @@ const Tasks = () => {
                   size="lg"
                 >
                   <Shuffle className="h-6 w-6" />
-                  <div className="font-semibold">Shuffle Button</div>
+                  <div className="font-semibold">Shuffle the Deck</div>
                 </Button>
 
                 <Button
@@ -695,7 +695,7 @@ const Tasks = () => {
                   size="lg"
                 >
                   <Check className="h-6 w-6" />
-                  <div className="font-semibold">Start in Order</div>
+                  <div className="font-semibold">Play in Order</div>
                 </Button>
               </div>
             </CardContent>
