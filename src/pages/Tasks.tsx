@@ -685,12 +685,7 @@ const Tasks = () => {
                   size="lg"
                 >
                   <Shuffle className="h-6 w-6" />
-                  <div className="text-center">
-                    <div className="font-semibold">Shuffle Button</div>
-                    <div className="text-xs opacity-90">
-                      AI prioritizes based on tags
-                    </div>
-                  </div>
+                  <div className="font-semibold">Shuffle Button</div>
                 </Button>
 
                 <Button
@@ -699,13 +694,8 @@ const Tasks = () => {
                   className="h-24 flex-col gap-2"
                   size="lg"
                 >
-                  <Brain className="h-6 w-6" />
-                  <div className="text-center">
-                    <div className="font-semibold">Start in Order</div>
-                    <div className="text-xs opacity-90">
-                      Keep current order
-                    </div>
-                  </div>
+                  <Check className="h-6 w-6" />
+                  <div className="font-semibold">Start in Order</div>
                 </Button>
               </div>
             </CardContent>
