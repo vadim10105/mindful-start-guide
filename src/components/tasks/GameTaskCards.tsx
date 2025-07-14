@@ -91,6 +91,10 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     };
   }, [flowStartTime, navigationUnlocked, hasCommittedToTask]);
 
+  // Calculate navigation state
+  const isNavigationLocked = isInitialLoad || (hasCommittedToTask && !navigationUnlocked);
+  const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -118,7 +122,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentViewingIndex, activeCommittedIndex, hasCommittedToTask, completedTasks]);
+  }, [currentViewingIndex, activeCommittedIndex, hasCommittedToTask, completedTasks, isNavigationLocked, navigationUnlocked, isInitialLoad]);
 
   const handleCommitToCurrentTask = () => {
     const currentTask = tasks[currentViewingIndex];
@@ -430,9 +434,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
-
-  const isNavigationLocked = isInitialLoad || (hasCommittedToTask && !navigationUnlocked);
-  const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
