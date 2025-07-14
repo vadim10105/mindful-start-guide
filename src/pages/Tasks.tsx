@@ -557,8 +557,9 @@ const Tasks = () => {
         {currentStep === 'input' && (
           <Card className="border-2 border-dashed border-muted-foreground/30">
             <CardHeader className="text-center">
-              <p className="text-muted-foreground">
-                Type what's on your mind. Or just list your tasks. I'm not picky.
+              <p className="text-foreground text-lg text-center leading-relaxed">
+                Type what's on your mind.<br />
+                Or just list your tasks, I'm not picky...
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
