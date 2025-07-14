@@ -79,11 +79,13 @@ interface TaskListItemProps {
   onDelete: (index: number) => void;
 }
 
-const TypewriterPlaceholder = () => {
+const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   const { text, showCursor } = useTypewriter();
   
   return (
-    <div className="absolute top-0 left-0 w-full h-full p-3 text-muted-foreground pointer-events-none flex items-start">
+    <div className={`absolute top-0 left-0 w-full h-full p-3 text-muted-foreground pointer-events-none flex items-start transition-all duration-300 ease-out ${
+      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
+    }`}>
       <span className="text-base leading-relaxed">
         {text}
         {showCursor && <span className="animate-pulse">|</span>}
@@ -179,6 +181,7 @@ const Tasks = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState(null);
+  const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -567,10 +570,12 @@ const Tasks = () => {
                 <Textarea
                   value={brainDumpText}
                   onChange={(e) => setBrainDumpText(e.target.value)}
+                  onFocus={() => setIsTextareaFocused(true)}
+                  onBlur={() => setIsTextareaFocused(false)}
                   className="min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
                   rows={12}
                 />
-                {!brainDumpText && <TypewriterPlaceholder />}
+                <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused} />
               </div>
               <Button 
                 onClick={handleBrainDumpSubmit}
