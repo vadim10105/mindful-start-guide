@@ -36,7 +36,7 @@ export const useTypewriter = () => {
         // Message complete, pause before deleting
         timeout = setTimeout(() => {
           setIsTyping(false);
-        }, 3000);
+        }, 12000);
       }
     } else {
       // Deleting phase
