@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle } from "lucide-react";
+import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
@@ -74,9 +74,10 @@ interface TaskListItemProps {
   isQuick: boolean;
   onTagUpdate: (tag: 'liked' | 'urgent' | 'quick', value: boolean) => void;
   onReorder: (dragIndex: number, hoverIndex: number) => void;
+  onDelete: (index: number) => void;
 }
 
-const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, onReorder }: TaskListItemProps) => {
+const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, onReorder, onDelete }: TaskListItemProps) => {
   const {
     attributes,
     listeners,
@@ -141,6 +142,11 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
             isQuick ? 'text-green-500 fill-green-500' : 'text-gray-300 hover:text-green-400'
           }`}
           onClick={() => onTagUpdate('quick', !isQuick)}
+        />
+        
+        <Trash2
+          className="h-5 w-5 cursor-pointer transition-colors hover:scale-110 text-gray-300 hover:text-red-400"
+          onClick={() => onDelete(index)}
         />
       </div>
     </div>
@@ -283,6 +289,25 @@ const Tasks = () => {
         setReviewedTasks((items) => arrayMove(items, oldIndex, newIndex));
       }
     }
+  };
+
+  const handleTaskDelete = (index: number) => {
+    const taskToDelete = reviewedTasks[index];
+    
+    // Remove task from reviewedTasks array
+    setReviewedTasks(prev => prev.filter((_, i) => i !== index));
+    
+    // Remove task from taskTags
+    setTaskTags(prev => {
+      const newTags = { ...prev };
+      delete newTags[taskToDelete];
+      return newTags;
+    });
+    
+    toast({
+      title: "Task deleted",
+      description: `"${taskToDelete}" has been removed from your list`,
+    });
   };
 
   const prioritizeTasks = async () => {
@@ -588,24 +613,25 @@ const Tasks = () => {
                     {reviewedTasks.map((task, index) => {
                       const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
                       return (
-                        <TaskListItem
-                          key={task}
-                          task={task}
-                          index={index}
-                          isLiked={tags.isLiked}
-                          isUrgent={tags.isUrgent}
-                          isQuick={tags.isQuick}
-                          onReorder={handleReorder}
-                          onTagUpdate={(tag, value) => {
-                            setTaskTags(prev => ({
-                              ...prev,
-                              [task]: {
-                                ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
-                                [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
-                              }
-                            }));
-                          }}
-                        />
+                         <TaskListItem
+                           key={task}
+                           task={task}
+                           index={index}
+                           isLiked={tags.isLiked}
+                           isUrgent={tags.isUrgent}
+                           isQuick={tags.isQuick}
+                           onReorder={handleReorder}
+                           onDelete={handleTaskDelete}
+                           onTagUpdate={(tag, value) => {
+                             setTaskTags(prev => ({
+                               ...prev,
+                               [task]: {
+                                 ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                 [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
+                               }
+                             }));
+                           }}
+                         />
                       );
                     })}
                   </div>
