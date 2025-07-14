@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Clock, Zap, Check } from "lucide-react";
-import { ProgressBorder } from "@/components/ui/progress-border";
+import { Heart, Clock, Zap, Check, X } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 
 interface TaskCardData {
@@ -27,6 +26,7 @@ interface TaskCardProps {
   activeCommittedIndex: number;
   flowProgress: number;
   sunsetImageUrl: string;
+  multiplier?: number;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
   onMoveOn: (taskId: string) => void;
@@ -52,6 +52,7 @@ export const TaskCard = ({
   activeCommittedIndex,
   flowProgress,
   sunsetImageUrl,
+  multiplier = 0,
   onCommit,
   onComplete,
   onMoveOn,
@@ -67,18 +68,6 @@ export const TaskCard = ({
     <div className={`w-full h-full transition-transform duration-700 ${
       isCompleted ? '[transform:rotateY(180deg)]' : ''
     }`} style={{ transformStyle: 'preserve-3d' }}>
-      
-      {/* Progress Border - Only show when committed and not completed */}
-      {isActiveCommitted && hasCommittedToTask && !isCompleted && (
-        <ProgressBorder
-          progress={flowProgress / 100}
-          width={320}
-          height={447}
-          stroke={6}
-          color="hsl(var(--primary))"
-          className="pointer-events-none z-[15]"
-        />
-      )}
       
       {/* Front of Card */}
       <Card className={`w-full h-full border-2 shadow-xl bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
@@ -131,6 +120,12 @@ export const TaskCard = ({
                 <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-300 border border-green-300">
                   <Zap className="w-3 h-3 mr-1" />
                   Quick
+                </Badge>
+              )}
+              {multiplier > 0 && (
+                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-300">
+                  <X className="w-3 h-3 mr-1" />
+                  ×{multiplier}
                 </Badge>
               )}
             </div>

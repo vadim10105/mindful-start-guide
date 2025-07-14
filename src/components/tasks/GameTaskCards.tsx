@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { MrIntentCharacter } from "./MrIntentCharacter";
-import { TodaysCollection } from "./TodaysCollection";
 import { TaskSwiper } from "./TaskSwiper";
 import { NavigationDots } from "./NavigationDots";
 
 import { supabase } from "@/integrations/supabase/client";
+import { MrIntentCharacter } from "./MrIntentCharacter";
+import { TodaysCollection } from "./TodaysCollection";
+import { VerticalPixelatedProgressBar } from "./VerticalPixelatedProgressBar";
 import { useToast } from "@/hooks/use-toast";
 import confetti from "canvas-confetti";
 
@@ -49,6 +50,8 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const [todaysCompletedTasks, setTodaysCompletedTasks] = useState<CompletedTask[]>([]);
   const [navigationUnlocked, setNavigationUnlocked] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [taskMultipliers, setTaskMultipliers] = useState<Map<string, number>>(new Map());
+  const [cardGlowEffect, setCardGlowEffect] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout>();
   const swiperRef = useRef<any>(null);
@@ -435,12 +438,40 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
+  const handleProgressMilestone = (milestone: number) => {
+    if (milestone === 25) { // 5 minutes
+      setCardGlowEffect(true);
+      setTimeout(() => setCardGlowEffect(false), 2000);
+    } else if (milestone === 100) { // 20 minutes
+      // Play ping sound
+      const audio = new Audio('/api/placeholder/ping.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(console.error);
+      
+      // Increment multiplier for current task
+      const currentTask = tasks[activeCommittedIndex];
+      if (currentTask) {
+        setTaskMultipliers(prev => {
+          const newMap = new Map(prev);
+          const currentMultiplier = (newMap.get(currentTask.id) as number) || 0;
+          newMap.set(currentTask.id, currentMultiplier + 1);
+          return newMap;
+        });
+      }
+      
+      // Reset progress
+      setFlowProgress(0);
+      setFlowStartTime(Date.now());
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="w-full px-4">
-        <div className="w-full">
+    <div className="min-h-screen bg-background flex">
+      {/* Main Content Area */}
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
           {/* Main Card Display */}
-          <div className="relative">
+          <div className={`relative ${cardGlowEffect ? 'animate-pulse' : ''}`}>
             <TaskSwiper
               ref={swiperRef}
               tasks={tasks}
@@ -453,6 +484,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               flowProgress={flowProgress}
               sunsetImages={sunsetImages}
               navigationUnlocked={navigationUnlocked}
+              taskMultipliers={taskMultipliers}
               onSlideChange={(activeIndex) => setCurrentViewingIndex(activeIndex)}
               onCommit={handleCommitToCurrentTask}
               onComplete={handleTaskComplete}
@@ -501,6 +533,13 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
           </div>
         </div>
       </div>
+
+      {/* Vertical Progress Bar */}
+      <VerticalPixelatedProgressBar
+        progress={flowProgress}
+        isVisible={hasCommittedToTask}
+        onMilestone={handleProgressMilestone}
+      />
 
 
       {/* Today's Collection */}
