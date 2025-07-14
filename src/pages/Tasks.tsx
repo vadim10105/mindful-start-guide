@@ -587,7 +587,7 @@ const Tasks = () => {
                   </>
                 ) : (
                   <>
-                    Make a List
+                    Share with Mr.Intent
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
