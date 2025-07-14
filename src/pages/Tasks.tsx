@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
+import { useLoadingTypewriter } from "@/hooks/use-loading-typewriter";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -180,6 +181,7 @@ const Tasks = () => {
   const [prioritizedTasks, setPrioritizedTasks] = useState<PrioritizedTask[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { text: loadingText, showCursor: showLoadingCursor } = useLoadingTypewriter(isProcessing || currentStep === 'processing');
   const [user, setUser] = useState(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   const { toast } = useToast();
@@ -583,7 +585,8 @@ const Tasks = () => {
                 {isProcessing ? (
                   <>
                     <Brain className="mr-2 h-4 w-4 animate-pulse" />
-                    AI is organizing your thoughts...
+                    {loadingText}
+                    {showLoadingCursor && <span className="animate-pulse">|</span>}
                   </>
                 ) : (
                   <>
@@ -602,9 +605,12 @@ const Tasks = () => {
             <CardContent className="py-12 text-center">
               <div className="space-y-4">
                 <Brain className="h-12 w-12 mx-auto animate-pulse text-primary" />
-                <h3 className="text-xl font-semibold">AI is organizing your thoughts...</h3>
+                <h3 className="text-xl font-semibold">
+                  {loadingText}
+                  {showLoadingCursor && <span className="animate-pulse">|</span>}
+                </h3>
                 <p className="text-muted-foreground">
-                  Extracting actionable tasks from your brain dump
+                  Mr. Intent is working his magic...
                 </p>
               </div>
             </CardContent>
