@@ -48,6 +48,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const [lastCompletedTask, setLastCompletedTask] = useState<{id: string, title: string, timeSpent: number} | null>(null);
   const [todaysCompletedTasks, setTodaysCompletedTasks] = useState<CompletedTask[]>([]);
   const [navigationUnlocked, setNavigationUnlocked] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   const timerRef = useRef<NodeJS.Timeout>();
   const swiperRef = useRef<any>(null);
@@ -165,6 +166,11 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     }
     setFlowProgress(0);
     
+    // Unlock navigation immediately upon completion
+    setNavigationUnlocked(true);
+    setHasCommittedToTask(false);
+    setIsInitialLoad(false);
+    
     setCompletedTasks(prev => new Set([...prev, taskId]));
     setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
     
@@ -275,6 +281,10 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     }
     setFlowProgress(0);
     
+    // Unlock navigation after moving on from first task
+    setNavigationUnlocked(true);
+    setIsInitialLoad(false);
+    
     setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
     
     try {
@@ -304,7 +314,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       setCurrentViewingIndex(nextIndex);
       setActiveCommittedIndex(nextIndex);
       setHasCommittedToTask(false);
-      setNavigationUnlocked(false);
+      setNavigationUnlocked(true); // Keep navigation unlocked after first task interaction
       setFlowStartTime(null);
       
       const moveOnMessages = [
@@ -421,7 +431,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
-  const isNavigationLocked = !hasCommittedToTask || (hasCommittedToTask && !navigationUnlocked);
+  const isNavigationLocked = isInitialLoad || (hasCommittedToTask && !navigationUnlocked);
   const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   return (
