@@ -484,30 +484,26 @@ const Tasks = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
+      {/* Back Button - Fixed Top Left */}
+      {currentStep !== 'input' && (
+        <Button
+          onClick={() => {
+            if (currentStep === 'prioritized') {
+              setCurrentStep('review');
+            } else {
+              setCurrentStep('input');
+            }
+          }}
+          variant="ghost"
+          size="sm"
+          className="fixed top-4 left-4 z-50 flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+      )}
+      
       <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input' || currentStep === 'review') ? 'max-w-4xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-4xl mx-auto'} space-y-6`}>
-        
-        {/* Header with Back Button */}
-        <div className="flex items-center gap-4">
-          {currentStep !== 'input' && (
-            <Button
-              onClick={() => {
-                if (currentStep === 'prioritized') {
-                  setCurrentStep('review');
-                } else {
-                  setCurrentStep('input');
-                }
-              }}
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          )}
-          <div className="text-center space-y-4 flex-1">
-          </div>
-        </div>
 
         {/* Input Step */}
         {currentStep === 'input' && (
