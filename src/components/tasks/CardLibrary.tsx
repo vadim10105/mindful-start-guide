@@ -19,6 +19,7 @@ interface CollectedCard {
   isLiked?: boolean;
   isUrgent?: boolean;
   isQuick?: boolean;
+  flippedImageUrl?: string;
 }
 
 interface CardLibraryProps {
@@ -83,7 +84,8 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
         priorityScore: task.ai_priority_score,
         isLiked: task.is_liked,
         isUrgent: task.is_urgent,
-        isQuick: task.is_quick
+        isQuick: task.is_quick,
+        flippedImageUrl: task.flipped_image_url
       }));
 
       setCollectedCards(cards);
@@ -284,7 +286,7 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
                   <div 
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ 
-                      backgroundImage: `url('${sunsetImages[index % sunsetImages.length]}')` 
+                      backgroundImage: `url('${card.flippedImageUrl || sunsetImages[index % sunsetImages.length]}')` 
                     }}
                   />
                   <div className="absolute inset-0 bg-black/40" />

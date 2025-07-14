@@ -162,11 +162,15 @@ export const TaskCard = ({
       {isCompleted && (
         <div 
           className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)]"
-          style={{ 
-            backfaceVisibility: 'hidden',
-            background: `linear-gradient(45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.2)), url('${sunsetImageUrl}') center/cover`
-          }}
+          style={{ backfaceVisibility: 'hidden' }}
         >
+          <div 
+            className="absolute inset-0 bg-cover bg-center rounded-lg"
+            style={{ 
+              backgroundImage: `url('${sunsetImageUrl}')` 
+            }}
+          />
+          <div className="absolute inset-0 bg-black/40 rounded-lg" />
           <div className="h-full flex flex-col justify-between p-6 text-white">
             <div className="text-center">
               <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
