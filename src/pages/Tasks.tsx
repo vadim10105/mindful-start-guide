@@ -557,12 +557,8 @@ const Tasks = () => {
         {currentStep === 'input' && (
           <Card className="border-2 border-dashed border-muted-foreground/30">
             <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2">
-                <Brain className="h-6 w-6 text-primary" />
-                Brain Dump Space
-              </CardTitle>
               <p className="text-muted-foreground">
-                Just dump everything on your mind here - AI will organize it into tasks
+                Type what's on your mind. Or just list your tasks. I'm not picky.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
