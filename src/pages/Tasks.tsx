@@ -10,6 +10,7 @@ import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVe
 import { useToast } from "@/hooks/use-toast";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   DndContext,
   closestCenter,
@@ -509,6 +510,11 @@ const Tasks = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
+      {/* Theme Toggle - Fixed Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+      
       {/* Back Button - Fixed Top Left */}
       {currentStep !== 'input' && (
         <Button
