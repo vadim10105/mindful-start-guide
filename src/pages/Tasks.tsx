@@ -603,12 +603,9 @@ const Tasks = () => {
         {currentStep === 'processing' && (
           <div className="h-64 flex items-center justify-center">
             <div className="text-center space-y-6">
-              <Brain className="h-12 w-12 mx-auto animate-pulse text-primary" />
-              
               <div className="space-y-2">
                 <h3 className="text-xl font-semibold">
                   {loadingText}
-                  {showLoadingCursor && <span className="animate-pulse">|</span>}
                 </h3>
                 <p className="text-muted-foreground">
                   Mr. Intent is working his magic...
