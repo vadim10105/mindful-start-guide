@@ -483,7 +483,7 @@ const Tasks = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background">
       {/* Back Button - Fixed Top Left */}
       {currentStep !== 'input' && (
         <Button
@@ -503,7 +503,9 @@ const Tasks = () => {
         </Button>
       )}
       
-      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input' || currentStep === 'review' || currentStep === 'processing') ? 'max-w-4xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-4xl mx-auto'} space-y-6`}>
+      {/* Full background container */}
+      <div className={`min-h-screen ${currentStep === 'input' || currentStep === 'review' || currentStep === 'processing' ? 'flex items-center justify-center' : ''} ${currentStep === 'game-cards' ? '' : 'p-4'}`}>
+        <div className={`${currentStep === 'game-cards' ? 'w-full' : 'max-w-4xl mx-auto'} ${currentStep === 'input' || currentStep === 'review' || currentStep === 'processing' ? '' : 'space-y-6'}`}>
 
         {/* Input Step */}
         {currentStep === 'input' && (

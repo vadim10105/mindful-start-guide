@@ -44,7 +44,7 @@ export const GameLoadingScreen = ({ onLoadingComplete, taskCount }: GameLoadingS
   }, [onLoadingComplete]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-secondary/20 flex items-center justify-center">
+    <div className="min-h-screen w-full bg-gradient-to-br from-primary/20 via-background to-secondary/20 flex items-center justify-center">
       <Card className="w-full max-w-md mx-4 border-2 border-primary/20 shadow-xl">
         <CardContent className="p-8 text-center space-y-6">
           {/* Animated Cards */}
