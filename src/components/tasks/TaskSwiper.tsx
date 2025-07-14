@@ -26,7 +26,6 @@ interface TaskSwiperProps {
   flowProgress: number;
   sunsetImages: string[];
   navigationUnlocked: boolean;
-  taskMultipliers?: Map<string, number>;
   onSlideChange: (activeIndex: number) => void;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
@@ -50,7 +49,6 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   flowProgress,
   sunsetImages,
   navigationUnlocked,
-  taskMultipliers = new Map(),
   onSlideChange,
   onCommit,
   onComplete,
@@ -102,7 +100,6 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 activeCommittedIndex={activeCommittedIndex}
                 flowProgress={flowProgress}
                 sunsetImageUrl={sunsetImages[index % sunsetImages.length]}
-                multiplier={taskMultipliers.get(task.id) || 0}
                 onCommit={onCommit}
                 onComplete={onComplete}
                 onMoveOn={onMoveOn}
