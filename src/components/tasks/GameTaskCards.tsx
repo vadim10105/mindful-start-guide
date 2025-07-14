@@ -425,18 +425,9 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="w-full px-4 py-8">
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="w-full px-4">
         <div className="w-full">
-          
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Your Task Adventure</h1>
-            <p className="text-muted-foreground">
-              Focus on one task at a time. You've got this! 
-            </p>
-          </div>
-
           {/* Main Card Display */}
           <div className="relative">
             <TaskSwiper
