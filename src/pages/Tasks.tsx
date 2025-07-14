@@ -601,22 +601,32 @@ const Tasks = () => {
 
         {/* Processing Step */}
         {currentStep === 'processing' && (
-          <Card className="min-h-[240px]">
-            <CardContent className="py-12 text-center h-full flex items-center justify-center">
-              <div className="space-y-4 w-full max-w-md">
-                <Brain className="h-12 w-12 mx-auto animate-pulse text-primary" />
-                <div className="min-h-[3rem] flex items-center justify-center">
-                  <h3 className="text-xl font-semibold">
-                    {loadingText}
-                    {showLoadingCursor && <span className="animate-pulse">|</span>}
-                  </h3>
-                </div>
+          <div className="h-64 flex items-center justify-center">
+            <div className="text-center space-y-6">
+              <Brain className="h-12 w-12 mx-auto animate-pulse text-primary" />
+              
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">
+                  {loadingText}
+                  {showLoadingCursor && <span className="animate-pulse">|</span>}
+                </h3>
                 <p className="text-muted-foreground">
                   Mr. Intent is working his magic...
                 </p>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Bouncing dots animation */}
+              <div className="flex justify-center space-x-2">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Review & Tag Step */}
