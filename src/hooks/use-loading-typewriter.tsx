@@ -41,7 +41,7 @@ export const useLoadingTypewriter = (isActive: boolean) => {
       timeout = setTimeout(() => {
         setCurrentMessageIndex((prev) => (prev + 1) % loadingMessages.length);
         setCurrentText('');
-      }, 2000); // Pause before next message
+      }, 5000); // 5 second pause before next message
     }
 
     return () => clearTimeout(timeout);
