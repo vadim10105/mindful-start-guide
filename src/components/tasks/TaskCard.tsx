@@ -81,13 +81,17 @@ export const TaskCard = ({
       )}
       
       {/* Front of Card */}
-      <Card className={`w-full h-full border-2 shadow-xl bg-card/95 backdrop-blur-sm text-card-foreground z-[10] ${
+      <Card className={`w-full h-full border-2 shadow-xl z-[10] ${
         isCompleted
           ? 'border-green-500' 
           : !isActiveCommitted && hasCommittedToTask
           ? 'border-muted-foreground/50'
           : 'border-primary/30 hover:border-primary/50'
-      }`} style={{ backfaceVisibility: 'hidden' }}>
+      }`} style={{ 
+        backfaceVisibility: 'hidden',
+        backgroundColor: 'hsl(202 10% 16%)',
+        color: 'hsl(48 100% 96%)'
+      }}>
         <div className="h-full flex flex-col">
           <CardHeader className="text-center pb-4 flex-shrink-0">
             <div className="flex items-center justify-center gap-2 mb-4">
