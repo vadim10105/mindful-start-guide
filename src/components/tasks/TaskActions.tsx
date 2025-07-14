@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Play, Pause, SkipForward, RotateCcw, Archive } from "lucide-react";
+import { Check, Play, Pause, SkipForward, RotateCcw } from "lucide-react";
 
 interface TaskCardData {
   id: string;
@@ -26,7 +26,6 @@ interface TaskActionsProps {
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
-  onArchive?: (taskId: string) => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
 }
@@ -46,28 +45,14 @@ export const TaskActions = ({
   onCarryOn,
   onSkip,
   onBackToActive,
-  onArchive,
   navigationUnlocked,
   formatTime
 }: TaskActionsProps) => {
   if (isCompleted) {
     return (
-      <div className="space-y-2">
-        <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-          <Check className="w-4 h-4" />
-          <span className="font-medium text-sm">Completed!</span>
-        </div>
-        {onArchive && (
-          <Button
-            onClick={() => onArchive(task.id)}
-            variant="outline"
-            size="sm"
-            className="w-full"
-          >
-            <Archive className="w-4 h-4 mr-2" />
-            Archive Task
-          </Button>
-        )}
+      <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+        <Check className="w-4 h-4" />
+        <span className="font-medium text-sm">Completed!</span>
       </div>
     );
   }

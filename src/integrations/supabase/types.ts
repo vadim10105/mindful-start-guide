@@ -124,8 +124,6 @@ export type Database = {
       tasks: {
         Row: {
           ai_priority_score: number | null
-          archive_position: number | null
-          archived_at: string | null
           card_position: number
           collection_added_at: string | null
           completed_at: string | null
@@ -150,8 +148,6 @@ export type Database = {
         }
         Insert: {
           ai_priority_score?: number | null
-          archive_position?: number | null
-          archived_at?: string | null
           card_position?: number
           collection_added_at?: string | null
           completed_at?: string | null
@@ -176,8 +172,6 @@ export type Database = {
         }
         Update: {
           ai_priority_score?: number | null
-          archive_position?: number | null
-          archived_at?: string | null
           card_position?: number
           collection_added_at?: string | null
           completed_at?: string | null

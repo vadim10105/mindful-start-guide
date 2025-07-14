@@ -6,12 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle, List } from "lucide-react";
+import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
-import { TaskManager } from "@/components/tasks/TaskManager";
-import { ArchiveDropZone } from "@/components/tasks/ArchiveDropZone";
 import {
   DndContext,
   closestCenter,
@@ -20,8 +18,6 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-  DragStartEvent,
-  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -34,7 +30,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type FlowStep = 'manage' | 'input' | 'processing' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
+type FlowStep = 'input' | 'processing' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
 
 interface ExtractedTask {
   title: string;
@@ -151,63 +147,8 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
   );
 };
 
-// Droppable wrapper component
-const Droppable = ({ children, id }: { children: React.ReactNode; id: string }) => {
-  const { isOver, setNodeRef } = useDroppable({ id });
-
-  return (
-    <div 
-      ref={setNodeRef}
-      className={`transition-colors rounded-lg ${
-        isOver ? 'bg-primary/10 border-2 border-primary border-dashed p-2' : ''
-      }`}
-    >
-      {children}
-    </div>
-  );
-};
-
-// Draggable archived task item
-const ArchiveTaskItem = ({ id, task, index }: { id: string; task: string; index: number }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div 
-      ref={setNodeRef}
-      style={style}
-      className={`p-4 bg-muted/30 border border-dashed rounded-lg cursor-grab hover:cursor-grabbing ${
-        isDragging ? 'opacity-50' : ''
-      }`}
-      {...attributes}
-      {...listeners}
-    >
-      <div className="flex items-center gap-4">
-        <div className="flex-shrink-0 w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm">
-          {index + 1}
-        </div>
-        <div className="flex-1">
-          <p className="text-sm text-muted-foreground">{task}</p>
-        </div>
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </div>
-    </div>
-  );
-};
-
 const Tasks = () => {
-  const [currentStep, setCurrentStep] = useState<FlowStep>('manage');
+  const [currentStep, setCurrentStep] = useState<FlowStep>('input');
   const [brainDumpText, setBrainDumpText] = useState("");
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
   const [reviewedTasks, setReviewedTasks] = useState<string[]>([]);
@@ -217,9 +158,6 @@ const Tasks = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState(null);
-  const [archivedTasks, setArchivedTasks] = useState<string[]>([]);
-  const [isArchiveCollapsed, setIsArchiveCollapsed] = useState(false);
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -324,8 +262,6 @@ const Tasks = () => {
     setExtractedTasks([]);
     setReviewedTasks([]);
     setTaggedTasks([]);
-    setArchivedTasks([]);
-    setIsArchiveCollapsed(false);
   };
 
   const handleReorder = (dragIndex: number, hoverIndex: number) => {
@@ -336,47 +272,10 @@ const Tasks = () => {
     setReviewedTasks(newTasks);
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setDraggedTaskId(event.active.id as string);
-  };
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    setDraggedTaskId(null);
 
-    if (!over) return;
-
-    // Handle archive zone drop
-    if (over.id === 'archive-zone') {
-      const taskToArchive = active.id as string;
-      if (reviewedTasks.includes(taskToArchive)) {
-        setReviewedTasks(prev => prev.filter(task => task !== taskToArchive));
-        setArchivedTasks(prev => [...prev, taskToArchive]);
-        setIsArchiveCollapsed(false); // Show archived tasks
-        toast({
-          title: "Task Archived",
-          description: `"${taskToArchive}" moved to archive`,
-        });
-      }
-      return;
-    }
-
-    // Handle restoration from archive - when dropping archived task on main list
-    if (over.id === 'main-task-list') {
-      const archivedTaskId = String(active.id).replace('archived-', '');
-      if (archivedTasks.includes(archivedTaskId)) {
-        setArchivedTasks(prev => prev.filter(task => task !== archivedTaskId));
-        setReviewedTasks(prev => [...prev, archivedTaskId]);
-        toast({
-          title: "Task Restored",
-          description: `"${archivedTaskId}" restored from archive`,
-        });
-      }
-      return;
-    }
-
-    // Handle regular reordering in main list
-    if (active.id !== over?.id && reviewedTasks.includes(active.id as string)) {
+    if (active.id !== over?.id) {
       const oldIndex = reviewedTasks.findIndex((task) => task === active.id);
       const newIndex = reviewedTasks.findIndex((task) => task === over?.id);
 
@@ -588,14 +487,12 @@ const Tasks = () => {
       <div className={`${currentStep === 'game-cards' ? 'w-full' : 'max-w-4xl mx-auto'} space-y-6`}>
         
         {/* Header with Back Button */}
-        {currentStep !== 'manage' && (
-          <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
+          {currentStep !== 'input' && (
             <Button
               onClick={() => {
                 if (currentStep === 'prioritized') {
                   setCurrentStep('review');
-                } else if (currentStep === 'input') {
-                  setCurrentStep('manage');
                 } else {
                   setCurrentStep('input');
                 }
@@ -607,22 +504,14 @@ const Tasks = () => {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <div className="text-center space-y-4 flex-1">
-              <h1 className="text-3xl font-bold">Task Creation</h1>
-              <p className="text-muted-foreground">
-                Transform your thoughts into organized, prioritized tasks
-              </p>
-            </div>
+          )}
+          <div className="text-center space-y-4 flex-1">
+            <h1 className="text-3xl font-bold">Task Creation</h1>
+            <p className="text-muted-foreground">
+              Transform your thoughts into organized, prioritized tasks
+            </p>
           </div>
-        )}
-
-        {/* Task Management Step */}
-        {currentStep === 'manage' && (
-          <TaskManager
-            onBack={() => window.history.back()}
-            onCreateNew={() => setCurrentStep('input')}
-          />
-        )}
+        </div>
 
         {/* Input Step */}
         {currentStep === 'input' && (
@@ -697,73 +586,38 @@ const Tasks = () => {
               <DndContext 
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               >
-                <Droppable id="main-task-list">
-                  <SortableContext 
-                    items={reviewedTasks}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-3">
-                      {reviewedTasks.map((task, index) => {
-                        const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
-                        return (
-                          <TaskListItem
-                            key={task}
-                            task={task}
-                            index={index}
-                            isLiked={tags.isLiked}
-                            isUrgent={tags.isUrgent}
-                            isQuick={tags.isQuick}
-                            onReorder={handleReorder}
-                            onTagUpdate={(tag, value) => {
-                              setTaskTags(prev => ({
-                                ...prev,
-                                [task]: {
-                                  ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
-                                  [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
-                                }
-                              }));
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                  </SortableContext>
-                </Droppable>
-                
-                {/* Archive Drop Zone */}
-                <ArchiveDropZone 
-                  isCollapsed={isArchiveCollapsed}
-                  onToggle={() => setIsArchiveCollapsed(!isArchiveCollapsed)}
-                  archivedCount={archivedTasks.length}
-                  isDragOver={draggedTaskId !== null}
-                />
-                
-                {/* Archived Tasks Display */}
-                {!isArchiveCollapsed && archivedTasks.length > 0 && (
-                  <div className="space-y-4 pt-4">
-                    <h4 className="font-medium text-muted-foreground">Archived Tasks</h4>
-                    <Droppable id="archived-task-list">
-                      <SortableContext 
-                        items={archivedTasks.map(task => `archived-${task}`)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        <div className="space-y-3 opacity-60">
-                          {archivedTasks.map((task, index) => (
-                            <ArchiveTaskItem 
-                              key={`archived-${task}`}
-                              id={`archived-${task}`}
-                              task={task}
-                              index={index}
-                            />
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </Droppable>
+                <SortableContext 
+                  items={reviewedTasks}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {reviewedTasks.map((task, index) => {
+                      const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                      return (
+                        <TaskListItem
+                          key={task}
+                          task={task}
+                          index={index}
+                          isLiked={tags.isLiked}
+                          isUrgent={tags.isUrgent}
+                          isQuick={tags.isQuick}
+                          onReorder={handleReorder}
+                          onTagUpdate={(tag, value) => {
+                            setTaskTags(prev => ({
+                              ...prev,
+                              [task]: {
+                                ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
+                              }
+                            }));
+                          }}
+                        />
+                      );
+                    })}
                   </div>
-                )}
+                </SortableContext>
               </DndContext>
               
               {/* Direct Action Buttons */}
@@ -862,38 +716,6 @@ const Tasks = () => {
                 ))}
               </div>
               
-              {/* Archive Drop Zone for Prioritized Tasks */}
-              <ArchiveDropZone 
-                isCollapsed={isArchiveCollapsed}
-                onToggle={() => setIsArchiveCollapsed(!isArchiveCollapsed)}
-                archivedCount={archivedTasks.length}
-                isDragOver={false}
-              />
-              
-              {/* Archived Tasks Display */}
-              {!isArchiveCollapsed && archivedTasks.length > 0 && (
-                <div className="space-y-4 pt-4">
-                  <h4 className="font-medium text-muted-foreground">Archived Tasks</h4>
-                  <div className="space-y-3 opacity-60">
-                    {archivedTasks.map((task, index) => {
-                      const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
-                      return (
-                        <div key={task} className="p-4 bg-muted/30 border border-dashed rounded-lg">
-                          <div className="flex items-center gap-4">
-                            <div className="flex-shrink-0 w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm">
-                              {index + 1}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-muted-foreground">{task}</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-               
               {/* Action Buttons */}
               <div className="flex gap-4 pt-6">
                 <Button 
