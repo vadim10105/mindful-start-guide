@@ -161,7 +161,7 @@ export const TaskCard = ({
       {/* Back of Card (Sunset Image) */}
       {isCompleted && (
         <div 
-          className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)]"
+          className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)] z-20"
           style={{ backfaceVisibility: 'hidden' }}
         >
           <div 
