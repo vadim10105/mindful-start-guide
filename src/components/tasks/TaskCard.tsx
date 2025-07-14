@@ -164,7 +164,7 @@ export const TaskCard = ({
           className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)]"
           style={{ 
             backfaceVisibility: 'hidden',
-            background: `linear-gradient(45deg, rgba(251,146,60,0.8), rgba(249,115,22,0.8)), url('${sunsetImageUrl}') center/cover`
+            background: `linear-gradient(45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.2)), url('${sunsetImageUrl}') center/cover`
           }}
         >
           <div className="h-full flex flex-col justify-between p-6 text-white">
@@ -173,12 +173,7 @@ export const TaskCard = ({
               <p className="text-sm opacity-90">{task.title}</p>
             </div>
             
-            <div className="text-center space-y-4">
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
-                <p className="text-sm mb-2">🌅 Beautiful work!</p>
-                <p className="text-xs opacity-75">You've earned this sunset moment</p>
-              </div>
-              
+            <div className="text-center">
               <button 
                 onClick={onAddToCollection}
                 className="w-full bg-white/20 hover:bg-white/30 border border-white/30 rounded-md py-2 px-4 text-sm transition-colors"
