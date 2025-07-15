@@ -83,13 +83,15 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     };
 
     if (hasCommittedToTask && flowStartTime) {
+      // Run immediately to check if 5 minutes have already passed
+      updateProgress();
       timerRef.current = setInterval(updateProgress, 1000);
     }
     
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [flowStartTime, navigationUnlocked, hasCommittedToTask]);
+  }, [flowStartTime, navigationUnlocked, hasCommittedToTask, activeCommittedIndex, tasks]);
 
   // Calculate navigation state
   const isNavigationLocked = isInitialLoad || (hasCommittedToTask && !navigationUnlocked);
