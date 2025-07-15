@@ -76,6 +76,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       if (elapsed >= 5 * 60 * 1000 && !navigationUnlocked) {
         console.log('Timer unlocking navigation after 5 minutes');
         setNavigationUnlocked(true);
+        setIsInitialLoad(false); // Reset initial load state when timer unlocks navigation
         const currentTask = tasks[activeCommittedIndex];
         setCharacterMessage(`Wow, you actually stuck with "${currentTask?.title}" longer than I would have! Feel free to browse around now.`);
         setShowCharacter(true);
