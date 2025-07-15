@@ -74,6 +74,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       setFlowProgress(progress);
       
       if (elapsed >= 5 * 60 * 1000 && !navigationUnlocked) {
+        console.log('Timer unlocking navigation after 5 minutes');
         setNavigationUnlocked(true);
         const currentTask = tasks[activeCommittedIndex];
         setCharacterMessage(`Wow, you actually stuck with "${currentTask?.title}" longer than I would have! Feel free to browse around now.`);
@@ -93,8 +94,17 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     };
   }, [flowStartTime, navigationUnlocked, hasCommittedToTask, activeCommittedIndex, tasks]);
 
-  // Calculate navigation state
+  // Calculate navigation state - navigation is locked if it's initial load OR if committed to task AND navigation hasn't been unlocked yet
   const isNavigationLocked = isInitialLoad || (hasCommittedToTask && !navigationUnlocked);
+  
+  // Debug logging
+  console.log('Navigation state:', {
+    isInitialLoad,
+    hasCommittedToTask,
+    navigationUnlocked,
+    isNavigationLocked,
+    flowStartTime: flowStartTime ? new Date(flowStartTime).toLocaleTimeString() : null
+  });
   const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   // Keyboard navigation
