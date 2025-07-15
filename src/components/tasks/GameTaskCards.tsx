@@ -470,7 +470,15 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               <div className="text-sm text-muted-foreground">
                 {isNavigationLocked ? (
                   hasCommittedToTask ? (
-                     `Navigation unlocks in ${Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000)} minutes. Focus first, swipe later.`
+                    (() => {
+                      const minutesRemaining = Math.max(0, Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000));
+                      const hasTimeElapsed = flowStartTime && (Date.now() - flowStartTime) >= 5 * 60 * 1000;
+                      
+                      if (hasTimeElapsed || minutesRemaining === 0) {
+                        return "Swipe, use arrow keys (←/→), or press ↓ to commit";
+                      }
+                      return `Navigation unlocks in ${minutesRemaining} minutes. Focus first, swipe later.`;
+                    })()
                   ) : (
                     "Start your focus session by playing this card."
                   )
