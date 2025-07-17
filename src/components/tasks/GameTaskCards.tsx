@@ -459,6 +459,41 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     return 'upcoming';
   };
 
+  const getTaskTimeSpent = (task: TaskCardData, index: number) => {
+    const status = getTaskStatus(task, index);
+    
+    if (status === 'completed') {
+      // For completed tasks, use the time from lastCompletedTask if it matches, otherwise calculate
+      if (lastCompletedTask && lastCompletedTask.id === task.id) {
+        return lastCompletedTask.timeSpent;
+      }
+      // Fallback: calculate from start time if available
+      const startTime = taskStartTimes[task.id];
+      if (startTime) {
+        // Estimate completion time (this is approximate since we don't store exact completion time)
+        return Math.round((Date.now() - startTime) / 60000);
+      }
+      return 0;
+    }
+    
+    if (status === 'paused') {
+      // For paused tasks, return the accumulated time
+      return pausedTasks.get(task.id) || 0;
+    }
+    
+    if (status === 'current' && hasCommittedToTask && index === activeCommittedIndex) {
+      // For current active task, calculate real-time spent time
+      const startTime = taskStartTimes[task.id];
+      if (startTime) {
+        const currentTime = Math.round((Date.now() - startTime) / 60000);
+        // Don't add paused time here as the start time is already adjusted for resumed tasks
+        return Math.max(0, currentTime);
+      }
+    }
+    
+    return 0;
+  };
+
   const handleSeeAheadPress = () => {
     setShowTaskList(true);
   };
@@ -554,7 +589,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         <Button
           variant="secondary"
           size="lg"
-          className="bg-card/80 backdrop-blur-sm border-2 border-primary/20 hover:border-primary/40 transition-all duration-200 shadow-lg"
+          className="bg-card/80 backdrop-blur-sm border border-border hover:bg-muted/50 transition-all duration-200 shadow-lg"
           onMouseDown={handleSeeAheadPress}
           onMouseUp={handleSeeAheadRelease}
           onMouseLeave={handleSeeAheadRelease}
@@ -579,6 +614,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
             <div className="p-4 space-y-3">
               {tasks.map((task, index) => {
                 const status = getTaskStatus(task, index);
+                const timeSpent = getTaskTimeSpent(task, index);
                 return (
                   <div
                     key={task.id}
@@ -601,6 +637,11 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
                           {status === 'completed' && <CheckCircle className="h-3 w-3 text-green-500" />}
                           {status === 'paused' && <Pause className="h-3 w-3 text-orange-500" />}
                           {status === 'current' && <Play className="h-3 w-3 text-primary" />}
+                          {timeSpent > 0 && (
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {formatTime(timeSpent)}
+                            </span>
+                          )}
                         </div>
                         <h4 className={`text-sm font-medium mb-2 line-clamp-2 ${
                           status === 'completed' || status === 'paused' || status === 'passed' 
