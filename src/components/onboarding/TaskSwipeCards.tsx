@@ -10,46 +10,46 @@ interface TaskSwipeCardsProps {
 
 const taskTypes = [
   {
-    id: "creative_work",
-    title: "Creative Work",
-    description: "Tasks where you make or express something.",
-    examples: "Writing, designing, brainstorming, content creation"
+    id: "creative_tasks",
+    title: "Creative Tasks",
+    description: "Tasks where you express ideas and create something new.",
+    examples: "Designing, writing, brainstorming, artistic projects"
   },
   {
-    id: "analytical_technical",
-    title: "Analytical + Technical Work", 
-    description: "Tasks where you think in systems, numbers, or code.",
-    examples: "Coding, spreadsheets, troubleshooting, data analysis"
+    id: "analytical_tasks", 
+    title: "Analytical Tasks",
+    description: "Tasks that require logical thinking and problem-solving.",
+    examples: "Research, data analysis, logical problem-solving"
   },
   {
-    id: "focused_deep_work",
-    title: "Focused Deep Work",
-    description: "Tasks that need sustained mental focus.",
-    examples: "Planning, researching, problem-solving, decision-making"
+    id: "social_tasks",
+    title: "Social Tasks",
+    description: "Tasks that involve working or communicating with others.",
+    examples: "Meetings, collaboration, communication"
   },
   {
-    id: "admin_life",
-    title: "Admin + Life Tasks",
-    description: "Fiddly but necessary responsibilities.",
-    examples: "Emails, booking things, budgeting, forms"
+    id: "physical_tasks",
+    title: "Physical Tasks",
+    description: "Tasks that involve hands-on work or movement.",
+    examples: "Hands-on work, movement-based activities"
   },
   {
-    id: "chores_errands",
-    title: "Chores + Errands",
-    description: "Physical tasks at home or out and about.",
-    examples: "Cleaning, shopping, laundry, cooking"
+    id: "routine_tasks",
+    title: "Routine Tasks",
+    description: "Regular administrative and maintenance activities.",
+    examples: "Administrative work, maintenance, recurring responsibilities"
   },
   {
-    id: "talking_people",
-    title: "Talking to People",
-    description: "Tasks that involve interaction or communication.",
-    examples: "Calls, meetings, voice notes, messaging"
+    id: "learning_tasks",
+    title: "Learning Tasks",
+    description: "Tasks focused on acquiring new knowledge or skills.",
+    examples: "Studying, skill development, educational activities"
   },
   {
-    id: "emotional_reflective",
-    title: "Emotional + Reflective Work",
-    description: "Tasks that help you feel clear or calm inside.",
-    examples: "Journaling, therapy, meditation, grounding"
+    id: "planning_tasks",
+    title: "Planning Tasks",
+    description: "Tasks that involve organizing and strategizing.",
+    examples: "Organizing, strategizing, project management"
   }
 ];
 

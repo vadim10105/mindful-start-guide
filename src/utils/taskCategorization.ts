@@ -3,98 +3,73 @@
 
 export interface CategoryRatings {
   'Creative': 'Loved' | 'Neutral' | 'Disliked';
-  'Analytical+Technical': 'Loved' | 'Neutral' | 'Disliked';
-  'DeepWork': 'Loved' | 'Neutral' | 'Disliked';
-  'Admin+Life': 'Loved' | 'Neutral' | 'Disliked';
-  'Chores': 'Loved' | 'Neutral' | 'Disliked';
+  'Analytical': 'Loved' | 'Neutral' | 'Disliked';
   'Social': 'Loved' | 'Neutral' | 'Disliked';
-  'Reflective': 'Loved' | 'Neutral' | 'Disliked';
+  'Physical': 'Loved' | 'Neutral' | 'Disliked';
+  'Routine': 'Loved' | 'Neutral' | 'Disliked';
+  'Learning': 'Loved' | 'Neutral' | 'Disliked';
+  'Planning': 'Loved' | 'Neutral' | 'Disliked';
 }
 
 // Map onboarding task IDs to prioritization categories
 const TASK_ID_TO_CATEGORY_MAP: Record<string, keyof CategoryRatings> = {
-  'creative_work': 'Creative',
-  'design_visual': 'Creative',
-  'writing_content': 'Creative',
-  'brainstorming': 'Creative',
-  'art_music': 'Creative',
-  
-  'coding_dev': 'Analytical+Technical',
-  'data_analysis': 'Analytical+Technical',
-  'research_study': 'Analytical+Technical',
-  'problem_solving': 'Analytical+Technical',
-  'technical_learning': 'Analytical+Technical',
-  
-  'deep_focus': 'DeepWork',
-  'strategic_planning': 'DeepWork',
-  'complex_projects': 'DeepWork',
-  'learning_skills': 'DeepWork',
-  
-  'admin_tasks': 'Admin+Life',
-  'emails_comm': 'Admin+Life',
-  'meetings_calls': 'Admin+Life',
-  'planning_org': 'Admin+Life',
-  'finance_bills': 'Admin+Life',
-  
-  'household_chores': 'Chores',
-  'cleaning_org': 'Chores',
-  'maintenance': 'Chores',
-  'errands': 'Chores',
-  'shopping': 'Chores',
-  
-  'social_networking': 'Social',
-  'team_collaboration': 'Social',
-  'relationship_building': 'Social',
-  'community_activities': 'Social',
-  
-  'self_reflection': 'Reflective',
-  'goal_setting': 'Reflective',
-  'journaling': 'Reflective',
-  'meditation_mindfulness': 'Reflective',
-  'personal_growth': 'Reflective'
+  'creative_tasks': 'Creative',
+  'analytical_tasks': 'Analytical',
+  'social_tasks': 'Social',
+  'physical_tasks': 'Physical',
+  'routine_tasks': 'Routine',
+  'learning_tasks': 'Learning',
+  'planning_tasks': 'Planning'
 };
 
 // Keywords for automatic task categorization
 const CATEGORY_KEYWORDS: Record<keyof CategoryRatings, string[]> = {
   'Creative': [
     'design', 'create', 'write', 'draw', 'paint', 'music', 'art', 'creative', 'brainstorm', 
-    'content', 'video', 'photo', 'visual', 'story', 'blog', 'creative'
+    'content', 'video', 'photo', 'visual', 'story', 'blog', 'sketch', 'craft', 'compose',
+    'artistic', 'imagination', 'conceptualize', 'ideate'
   ],
-  'Analytical+Technical': [
-    'code', 'program', 'develop', 'analyze', 'data', 'research', 'study', 'technical', 
-    'algorithm', 'database', 'debug', 'test', 'api', 'system', 'software'
-  ],
-  'DeepWork': [
-    'focus', 'concentrate', 'deep', 'complex', 'strategic', 'plan', 'strategy', 
-    'learn', 'skill', 'project', 'important', 'critical'
-  ],
-  'Admin+Life': [
-    'email', 'meeting', 'call', 'admin', 'organize', 'schedule', 'calendar', 
-    'document', 'paperwork', 'form', 'application', 'finance', 'bill', 'tax'
-  ],
-  'Chores': [
-    'clean', 'wash', 'laundry', 'dishes', 'vacuum', 'tidy', 'organize', 
-    'grocery', 'shop', 'errand', 'maintenance', 'repair', 'chore'
+  'Analytical': [
+    'research', 'analyze', 'data', 'study', 'investigate', 'examine', 'evaluate', 'assess',
+    'calculate', 'measure', 'statistics', 'logic', 'reasoning', 'problem-solving', 'solve',
+    'troubleshoot', 'debug', 'review', 'compare', 'test', 'verify'
   ],
   'Social': [
-    'social', 'friend', 'family', 'team', 'collaborate', 'network', 'meet', 
-    'chat', 'talk', 'connect', 'relationship', 'community', 'group'
+    'meeting', 'call', 'collaborate', 'team', 'discuss', 'communicate', 'present', 'share',
+    'network', 'connect', 'interview', 'coordinate', 'negotiate', 'feedback', 'conversation',
+    'social', 'group', 'partnership', 'relationship', 'client', 'customer'
   ],
-  'Reflective': [
-    'reflect', 'journal', 'meditate', 'mindful', 'goal', 'plan', 'think', 
-    'review', 'assess', 'evaluate', 'personal', 'growth', 'self'
+  'Physical': [
+    'build', 'fix', 'repair', 'move', 'exercise', 'walk', 'run', 'hands-on', 'manual',
+    'physical', 'craft', 'assemble', 'install', 'maintenance', 'construction', 'gardening',
+    'cooking', 'cleaning', 'organizing', 'setup', 'workout'
+  ],
+  'Routine': [
+    'admin', 'administrative', 'paperwork', 'form', 'document', 'file', 'organize', 'schedule',
+    'calendar', 'email', 'routine', 'recurring', 'maintenance', 'update', 'backup', 'report',
+    'invoice', 'billing', 'accounting', 'tax', 'compliance', 'process', 'procedure'
+  ],
+  'Learning': [
+    'learn', 'study', 'course', 'training', 'education', 'skill', 'tutorial', 'practice',
+    'development', 'improve', 'master', 'certification', 'workshop', 'seminar', 'reading',
+    'book', 'article', 'knowledge', 'understanding', 'explore', 'discover'
+  ],
+  'Planning': [
+    'plan', 'organize', 'strategy', 'strategize', 'schedule', 'coordinate', 'manage', 'project',
+    'roadmap', 'timeline', 'agenda', 'prepare', 'structure', 'framework', 'outline', 'design',
+    'architecture', 'blueprint', 'goals', 'objectives', 'milestones', 'prioritize'
   ]
 };
 
 export function convertOnboardingPreferencesToCategoryRatings(taskPreferences: any): CategoryRatings {
   const categoryRatings: CategoryRatings = {
     'Creative': 'Neutral',
-    'Analytical+Technical': 'Neutral',
-    'DeepWork': 'Neutral',
-    'Admin+Life': 'Neutral',
-    'Chores': 'Neutral',
+    'Analytical': 'Neutral',
     'Social': 'Neutral',
-    'Reflective': 'Neutral'
+    'Physical': 'Neutral',
+    'Routine': 'Neutral',
+    'Learning': 'Neutral',
+    'Planning': 'Neutral'
   };
 
   if (!taskPreferences) return categoryRatings;
@@ -103,9 +78,9 @@ export function convertOnboardingPreferencesToCategoryRatings(taskPreferences: a
   Object.entries(taskPreferences).forEach(([taskId, preference]) => {
     const category = TASK_ID_TO_CATEGORY_MAP[taskId];
     if (category && typeof preference === 'string') {
-      if (preference === 'love') {
+      if (preference === 'liked') {
         categoryRatings[category] = 'Loved';
-      } else if (preference === 'dislike') {
+      } else if (preference === 'disliked') {
         categoryRatings[category] = 'Disliked';
       }
       // 'neutral' stays as 'Neutral'
@@ -121,12 +96,12 @@ export function categorizeTask(taskTitle: string): keyof CategoryRatings {
   // Count keyword matches for each category
   const categoryScores: Record<keyof CategoryRatings, number> = {
     'Creative': 0,
-    'Analytical+Technical': 0,
-    'DeepWork': 0,
-    'Admin+Life': 0,
-    'Chores': 0,
+    'Analytical': 0,
     'Social': 0,
-    'Reflective': 0
+    'Physical': 0,
+    'Routine': 0,
+    'Learning': 0,
+    'Planning': 0
   };
 
   // Score each category based on keyword matches
@@ -139,7 +114,7 @@ export function categorizeTask(taskTitle: string): keyof CategoryRatings {
   });
 
   // Find the category with the highest score
-  let bestCategory: keyof CategoryRatings = 'Admin+Life'; // Default fallback
+  let bestCategory: keyof CategoryRatings = 'Routine'; // Default fallback
   let bestScore = 0;
 
   Object.entries(categoryScores).forEach(([category, score]) => {
