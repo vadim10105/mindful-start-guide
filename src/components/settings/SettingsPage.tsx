@@ -33,13 +33,13 @@ const taskPreferences = [
 ];
 
 const taskTypes = [
-  { id: "creative_work", title: "Creative Work" },
-  { id: "analytical_technical", title: "Analytical + Technical Work" },
-  { id: "focused_deep_work", title: "Focused Deep Work" },
-  { id: "admin_life", title: "Admin + Life Tasks" },
-  { id: "chores_errands", title: "Chores + Errands" },
-  { id: "talking_people", title: "Talking to People" },
-  { id: "emotional_reflective", title: "Emotional + Reflective Work" },
+  { id: "creative", title: "Creative tasks" },
+  { id: "analytical", title: "Analytical tasks" },
+  { id: "social", title: "Social tasks" },
+  { id: "physical", title: "Physical tasks" },
+  { id: "routine", title: "Routine tasks" },
+  { id: "learning", title: "Learning tasks" },
+  { id: "planning", title: "Planning tasks" },
 ];
 
 export const SettingsPage = () => {
