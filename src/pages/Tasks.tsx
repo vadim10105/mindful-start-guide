@@ -391,21 +391,6 @@ const Tasks = () => {
 
       console.log('Prioritization response:', data);
 
-      // Log detailed scoring for each task
-      console.log('🎯 TASK SCORING BREAKDOWN:');
-      data.orderedTasks.forEach((task: any, index: number) => {
-        console.log(`${index + 1}. "${task.text}"`);
-        console.log(`   📊 Total Score: ${task.totalScore}`);
-        console.log(`   📈 Score Breakdown:`);
-        console.log(`      • Base Category Score: ${task.scoreBreakdown.baseCategoryScore}`);
-        console.log(`      • Live Tag Score: ${task.scoreBreakdown.liveTagScore}`);
-        console.log(`      • Energy Adjustment: ${task.scoreBreakdown.energyAdjust}`);
-        console.log(`   🏷️  Category: ${task.inferred.category}`);
-        console.log(`   🎲 Rule Placement: ${task.rulePlacement}`);
-        console.log(`   ⚡ Tags: ${Object.entries(task.tags).filter(([_, value]) => value).map(([key, _]) => key).join(', ') || 'none'}`);
-        console.log('   ---');
-      });
-
       // Convert back to our expected format
       const prioritizedTasks = data.orderedTasks.map((task: any) => ({
         id: task.id,
