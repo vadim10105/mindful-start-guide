@@ -13,6 +13,7 @@ import { useLoadingTypewriter } from "@/hooks/use-loading-typewriter";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, getCurrentEnergyState } from "@/utils/taskCategorization";
 import {
   DndContext,
   closestCenter,
@@ -336,11 +337,12 @@ const Tasks = () => {
     console.log('Task tags state:', taskTags);
     console.log('Reviewed tasks:', reviewedTasks);
 
-    // Create task input format for the edge function using taskTags state instead of taggedTasks
+    // Create task input format for the edge function with proper categorization
     const taskInputs = reviewedTasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+      const category = categorizeTask(taskTitle);
       
-      console.log(`Task "${taskTitle}" tags:`, tags);
+      console.log(`Task "${taskTitle}" categorized as:`, category, 'with tags:', tags);
       
       return {
         id: `temp-${index}`,
@@ -352,25 +354,27 @@ const Tasks = () => {
           disliked: false // We don't have disliked in the UI currently
         },
         inferred: {
-          category: 'Admin+Life' // Default category - we'll enhance this later
+          category: category
         }
       };
     });
 
+    // Convert onboarding preferences to category ratings
+    const categoryRatings = convertOnboardingPreferencesToCategoryRatings(userProfile?.task_preferences);
+    console.log('Converted category ratings:', categoryRatings);
+
+    // Determine current energy state based on time and user's energy preferences
+    const energyState = getCurrentEnergyState(userProfile?.peak_energy_time, userProfile?.lowest_energy_time);
+    console.log('Current energy state:', energyState);
+
     // Create user profile for the edge function
     const profileInput = {
       startPreference: userProfile?.task_start_preference === 'hard_first' ? 'eatTheFrog' : 'quickWin',
-      energyState: userProfile?.peak_energy_time ? 'high' : 'low',
-      categoryRatings: {
-        'Creative': 'Neutral',
-        'Analytical+Technical': 'Neutral', 
-        'DeepWork': 'Neutral',
-        'Admin+Life': 'Neutral',
-        'Chores': 'Neutral',
-        'Social': 'Neutral',
-        'Reflective': 'Neutral'
-      }
+      energyState: energyState,
+      categoryRatings: categoryRatings
     };
+
+    console.log('Profile input for prioritization:', profileInput);
 
     try {
       const { data, error } = await supabase.functions.invoke('prioritize-tasks', {

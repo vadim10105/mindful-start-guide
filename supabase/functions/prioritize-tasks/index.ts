@@ -17,8 +17,8 @@ interface TaskInput {
     disliked?: boolean;
   };
   inferred: {
-    complexity?: 'low' | 'medium' | 'high'; // Made optional since we're not using it
-    importance?: 'low' | 'medium' | 'high'; // Made optional since we're not using it
+    complexity?: 'low' | 'medium' | 'high';
+    importance?: 'low' | 'medium' | 'high';
     category: 'Creative' | 'Analytical+Technical' | 'DeepWork' | 'Admin+Life' | 'Chores' | 'Social' | 'Reflective';
   };
 }
@@ -41,11 +41,14 @@ interface ScoredTask extends TaskInput {
 }
 
 function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: number; breakdown: any } {
-  // a. BaseCategoryScore
+  console.log(`Calculating score for task: "${task.text}"`);
+  console.log(`Category: ${task.inferred.category}, User rating: ${profile.categoryRatings[task.inferred.category]}`);
+  
+  // a. BaseCategoryScore - now uses actual user preferences
   const categoryRating = profile.categoryRatings[task.inferred.category] || 'Neutral';
   const baseCategoryScore = categoryRating === 'Loved' ? 3 : categoryRating === 'Neutral' ? 0 : -2;
 
-  // b. LiveTagScore
+  // b. LiveTagScore - adjusted based on start preference
   let liveTagScore = 0;
   if (profile.startPreference === 'quickWin') {
     if (task.tags.liked) liveTagScore += 3;
@@ -59,16 +62,35 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
     if (task.tags.disliked) liveTagScore -= 2;
   }
 
-  // c. EnergyAdjust (simplified without complexity)
+  // c. EnergyAdjust - enhanced to consider both tags and categories
   let energyAdjust = 0;
   if (profile.energyState === 'low') {
-    if (task.tags.quick) energyAdjust += 1;
+    // Low energy: boost quick tasks and liked tasks
+    if (task.tags.quick) energyAdjust += 2;
     if (task.tags.liked) energyAdjust += 1;
+    // Also boost categories that require less mental energy
+    if (task.inferred.category === 'Chores' || task.inferred.category === 'Admin+Life') {
+      energyAdjust += 1;
+    }
+    // Penalize high-energy categories when energy is low
+    if (task.inferred.category === 'DeepWork' || task.inferred.category === 'Analytical+Technical') {
+      energyAdjust -= 1;
+    }
   } else { // high energy
-    if (task.tags.urgent) energyAdjust += 1;
+    // High energy: boost urgent tasks and challenging categories
+    if (task.tags.urgent) energyAdjust += 2;
+    if (task.inferred.category === 'DeepWork' || task.inferred.category === 'Analytical+Technical') {
+      energyAdjust += 1;
+    }
+    // Slight boost for creative work during high energy
+    if (task.inferred.category === 'Creative') {
+      energyAdjust += 1;
+    }
   }
 
   const totalScore = baseCategoryScore + liveTagScore + energyAdjust;
+
+  console.log(`Score breakdown - Base: ${baseCategoryScore}, Tags: ${liveTagScore}, Energy: ${energyAdjust}, Total: ${totalScore}`);
 
   return {
     score: totalScore,
@@ -326,7 +348,10 @@ serve(async (req) => {
 
     console.log('Received prioritization request:', { 
       taskCount: tasks.length, 
-      startPreference: userProfile.startPreference 
+      startPreference: userProfile.startPreference,
+      energyState: userProfile.energyState,
+      categories: tasks.map(t => `${t.text}: ${t.inferred.category}`),
+      categoryRatings: userProfile.categoryRatings
     });
 
     // Default profile values if not provided
@@ -355,7 +380,12 @@ serve(async (req) => {
     console.log('Prioritization completed:', {
       inputTasks: tasks.length,
       outputTasks: orderedTasks.length,
-      strategy: profile.startPreference
+      strategy: profile.startPreference,
+      energyState: profile.energyState,
+      scoreRange: {
+        min: Math.min(...orderedTasks.map(t => t.totalScore)),
+        max: Math.max(...orderedTasks.map(t => t.totalScore))
+      }
     });
 
     return new Response(JSON.stringify({
