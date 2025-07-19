@@ -1,25 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MrIntentCharacter } from "./MrIntentCharacter";
 import { TodaysCollection } from "./TodaysCollection";
 import { TaskSwiper } from "./TaskSwiper";
 import { NavigationDots } from "./NavigationDots";
-import { Heart, Zap, Clock, CheckCircle, Pause, Play, Eye } from "lucide-react";
+import { TaskListOverlay } from "./TaskListOverlay";
+import { CharacterDisplay, useCharacterMessages } from "./CharacterMessages";
+import { useGameState, TaskCardData, CompletedTask } from "./GameState";
+import { useTaskTimer } from "./TaskTimer";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import confetti from "canvas-confetti";
-
-interface TaskCardData {
-  id: string;
-  title: string;
-  priority_score: number;
-  explanation: string;
-  is_liked?: boolean;
-  is_urgent?: boolean;
-  is_quick?: boolean;
-}
 
 interface GameTaskCardsProps {
   tasks: TaskCardData[];
@@ -27,38 +19,10 @@ interface GameTaskCardsProps {
   onTaskComplete?: (taskId: string) => void;
 }
 
-interface CompletedTask {
-  id: string;
-  title: string;
-  timeSpent: number;
-  completedAt: Date;
-  sunsetImageUrl: string;
-}
-
 export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCardsProps) => {
-  const [currentViewingIndex, setCurrentViewingIndex] = useState(0);
-  const [activeCommittedIndex, setActiveCommittedIndex] = useState(0);
-  const [flowStartTime, setFlowStartTime] = useState<number | null>(null);
-  const [showCharacter, setShowCharacter] = useState(true);
-  const [characterMessage, setCharacterMessage] = useState(
-    "Ugh, fine... I guess we should probably do something productive. Click 'Play this card' if you're feeling ambitious."
-  );
-  const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
-  const [pausedTasks, setPausedTasks] = useState<Map<string, number>>(new Map());
-  const [hasCommittedToTask, setHasCommittedToTask] = useState(false);
-  const [taskStartTimes, setTaskStartTimes] = useState<Record<string, number>>({});
-  const [lastCompletedTask, setLastCompletedTask] = useState<{id: string, title: string, timeSpent: number} | null>(null);
-  const [todaysCompletedTasks, setTodaysCompletedTasks] = useState<CompletedTask[]>([]);
-  const [navigationUnlocked, setNavigationUnlocked] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [showTaskList, setShowTaskList] = useState(false);
-  
-  const timerRef = useRef<NodeJS.Timeout>();
-  const swiperRef = useRef<any>(null);
+  const gameState = useGameState(tasks);
+  const characterMessages = useCharacterMessages();
   const { toast } = useToast();
-
-  // Calculate flow progress (0-100) based on 20-minute commitment periods
-  const [flowProgress, setFlowProgress] = useState(0);
 
   // Sunset images for card backs
   const sunsetImages = [
@@ -67,70 +31,40 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=600&fit=crop',
   ];
 
-  // Progress tracking effect
-  useEffect(() => {
-    const updateProgress = () => {
-      if (!flowStartTime || !hasCommittedToTask) return;
-      
-      const elapsed = Date.now() - flowStartTime;
-      const progress = Math.min((elapsed / (20 * 60 * 1000)) * 100, 100);
-      setFlowProgress(progress);
-      
-      if (elapsed >= 5 * 60 * 1000 && !navigationUnlocked) {
-        console.log('Timer unlocking navigation after 5 minutes');
-        setNavigationUnlocked(true);
-        setIsInitialLoad(false); // Reset initial load state when timer unlocks navigation
-        const currentTask = tasks[activeCommittedIndex];
-        setCharacterMessage(`Wow, you actually stuck with "${currentTask?.title}" longer than I would have! Feel free to browse around now.`);
-        setShowCharacter(true);
-        setTimeout(() => setShowCharacter(false), 8000);
-      }
-    };
-
-    if (hasCommittedToTask && flowStartTime) {
-      // Run immediately to check if 5 minutes have already passed
-      updateProgress();
-      timerRef.current = setInterval(updateProgress, 1000);
-    }
-    
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [flowStartTime, navigationUnlocked, hasCommittedToTask, activeCommittedIndex, tasks]);
-
-  // Calculate navigation state - navigation is locked if it's initial load OR if committed to task AND navigation hasn't been unlocked yet
-  const isNavigationLocked = isInitialLoad || (hasCommittedToTask && !navigationUnlocked);
-  
-  // Debug logging
-  console.log('Navigation state:', {
-    isInitialLoad,
-    hasCommittedToTask,
-    navigationUnlocked,
-    isNavigationLocked,
-    flowStartTime: flowStartTime ? new Date(flowStartTime).toLocaleTimeString() : null
+  // Timer hook
+  useTaskTimer({
+    flowStartTime: gameState.flowStartTime,
+    hasCommittedToTask: gameState.hasCommittedToTask,
+    navigationUnlocked: gameState.navigationUnlocked,
+    activeCommittedIndex: gameState.activeCommittedIndex,
+    tasks,
+    timerRef: gameState.timerRef,
+    setFlowProgress: gameState.setFlowProgress,
+    setNavigationUnlocked: gameState.setNavigationUnlocked,
+    setIsInitialLoad: gameState.setIsInitialLoad,
+    onNavigationUnlock: characterMessages.showMessage
   });
-  const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        if (!isNavigationLocked && swiperRef.current?.swiper) {
+        if (!gameState.isNavigationLocked && gameState.swiperRef.current?.swiper) {
           e.preventDefault();
           if (e.key === 'ArrowLeft') {
-            swiperRef.current.swiper.slidePrev();
+            gameState.swiperRef.current.swiper.slidePrev();
           } else if (e.key === 'ArrowRight') {
-            swiperRef.current.swiper.slideNext();
+            gameState.swiperRef.current.swiper.slideNext();
           }
         }
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        const currentTask = tasks[currentViewingIndex];
+        const currentTask = tasks[gameState.currentViewingIndex];
         if (!currentTask) return;
         
-        if (isTaskCommitted && !completedTasks.has(currentTask.id)) {
+        if (gameState.isTaskCommitted && !gameState.completedTasks.has(currentTask.id)) {
           handleTaskComplete(currentTask.id);
-        } else if (!hasCommittedToTask || currentViewingIndex !== activeCommittedIndex) {
+        } else if (!gameState.hasCommittedToTask || gameState.currentViewingIndex !== gameState.activeCommittedIndex) {
           handleCommitToCurrentTask();
         }
       }
@@ -138,40 +72,32 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentViewingIndex, activeCommittedIndex, hasCommittedToTask, completedTasks, isNavigationLocked, navigationUnlocked, isInitialLoad]);
+  }, [gameState.currentViewingIndex, gameState.activeCommittedIndex, gameState.hasCommittedToTask, gameState.completedTasks, gameState.isNavigationLocked]);
 
   const handleCommitToCurrentTask = () => {
-    const currentTask = tasks[currentViewingIndex];
+    const currentTask = tasks[gameState.currentViewingIndex];
     if (!currentTask) return;
     
-    setHasCommittedToTask(true);
-    setActiveCommittedIndex(currentViewingIndex);
-    setFlowStartTime(Date.now());
-    setFlowProgress(0);
-    setNavigationUnlocked(false);
+    gameState.setHasCommittedToTask(true);
+    gameState.setActiveCommittedIndex(gameState.currentViewingIndex);
+    gameState.setFlowStartTime(Date.now());
+    gameState.setFlowProgress(0);
+    gameState.setNavigationUnlocked(false);
     
-    setTaskStartTimes(prev => ({
+    gameState.setTaskStartTimes(prev => ({
       ...prev,
       [currentTask.id]: Date.now()
     }));
     
-    const lazyMessages = [
-      `Alright, "${currentTask.title}"... I'd probably procrastinate on this too, but here we are.`,
-      `Even I can manage 5 minutes of focus on "${currentTask.title}"... probably.`,
-      `Fine, we're doing "${currentTask.title}". At least one of us is being productive today.`,
-      `"${currentTask.title}" it is. Try not to make me look too lazy by comparison.`
-    ];
-    
-    setCharacterMessage(lazyMessages[Math.floor(Math.random() * lazyMessages.length)]);
-    setShowCharacter(true);
-    setTimeout(() => setShowCharacter(false), 8000);
+    const message = characterMessages.getRandomMessage(characterMessages.getCommitMessages(currentTask.title));
+    characterMessages.showMessage(message);
   };
 
   const handleTaskComplete = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const startTime = taskStartTimes[taskId];
+    const startTime = gameState.taskStartTimes[taskId];
     const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
     
     confetti({
@@ -181,18 +107,16 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57']
     });
 
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
+    if (gameState.timerRef.current) {
+      clearInterval(gameState.timerRef.current);
     }
-    setFlowProgress(0);
+    gameState.setFlowProgress(0);
+    gameState.setNavigationUnlocked(true);
+    gameState.setHasCommittedToTask(false);
+    gameState.setIsInitialLoad(false);
     
-    // Unlock navigation immediately upon completion
-    setNavigationUnlocked(true);
-    setHasCommittedToTask(false);
-    setIsInitialLoad(false);
-    
-    setCompletedTasks(prev => new Set([...prev, taskId]));
-    setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
+    gameState.setCompletedTasks(prev => new Set([...prev, taskId]));
+    gameState.setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -221,7 +145,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
   };
 
   const handleAddToCollection = async () => {
-    if (!lastCompletedTask) return;
+    if (!gameState.lastCompletedTask) return;
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -229,17 +153,17 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         await supabase
           .from('tasks')
           .update({ collection_added_at: new Date().toISOString() })
-          .eq('id', lastCompletedTask.id);
+          .eq('id', gameState.lastCompletedTask.id);
 
         const newCollectedTask: CompletedTask = {
-          id: lastCompletedTask.id,
-          title: lastCompletedTask.title,
-          timeSpent: lastCompletedTask.timeSpent,
+          id: gameState.lastCompletedTask.id,
+          title: gameState.lastCompletedTask.title,
+          timeSpent: gameState.lastCompletedTask.timeSpent,
           completedAt: new Date(),
           sunsetImageUrl: sunsetImages[Math.floor(Math.random() * sunsetImages.length)]
         };
         
-        setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
+        gameState.setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
 
         await supabase.rpc('update_daily_stats', {
           p_user_id: user.id,
@@ -262,50 +186,41 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     }
     
     // Move to next task after adding to collection
-    const nextIndex = currentViewingIndex + 1;
+    const nextIndex = gameState.currentViewingIndex + 1;
     
     if (nextIndex < tasks.length) {
-      setCurrentViewingIndex(nextIndex);
-      setActiveCommittedIndex(nextIndex);
-      setHasCommittedToTask(false);
-      setNavigationUnlocked(false);
-      setFlowStartTime(null);
-      setFlowProgress(0);
+      gameState.setCurrentViewingIndex(nextIndex);
+      gameState.setActiveCommittedIndex(nextIndex);
+      gameState.setHasCommittedToTask(false);
+      gameState.setNavigationUnlocked(false);
+      gameState.setFlowStartTime(null);
+      gameState.setFlowProgress(0);
       
       const nextTask = tasks[nextIndex];
-      const newCardMessages = [
-        `Oh great, now we have "${nextTask?.title}"... this day just keeps getting better.`,
-        `Next up: "${nextTask?.title}". I'm already tired just thinking about it.`,
-        `"${nextTask?.title}" is calling... but I'm not answering.`,
-        `Well, "${nextTask?.title}" isn't going to do itself... unfortunately.`
-      ];
-      setCharacterMessage(newCardMessages[Math.floor(Math.random() * newCardMessages.length)]);
-      setShowCharacter(true);
-      setTimeout(() => setShowCharacter(false), 8000);
+      const message = characterMessages.getRandomMessage(characterMessages.getNewCardMessages(nextTask?.title || ''));
+      characterMessages.showMessage(message);
     }
   };
 
   const handleBackToActiveCard = () => {
-    setCurrentViewingIndex(activeCommittedIndex);
+    gameState.setCurrentViewingIndex(gameState.activeCommittedIndex);
   };
 
   const handleMoveOnForNow = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const startTime = taskStartTimes[taskId];
+    const startTime = gameState.taskStartTimes[taskId];
     const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
     
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
+    if (gameState.timerRef.current) {
+      clearInterval(gameState.timerRef.current);
     }
-    setFlowProgress(0);
+    gameState.setFlowProgress(0);
+    gameState.setNavigationUnlocked(true);
+    gameState.setIsInitialLoad(false);
     
-    // Unlock navigation after moving on from first task
-    setNavigationUnlocked(true);
-    setIsInitialLoad(false);
-    
-    setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
+    gameState.setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -324,44 +239,28 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     }
     
     const nextTask = tasks.find((t, index) => 
-      index > currentViewingIndex && 
-      !completedTasks.has(t.id) && 
-      !pausedTasks.has(t.id)
+      index > gameState.currentViewingIndex && 
+      !gameState.completedTasks.has(t.id) && 
+      !gameState.pausedTasks.has(t.id)
     );
 
     if (nextTask) {
       const nextIndex = tasks.indexOf(nextTask);
-      setCurrentViewingIndex(nextIndex);
-      setActiveCommittedIndex(nextIndex);
-      setHasCommittedToTask(false);
-      setNavigationUnlocked(true); // Keep navigation unlocked after first task interaction
-      setFlowStartTime(null);
+      gameState.setCurrentViewingIndex(nextIndex);
+      gameState.setActiveCommittedIndex(nextIndex);
+      gameState.setHasCommittedToTask(false);
+      gameState.setNavigationUnlocked(true);
+      gameState.setFlowStartTime(null);
       
-      const moveOnMessages = [
-        `Fine, moving on to "${nextTask.title}"... this better be more interesting.`,
-        `Next up: "${nextTask.title}". Here we go again...`,
-        `"${nextTask.title}" is next. Let's see if we can actually focus this time.`,
-        `Moving to "${nextTask.title}"... hopefully this goes better.`
-      ];
-      
-      setCharacterMessage(moveOnMessages[Math.floor(Math.random() * moveOnMessages.length)]);
-      setShowCharacter(true);
-      setTimeout(() => setShowCharacter(false), 8000);
+      const message = characterMessages.getRandomMessage(characterMessages.getMoveOnMessages(nextTask.title));
+      characterMessages.showMessage(message);
     } else {
-      setHasCommittedToTask(false);
-      setNavigationUnlocked(false);
-      setFlowStartTime(null);
+      gameState.setHasCommittedToTask(false);
+      gameState.setNavigationUnlocked(false);
+      gameState.setFlowStartTime(null);
       
-      const pauseMessages = [
-        `Fine, taking a break from "${task.title}"... I wasn't really in the mood anyway.`,
-        `"${task.title}" can wait. Even I need a breather sometimes.`,
-        `Pausing "${task.title}"... probably for the best, honestly.`,
-        `We'll get back to "${task.title}" when we feel like it. No rush.`
-      ];
-      
-      setCharacterMessage(pauseMessages[Math.floor(Math.random() * pauseMessages.length)]);
-      setShowCharacter(true);
-      setTimeout(() => setShowCharacter(false), 8000);
+      const message = characterMessages.getRandomMessage(characterMessages.getPauseMessages(task.title));
+      characterMessages.showMessage(message);
     }
     
     toast({
@@ -374,42 +273,34 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     
-    const pausedTime = pausedTasks.get(taskId) || 0;
+    const pausedTime = gameState.pausedTasks.get(taskId) || 0;
     
-    setHasCommittedToTask(true);
-    setActiveCommittedIndex(currentViewingIndex);
-    setFlowStartTime(Date.now());
-    setFlowProgress(0);
-    setNavigationUnlocked(false);
+    gameState.setHasCommittedToTask(true);
+    gameState.setActiveCommittedIndex(gameState.currentViewingIndex);
+    gameState.setFlowStartTime(Date.now());
+    gameState.setFlowProgress(0);
+    gameState.setNavigationUnlocked(false);
     
-    setTaskStartTimes(prev => ({
+    gameState.setTaskStartTimes(prev => ({
       ...prev,
       [taskId]: Date.now() - (pausedTime * 60000)
     }));
     
-    setPausedTasks(prev => {
+    gameState.setPausedTasks(prev => {
       const newMap = new Map(prev);
       newMap.delete(taskId);
       return newMap;
     });
     
-    const continueMessages = [
-      `Alright, back to "${task.title}"... where were we? Oh right, avoiding it.`,
-      `Continuing with "${task.title}"... hope you're more motivated than I am.`,
-      `"${task.title}" again... fine, let's see if we can actually finish it this time.`,
-      `Back to the grind with "${task.title}"... joy.`
-    ];
-    
-    setCharacterMessage(continueMessages[Math.floor(Math.random() * continueMessages.length)]);
-    setShowCharacter(true);
-    setTimeout(() => setShowCharacter(false), 8000);
+    const message = characterMessages.getRandomMessage(characterMessages.getContinueMessages(task.title));
+    characterMessages.showMessage(message);
   };
 
   const handleSkip = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     
-    setPausedTasks(prev => {
+    gameState.setPausedTasks(prev => {
       const newMap = new Map(prev);
       newMap.delete(taskId);
       return newMap;
@@ -427,16 +318,8 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
       console.error('Error skipping task:', error);
     }
     
-    const skipMessages = [
-      `Skipping "${task.title}"... honestly, probably for the best.`,
-      `"${task.title}" is now officially someone else's problem.`,
-      `Goodbye "${task.title}"... it's not you, it's definitely me.`,
-      `"${task.title}" has been eliminated. One less thing to worry about.`
-    ];
-    
-    setCharacterMessage(skipMessages[Math.floor(Math.random() * skipMessages.length)]);
-    setShowCharacter(true);
-    setTimeout(() => setShowCharacter(false), 8000);
+    const message = characterMessages.getRandomMessage(characterMessages.getSkipMessages(task.title));
+    characterMessages.showMessage(message);
     
     toast({
       title: "Task Skipped",
@@ -451,55 +334,12 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
-  const getTaskStatus = (task: TaskCardData, index: number) => {
-    if (completedTasks.has(task.id)) return 'completed';
-    if (pausedTasks.has(task.id)) return 'paused';
-    if (index === currentViewingIndex) return 'current';
-    if (index < currentViewingIndex) return 'passed';
-    return 'upcoming';
-  };
-
-  const getTaskTimeSpent = (task: TaskCardData, index: number) => {
-    const status = getTaskStatus(task, index);
-    
-    if (status === 'completed') {
-      // For completed tasks, use the time from lastCompletedTask if it matches, otherwise calculate
-      if (lastCompletedTask && lastCompletedTask.id === task.id) {
-        return lastCompletedTask.timeSpent;
-      }
-      // Fallback: calculate from start time if available
-      const startTime = taskStartTimes[task.id];
-      if (startTime) {
-        // Estimate completion time (this is approximate since we don't store exact completion time)
-        return Math.round((Date.now() - startTime) / 60000);
-      }
-      return 0;
-    }
-    
-    if (status === 'paused') {
-      // For paused tasks, return the accumulated time
-      return pausedTasks.get(task.id) || 0;
-    }
-    
-    if (status === 'current' && hasCommittedToTask && index === activeCommittedIndex) {
-      // For current active task, calculate real-time spent time
-      const startTime = taskStartTimes[task.id];
-      if (startTime) {
-        const currentTime = Math.round((Date.now() - startTime) / 60000);
-        // Don't add paused time here as the start time is already adjusted for resumed tasks
-        return Math.max(0, currentTime);
-      }
-    }
-    
-    return 0;
-  };
-
   const handleSeeAheadPress = () => {
-    setShowTaskList(true);
+    gameState.setShowTaskList(true);
   };
 
   const handleSeeAheadRelease = () => {
-    setShowTaskList(false);
+    gameState.setShowTaskList(false);
   };
 
   return (
@@ -509,25 +349,24 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
           {/* Main Card Display */}
           <div className="relative">
             <TaskSwiper
-              ref={swiperRef}
+              ref={gameState.swiperRef}
               tasks={tasks}
-              currentViewingIndex={currentViewingIndex}
-              activeCommittedIndex={activeCommittedIndex}
-              hasCommittedToTask={hasCommittedToTask}
-              completedTasks={completedTasks}
-              pausedTasks={pausedTasks}
-              isNavigationLocked={isNavigationLocked}
-              flowProgress={flowProgress}
+              currentViewingIndex={gameState.currentViewingIndex}
+              activeCommittedIndex={gameState.activeCommittedIndex}
+              hasCommittedToTask={gameState.hasCommittedToTask}
+              completedTasks={gameState.completedTasks}
+              pausedTasks={gameState.pausedTasks}
+              isNavigationLocked={gameState.isNavigationLocked}
+              flowProgress={gameState.flowProgress}
               sunsetImages={sunsetImages}
-              navigationUnlocked={navigationUnlocked}
-              onSlideChange={(activeIndex) => setCurrentViewingIndex(activeIndex)}
+              navigationUnlocked={gameState.navigationUnlocked}
+              onSlideChange={(activeIndex) => gameState.setCurrentViewingIndex(activeIndex)}
               onCommit={handleCommitToCurrentTask}
               onComplete={handleTaskComplete}
               onMoveOn={handleMoveOnForNow}
               onCarryOn={handleCarryOn}
               onSkip={handleSkip}
               onBackToActive={handleBackToActiveCard}
-              
               onAddToCollection={handleAddToCollection}
               formatTime={formatTime}
             />
@@ -535,11 +374,11 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
             {/* Navigation Status */}
             <div className="text-center mb-6">
               <div className="text-sm text-muted-foreground">
-                {isNavigationLocked ? (
-                  hasCommittedToTask ? (
+                {gameState.isNavigationLocked ? (
+                  gameState.hasCommittedToTask ? (
                     (() => {
-                      const minutesRemaining = Math.max(0, Math.ceil((5 * 60 * 1000 - (Date.now() - (flowStartTime || 0))) / 60000));
-                      const hasTimeElapsed = flowStartTime && (Date.now() - flowStartTime) >= 5 * 60 * 1000;
+                      const minutesRemaining = Math.max(0, Math.ceil((5 * 60 * 1000 - (Date.now() - (gameState.flowStartTime || 0))) / 60000));
+                      const hasTimeElapsed = gameState.flowStartTime && (Date.now() - gameState.flowStartTime) >= 5 * 60 * 1000;
                       
                       if (hasTimeElapsed || minutesRemaining === 0) {
                         return "Swipe, use arrow keys (←/→), or press ↓ to commit";
@@ -558,15 +397,15 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
             {/* Navigation Dots */}
             <NavigationDots
               tasks={tasks}
-              currentViewingIndex={currentViewingIndex}
-              activeCommittedIndex={activeCommittedIndex}
-              hasCommittedToTask={hasCommittedToTask}
-              completedTasks={completedTasks}
-              pausedTasks={pausedTasks}
+              currentViewingIndex={gameState.currentViewingIndex}
+              activeCommittedIndex={gameState.activeCommittedIndex}
+              hasCommittedToTask={gameState.hasCommittedToTask}
+              completedTasks={gameState.completedTasks}
+              pausedTasks={gameState.pausedTasks}
             />
 
             {/* Completion */}
-            {completedTasks.size === tasks.length && (
+            {gameState.completedTasks.size === tasks.length && (
               <div className="text-center">
                 <Button onClick={onComplete} size="lg" className="w-full max-w-xs">
                   Finish Session
@@ -577,116 +416,29 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         </div>
       </div>
 
-
       {/* Today's Collection */}
       <TodaysCollection 
-        completedTasks={todaysCompletedTasks}
-        isVisible={todaysCompletedTasks.length > 0}
+        completedTasks={gameState.todaysCompletedTasks}
+        isVisible={gameState.todaysCompletedTasks.length > 0}
       />
 
-      {/* See What's Ahead Button */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
-        <Button
-          variant="secondary"
-          size="lg"
-          className="bg-card/80 backdrop-blur-sm border border-border hover:bg-muted/50 transition-all duration-200 shadow-lg"
-          onMouseDown={handleSeeAheadPress}
-          onMouseUp={handleSeeAheadRelease}
-          onMouseLeave={handleSeeAheadRelease}
-          onTouchStart={handleSeeAheadPress}
-          onTouchEnd={handleSeeAheadRelease}
-        >
-          <Eye className="mr-2 h-4 w-4" />
-          See what's Ahead
-        </Button>
-      </div>
-
       {/* Task List Overlay */}
-      {showTaskList && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-4 border-b">
-              <h3 className="text-lg font-semibold text-center">What's Ahead</h3>
-              <p className="text-sm text-muted-foreground text-center mt-1">
-                {tasks.length} tasks total
-              </p>
-            </div>
-            <div className="p-4 space-y-3">
-              {tasks.map((task, index) => {
-                const status = getTaskStatus(task, index);
-                const timeSpent = getTaskTimeSpent(task, index);
-                return (
-                  <div
-                    key={task.id}
-                    className={`p-3 rounded-lg border transition-all ${
-                      status === 'current' 
-                        ? 'bg-primary/10 border-primary shadow-sm' 
-                        : status === 'completed'
-                        ? 'bg-green-500/10 border-green-500/20 opacity-75'
-                        : status === 'paused'
-                        ? 'bg-orange-500/10 border-orange-500/20 opacity-75'
-                        : status === 'passed'
-                        ? 'bg-muted/50 border-muted opacity-60'
-                        : 'bg-card border-border'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs text-muted-foreground">#{index + 1}</span>
-                          {status === 'completed' && <CheckCircle className="h-3 w-3 text-green-500" />}
-                          {status === 'paused' && <Pause className="h-3 w-3 text-orange-500" />}
-                          {status === 'current' && <Play className="h-3 w-3 text-primary" />}
-                          {timeSpent > 0 && (
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              {formatTime(timeSpent)}
-                            </span>
-                          )}
-                        </div>
-                        <h4 className={`text-sm font-medium mb-2 line-clamp-2 ${
-                          status === 'completed' || status === 'paused' || status === 'passed' 
-                            ? 'text-muted-foreground' 
-                            : ''
-                        }`}>
-                          {task.title}
-                        </h4>
-                        <div className="flex flex-wrap gap-1">
-                          {task.is_liked && (
-                            <Badge variant="outline" className="text-xs h-5 px-1.5">
-                              <Heart className="h-2.5 w-2.5 mr-1 fill-current" />
-                              Liked
-                            </Badge>
-                          )}
-                          {task.is_urgent && (
-                            <Badge variant="outline" className="text-xs h-5 px-1.5">
-                              <Zap className="h-2.5 w-2.5 mr-1" />
-                              Urgent
-                            </Badge>
-                          )}
-                          {task.is_quick && (
-                            <Badge variant="outline" className="text-xs h-5 px-1.5">
-                              <Clock className="h-2.5 w-2.5 mr-1" />
-                              Quick
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      <TaskListOverlay
+        showTaskList={gameState.showTaskList}
+        tasks={tasks}
+        getTaskStatus={gameState.getTaskStatus}
+        getTaskTimeSpent={gameState.getTaskTimeSpent}
+        formatTime={formatTime}
+        onSeeAheadPress={handleSeeAheadPress}
+        onSeeAheadRelease={handleSeeAheadRelease}
+      />
 
       {/* Mr Intent Character */}
-      {showCharacter && (
-        <MrIntentCharacter
-          message={characterMessage}
-          onClose={() => setShowCharacter(false)}
-        />
-      )}
+      <CharacterDisplay
+        showCharacter={characterMessages.showCharacter}
+        characterMessage={characterMessages.characterMessage}
+        onClose={() => characterMessages.setShowCharacter(false)}
+      />
     </div>
   );
 };
