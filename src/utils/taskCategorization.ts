@@ -22,42 +22,49 @@ const TASK_ID_TO_CATEGORY_MAP: Record<string, keyof CategoryRatings> = {
   'planning_tasks': 'Planning'
 };
 
-// Keywords for automatic task categorization
+// Updated keywords for automatic task categorization - mapped to the correct categories
 const CATEGORY_KEYWORDS: Record<keyof CategoryRatings, string[]> = {
   'Creative': [
     'design', 'create', 'write', 'draw', 'paint', 'music', 'art', 'creative', 'brainstorm', 
     'content', 'video', 'photo', 'visual', 'story', 'blog', 'sketch', 'craft', 'compose',
-    'artistic', 'imagination', 'conceptualize', 'ideate'
+    'artistic', 'imagination', 'conceptualize', 'ideate', 'logo', 'graphics', 'branding',
+    'mockup', 'prototype', 'wireframe', 'ui', 'ux', 'interface'
   ],
   'Analytical': [
     'research', 'analyze', 'data', 'study', 'investigate', 'examine', 'evaluate', 'assess',
     'calculate', 'measure', 'statistics', 'logic', 'reasoning', 'problem-solving', 'solve',
-    'troubleshoot', 'debug', 'review', 'compare', 'test', 'verify'
+    'troubleshoot', 'debug', 'review', 'compare', 'test', 'verify', 'metrics', 'performance',
+    'optimization', 'analysis', 'technical', 'code', 'programming', 'development', 'bug',
+    'algorithm', 'database', 'query', 'sql', 'api', 'integration', 'system', 'architecture'
   ],
   'Social': [
     'meeting', 'call', 'collaborate', 'team', 'discuss', 'communicate', 'present', 'share',
     'network', 'connect', 'interview', 'coordinate', 'negotiate', 'feedback', 'conversation',
-    'social', 'group', 'partnership', 'relationship', 'client', 'customer'
+    'social', 'group', 'partnership', 'relationship', 'client', 'customer', 'stakeholder',
+    'presentation', 'demo', 'conference', 'workshop', 'session', 'sync', 'standup'
   ],
   'Physical': [
     'build', 'fix', 'repair', 'move', 'exercise', 'walk', 'run', 'hands-on', 'manual',
     'physical', 'craft', 'assemble', 'install', 'maintenance', 'construction', 'gardening',
-    'cooking', 'cleaning', 'organizing', 'setup', 'workout'
+    'cooking', 'cleaning', 'organizing', 'setup', 'workout', 'hardware', 'equipment'
   ],
   'Routine': [
     'admin', 'administrative', 'paperwork', 'form', 'document', 'file', 'organize', 'schedule',
     'calendar', 'email', 'routine', 'recurring', 'maintenance', 'update', 'backup', 'report',
-    'invoice', 'billing', 'accounting', 'tax', 'compliance', 'process', 'procedure'
+    'invoice', 'billing', 'accounting', 'tax', 'compliance', 'process', 'procedure', 'workflow',
+    'approval', 'submission', 'filing', 'documentation', 'record', 'log', 'tracking'
   ],
   'Learning': [
     'learn', 'study', 'course', 'training', 'education', 'skill', 'tutorial', 'practice',
     'development', 'improve', 'master', 'certification', 'workshop', 'seminar', 'reading',
-    'book', 'article', 'knowledge', 'understanding', 'explore', 'discover'
+    'book', 'article', 'knowledge', 'understanding', 'explore', 'discover', 'research',
+    'documentation', 'guide', 'manual', 'best practices', 'framework', 'methodology'
   ],
   'Planning': [
     'plan', 'organize', 'strategy', 'strategize', 'schedule', 'coordinate', 'manage', 'project',
     'roadmap', 'timeline', 'agenda', 'prepare', 'structure', 'framework', 'outline', 'design',
-    'architecture', 'blueprint', 'goals', 'objectives', 'milestones', 'prioritize'
+    'architecture', 'blueprint', 'goals', 'objectives', 'milestones', 'prioritize', 'scope',
+    'requirements', 'specification', 'proposal', 'estimate', 'budget', 'resource', 'allocation'
   ]
 };
 
