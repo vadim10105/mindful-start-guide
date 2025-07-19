@@ -332,17 +332,21 @@ const Tasks = () => {
   };
 
   const prioritizeTasks = async () => {
-    console.log('Starting task prioritization...');
-    console.log('User profile:', userProfile);
-    console.log('Task tags state:', taskTags);
-    console.log('Reviewed tasks:', reviewedTasks);
+    console.log('🎯 Starting AI Task Prioritization...');
+    console.log('📊 User profile:', userProfile);
+    console.log('🏷️ Task tags state:', taskTags);
+    console.log('📝 Tasks to prioritize:', reviewedTasks);
 
     // Create task input format for the edge function with proper categorization
     const taskInputs = reviewedTasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
       const category = categorizeTask(taskTitle);
       
-      console.log(`Task "${taskTitle}" categorized as:`, category, 'with tags:', tags);
+      console.log(`🔍 Task "${taskTitle}":`, {
+        category: category,
+        tags: tags,
+        position: index + 1
+      });
       
       return {
         id: `temp-${index}`,
@@ -351,7 +355,7 @@ const Tasks = () => {
           liked: tags.isLiked,
           urgent: tags.isUrgent,
           quick: tags.isQuick,
-          disliked: false // We don't have disliked in the UI currently
+          disliked: false
         },
         inferred: {
           category: category
@@ -361,11 +365,11 @@ const Tasks = () => {
 
     // Convert onboarding preferences to category ratings
     const categoryRatings = convertOnboardingPreferencesToCategoryRatings(userProfile?.task_preferences);
-    console.log('Converted category ratings:', categoryRatings);
+    console.log('⚙️ Converted category ratings:', categoryRatings);
 
     // Determine current energy state based on time and user's energy preferences
     const energyState = getCurrentEnergyState(userProfile?.peak_energy_time, userProfile?.lowest_energy_time);
-    console.log('Current energy state:', energyState);
+    console.log('⚡ Current energy state:', energyState);
 
     // Create user profile for the edge function
     const profileInput = {
@@ -374,7 +378,8 @@ const Tasks = () => {
       categoryRatings: categoryRatings
     };
 
-    console.log('Profile input for prioritization:', profileInput);
+    console.log('👤 Profile input for prioritization:', profileInput);
+    console.log(`🧠 Using ${profileInput.startPreference} strategy with ${energyState} energy`);
 
     try {
       const { data, error } = await supabase.functions.invoke('prioritize-tasks', {
@@ -385,28 +390,44 @@ const Tasks = () => {
       });
 
       if (error) {
-        console.error('Edge function error:', error);
+        console.error('❌ Edge function error:', error);
         throw new Error('Failed to prioritize tasks');
       }
 
-      console.log('Prioritization response:', data);
+      console.log('✅ Prioritization response received:', data);
 
-      // Convert back to our expected format
-      const prioritizedTasks = data.orderedTasks.map((task: any) => ({
-        id: task.id,
-        title: task.text,
-        priority_score: task.totalScore,
-        explanation: `${task.rulePlacement} • Score: ${task.totalScore} (Base: ${task.scoreBreakdown.baseCategoryScore}, Tags: ${task.scoreBreakdown.liveTagScore}, Energy: ${task.scoreBreakdown.energyAdjust})`,
-        is_liked: task.tags.liked,
-        is_urgent: task.tags.urgent,
-        is_quick: task.tags.quick
-      }));
+      // Convert back to our expected format and log detailed scoring
+      const prioritizedTasks = data.orderedTasks.map((task: any, index: number) => {
+        console.log(`📈 Final Task #${index + 1}: "${task.text}"`, {
+          totalScore: task.totalScore,
+          rulePlacement: task.rulePlacement,
+          scoreBreakdown: task.scoreBreakdown,
+          tags: task.tags,
+          category: task.inferred?.category
+        });
+
+        return {
+          id: task.id,
+          title: task.text,
+          priority_score: task.totalScore,
+          explanation: `${task.rulePlacement} • Score: ${task.totalScore} (Base: ${task.scoreBreakdown.baseCategoryScore}, Tags: ${task.scoreBreakdown.liveTagScore}, Energy: ${task.scoreBreakdown.energyAdjust})`,
+          is_liked: task.tags.liked,
+          is_urgent: task.tags.urgent,
+          is_quick: task.tags.quick
+        };
+      });
+
+      console.log('🎊 Final prioritized order:');
+      prioritizedTasks.forEach((task, index) => {
+        console.log(`  ${index + 1}. ${task.title} (Score: ${task.priority_score})`);
+      });
 
       return prioritizedTasks;
 
     } catch (error) {
-      console.error('Error calling prioritization:', error);
+      console.error('💥 Error calling prioritization:', error);
       // Fallback to simple scoring if edge function fails
+      console.log('🔄 Using fallback prioritization...');
       return reviewedTasks.map((title, index) => ({
         id: `temp-${index}`,
         title,
@@ -420,7 +441,7 @@ const Tasks = () => {
   };
 
   const handleShuffle = async () => {
-    console.log('Shuffle button clicked');
+    console.log('🎲 Shuffle button clicked - Starting AI prioritization...');
     setIsProcessing(true);
     
     try {
@@ -447,6 +468,26 @@ const Tasks = () => {
   };
 
   const handleManualOrder = async () => {
+    console.log('📋 Play in Order button clicked - Using manual task order...');
+    
+    // Log the manual order with scoring details
+    console.log('🎯 Manual Task Organization:');
+    reviewedTasks.forEach((taskTitle, index) => {
+      const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+      const category = categorizeTask(taskTitle);
+      
+      console.log(`📝 Task #${index + 1}: "${taskTitle}"`, {
+        position: index + 1,
+        category: category,
+        tags: {
+          liked: tags.isLiked,
+          urgent: tags.isUrgent,
+          quick: tags.isQuick
+        },
+        reasoning: 'User-defined order - no AI scoring applied'
+      });
+    });
+
     // Update tagged tasks with the current order before saving
     const orderedTaggedTasks = reviewedTasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
@@ -461,6 +502,7 @@ const Tasks = () => {
       };
     });
     
+    console.log('💾 Saving tasks in manual order...');
     setTaggedTasks(orderedTaggedTasks);
     await saveTasks();
   };
