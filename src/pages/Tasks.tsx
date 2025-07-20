@@ -13,7 +13,7 @@ import { useLoadingTypewriter } from "@/hooks/use-loading-typewriter";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, getCurrentEnergyState } from "@/utils/taskCategorization";
+import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categorizeTasks, getCurrentEnergyState } from "@/utils/taskCategorization";
 import {
   DndContext,
   closestCenter,
@@ -337,10 +337,15 @@ const Tasks = () => {
     console.log('🏷️ Task tags state:', taskTags);
     console.log('📝 Tasks to prioritize:', reviewedTasks);
 
-    // Create task input format for the edge function with proper categorization
+    // Use AI categorization for batch processing
+    console.log('🤖 Getting AI categorization for all tasks...');
+    const taskCategories = await categorizeTasks(reviewedTasks);
+    console.log('📋 AI categorization results:', taskCategories);
+
+    // Create task input format for the edge function with AI categorization
     const taskInputs = reviewedTasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-      const category = categorizeTask(taskTitle);
+      const category = taskCategories[taskTitle] || 'Routine'; // Fallback to Routine if categorization failed
       
       console.log(`🔍 Task "${taskTitle}":`, {
         category: category,
@@ -470,11 +475,15 @@ const Tasks = () => {
   const handleManualOrder = async () => {
     console.log('📋 Play in Order button clicked - Using manual task order...');
     
-    // Log the manual order with scoring details
+    // Get AI categorization for logging purposes
+    console.log('🤖 Getting AI categorization for manual order logging...');
+    const taskCategories = await categorizeTasks(reviewedTasks);
+    
+    // Log the manual order with AI categorization details
     console.log('🎯 Manual Task Organization:');
     reviewedTasks.forEach((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-      const category = categorizeTask(taskTitle);
+      const category = taskCategories[taskTitle] || 'Routine';
       
       console.log(`📝 Task #${index + 1}: "${taskTitle}"`, {
         position: index + 1,

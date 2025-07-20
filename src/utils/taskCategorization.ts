@@ -22,7 +22,7 @@ const TASK_ID_TO_CATEGORY_MAP: Record<string, keyof CategoryRatings> = {
   'planning_tasks': 'Planning'
 };
 
-// Updated keywords for automatic task categorization - mapped to the correct categories
+// Keywords for fallback categorization
 const CATEGORY_KEYWORDS: Record<keyof CategoryRatings, string[]> = {
   'Creative': [
     'design', 'create', 'write', 'draw', 'paint', 'music', 'art', 'creative', 'brainstorm', 
@@ -97,7 +97,8 @@ export function convertOnboardingPreferencesToCategoryRatings(taskPreferences: a
   return categoryRatings;
 }
 
-export function categorizeTask(taskTitle: string): keyof CategoryRatings {
+// Fallback keyword-based categorization
+function categorizeTaskByKeywords(taskTitle: string): keyof CategoryRatings {
   const lowerTitle = taskTitle.toLowerCase();
   
   // Count keyword matches for each category
@@ -132,6 +133,79 @@ export function categorizeTask(taskTitle: string): keyof CategoryRatings {
   });
 
   return bestCategory;
+}
+
+// Main categorization function - tries AI first, falls back to keywords
+export async function categorizeTask(taskTitle: string): Promise<keyof CategoryRatings> {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    console.log(`🤖 Attempting AI categorization for: "${taskTitle}"`);
+    
+    const { data, error } = await supabase.functions.invoke('categorize-task', {
+      body: { tasks: [taskTitle] }
+    });
+
+    if (error) {
+      console.warn('AI categorization failed:', error);
+      throw error;
+    }
+
+    if (data?.results && data.results.length > 0) {
+      const result = data.results[0];
+      console.log(`✅ AI categorized "${taskTitle}" as ${result.category} (confidence: ${result.confidence})`);
+      console.log(`   Reasoning: ${result.reasoning}`);
+      return result.category;
+    }
+
+    throw new Error('No AI categorization results');
+
+  } catch (error) {
+    console.warn(`⚠️ AI categorization failed for "${taskTitle}", using keyword fallback:`, error);
+    const category = categorizeTaskByKeywords(taskTitle);
+    console.log(`🔤 Keyword categorized "${taskTitle}" as ${category}`);
+    return category;
+  }
+}
+
+// Batch categorization for multiple tasks
+export async function categorizeTasks(taskTitles: string[]): Promise<Record<string, keyof CategoryRatings>> {
+  if (taskTitles.length === 0) return {};
+
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    console.log(`🤖 Attempting AI batch categorization for ${taskTitles.length} tasks`);
+    
+    const { data, error } = await supabase.functions.invoke('categorize-task', {
+      body: { tasks: taskTitles }
+    });
+
+    if (error) {
+      console.warn('AI batch categorization failed:', error);
+      throw error;
+    }
+
+    if (data?.results && data.results.length > 0) {
+      const results: Record<string, keyof CategoryRatings> = {};
+      data.results.forEach((result: any) => {
+        results[result.task] = result.category;
+        console.log(`✅ AI categorized "${result.task}" as ${result.category} (confidence: ${result.confidence})`);
+      });
+      return results;
+    }
+
+    throw new Error('No AI categorization results');
+
+  } catch (error) {
+    console.warn(`⚠️ AI batch categorization failed, using keyword fallback:`, error);
+    const results: Record<string, keyof CategoryRatings> = {};
+    taskTitles.forEach(title => {
+      results[title] = categorizeTaskByKeywords(title);
+      console.log(`🔤 Keyword categorized "${title}" as ${results[title]}`);
+    });
+    return results;
+  }
 }
 
 export function getCurrentEnergyState(peakEnergyTime?: string, lowestEnergyTime?: string): 'high' | 'low' {
