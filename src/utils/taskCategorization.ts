@@ -1,4 +1,3 @@
-
 // Task categorization and user preference utilities
 
 export interface CategoryRatings {
@@ -11,15 +10,15 @@ export interface CategoryRatings {
   'Planning': 'Loved' | 'Neutral' | 'Disliked';
 }
 
-// Map onboarding task IDs to prioritization categories
+// Updated map to match the actual onboarding task IDs from TaskSwipeCards
 const TASK_ID_TO_CATEGORY_MAP: Record<string, keyof CategoryRatings> = {
-  'creative_tasks': 'Creative',
-  'analytical_tasks': 'Analytical',
-  'social_tasks': 'Social',
+  'creative_work': 'Creative',
+  'data_analysis': 'Analytical', 
+  'team_meetings': 'Social',
   'physical_tasks': 'Physical',
-  'routine_tasks': 'Routine',
-  'learning_tasks': 'Learning',
-  'planning_tasks': 'Planning'
+  'admin_work': 'Routine',
+  'learning_new_skills': 'Learning',
+  'project_planning': 'Planning'
 };
 
 // Keywords for fallback categorization
@@ -69,6 +68,8 @@ const CATEGORY_KEYWORDS: Record<keyof CategoryRatings, string[]> = {
 };
 
 export function convertOnboardingPreferencesToCategoryRatings(taskPreferences: any): CategoryRatings {
+  console.log('🔍 Raw task preferences from database:', taskPreferences);
+  
   const categoryRatings: CategoryRatings = {
     'Creative': 'Neutral',
     'Analytical': 'Neutral',
@@ -79,21 +80,31 @@ export function convertOnboardingPreferencesToCategoryRatings(taskPreferences: a
     'Planning': 'Neutral'
   };
 
-  if (!taskPreferences) return categoryRatings;
+  if (!taskPreferences) {
+    console.log('⚠️ No task preferences found, using all Neutral');
+    return categoryRatings;
+  }
 
   // Convert onboarding preferences to category ratings
   Object.entries(taskPreferences).forEach(([taskId, preference]) => {
     const category = TASK_ID_TO_CATEGORY_MAP[taskId];
+    console.log(`📋 Processing taskId: ${taskId}, preference: ${preference}, maps to category: ${category}`);
+    
     if (category && typeof preference === 'string') {
       if (preference === 'liked') {
         categoryRatings[category] = 'Loved';
+        console.log(`✅ Set ${category} to Loved`);
       } else if (preference === 'disliked') {
         categoryRatings[category] = 'Disliked';
+        console.log(`❌ Set ${category} to Disliked`);
       }
       // 'neutral' stays as 'Neutral'
+    } else {
+      console.log(`⚠️ No mapping found for taskId: ${taskId}`);
     }
   });
 
+  console.log('📊 Final category ratings:', categoryRatings);
   return categoryRatings;
 }
 

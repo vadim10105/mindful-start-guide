@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
@@ -41,15 +40,22 @@ interface ScoredTask extends TaskInput {
 }
 
 function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: number; breakdown: any } {
-  console.log(`Calculating score for task: "${task.text}"`);
-  console.log(`Category: ${task.inferred.category}, User rating: ${profile.categoryRatings[task.inferred.category] || 'Neutral'}`);
+  console.log(`\n🎯 Calculating score for task: "${task.text}"`);
+  console.log(`📂 Category: ${task.inferred.category}`);
+  console.log(`👤 User category ratings:`, profile.categoryRatings);
   
   // a. BaseCategoryScore - uses actual user preferences from onboarding
   const categoryRating = profile.categoryRatings[task.inferred.category] || 'Neutral';
+  console.log(`⭐ Category rating for ${task.inferred.category}: ${categoryRating}`);
+  
   const baseCategoryScore = categoryRating === 'Loved' ? 3 : categoryRating === 'Neutral' ? 0 : -2;
+  console.log(`📊 Base category score: ${baseCategoryScore}`);
 
   // b. LiveTagScore - based on live tags and start preference
   let liveTagScore = 0;
+  console.log(`🏷️ Task tags:`, task.tags);
+  console.log(`🎯 Start preference: ${profile.startPreference}`);
+  
   if (profile.startPreference === 'quickWin') {
     if (task.tags.liked) liveTagScore += 3;
     if (task.tags.quick) liveTagScore += 2;
@@ -61,9 +67,12 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
     if (task.tags.urgent) liveTagScore += 3;
     if (task.tags.disliked) liveTagScore -= 2;
   }
+  console.log(`🏷️ Live tag score: ${liveTagScore}`);
 
   // c. EnergyAdjust - FIXED: This should always apply based on energy state
   let energyAdjust = 0;
+  console.log(`⚡ Energy state: ${profile.energyState}`);
+  
   if (profile.energyState === 'low') {
     // Low energy: boost quick tasks and liked tasks
     if (task.tags.quick) energyAdjust += 1;
@@ -87,10 +96,10 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
       energyAdjust += 1;
     }
   }
+  console.log(`⚡ Energy adjustment: ${energyAdjust}`);
 
   const totalScore = baseCategoryScore + liveTagScore + energyAdjust;
-
-  console.log(`Score breakdown - Base: ${baseCategoryScore}, Tags: ${liveTagScore}, Energy: ${energyAdjust}, Total: ${totalScore}`);
+  console.log(`🎯 TOTAL SCORE: ${totalScore} (Base: ${baseCategoryScore} + Tags: ${liveTagScore} + Energy: ${energyAdjust})`);
 
   return {
     score: totalScore,
@@ -346,13 +355,12 @@ serve(async (req) => {
   try {
     const { tasks, userProfile } = await req.json();
 
-    console.log('Received prioritization request:', { 
-      taskCount: tasks.length, 
-      startPreference: userProfile.startPreference,
-      energyState: userProfile.energyState,
-      categories: tasks.map(t => `${t.text}: ${t.inferred.category}`),
-      categoryRatings: userProfile.categoryRatings
-    });
+    console.log('\n🚀 Received prioritization request:');
+    console.log('📋 Task count:', tasks.length);
+    console.log('🎯 Start preference:', userProfile.startPreference);
+    console.log('⚡ Energy state:', userProfile.energyState);
+    console.log('📊 Category ratings:', userProfile.categoryRatings);
+    console.log('📝 Task categories:', tasks.map(t => `"${t.text}": ${t.inferred.category}`));
 
     // Default profile values if not provided
     const profile: UserProfile = {
@@ -377,15 +385,10 @@ serve(async (req) => {
       orderedTasks = applyEatTheFrogRules(tasks, profile);
     }
 
-    console.log('Prioritization completed:', {
-      inputTasks: tasks.length,
-      outputTasks: orderedTasks.length,
-      strategy: profile.startPreference,
-      energyState: profile.energyState,
-      scoreRange: {
-        min: Math.min(...orderedTasks.map(t => t.totalScore)),
-        max: Math.max(...orderedTasks.map(t => t.totalScore))
-      }
+    console.log('\n✅ Prioritization completed:');
+    console.log('📊 Score summary:');
+    orderedTasks.forEach((task, index) => {
+      console.log(`${index + 1}. "${task.text}" - Score: ${task.totalScore} (${task.rulePlacement})`);
     });
 
     return new Response(JSON.stringify({
