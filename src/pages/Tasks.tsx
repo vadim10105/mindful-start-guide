@@ -718,25 +718,25 @@ const Tasks = () => {
         </Button>
       )}
       
-      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input' || currentStep === 'review' || currentStep === 'processing') ? 'max-w-6xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-6xl mx-auto'} space-y-6`}>
+      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input') ? 'sm:max-w-6xl sm:mx-auto sm:flex sm:items-center sm:justify-center sm:min-h-screen fixed inset-0 flex items-center justify-center pt-16 pb-6 px-2 sm:relative sm:pt-0 sm:pb-0 sm:px-4' : (currentStep === 'review' || currentStep === 'processing') ? 'max-w-6xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-6xl mx-auto'} space-y-6`}>
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <Card className="border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl mx-4 sm:mx-0">
+          <Card className="border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl h-full sm:h-auto flex flex-col">
             <CardHeader className="text-center px-4 sm:px-6">
               <p className="text-foreground text-base sm:text-lg text-center leading-relaxed">
                 Type what's on your mind.<br />
                 Or just list your tasks, I'm not picky...
               </p>
             </CardHeader>
-            <CardContent className="space-y-4 px-4 sm:px-6">
-              <div className="relative">
+            <CardContent className="flex-1 sm:flex-none flex flex-col space-y-4 px-4 sm:px-6">
+              <div className="relative flex-1 sm:flex-none">
                 <Textarea
                   value={brainDumpText}
                   onChange={(e) => setBrainDumpText(e.target.value)}
                   onFocus={() => setIsTextareaFocused(true)}
                   onBlur={() => setIsTextareaFocused(false)}
-                  className="min-h-[200px] sm:min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
+                  className="h-full sm:h-auto sm:min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
                   rows={8}
                 />
                 <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused} />
