@@ -194,6 +194,7 @@ const Tasks = () => {
     })
   );
 
+  // Enhanced user check with profile creation
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -204,18 +205,64 @@ const Tasks = () => {
       setUser(user);
       
       // Fetch user profile for prioritization
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('task_start_preference, task_preferences, peak_energy_time, lowest_energy_time')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your profile.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (profile) {
         setUserProfile(profile);
+      } else {
+        // Create a default profile if one doesn't exist
+        console.log('No profile found, creating default profile...');
+        const defaultProfile = {
+          user_id: user.id,
+          display_name: user.email?.split('@')[0] || 'User',
+          task_start_preference: 'easier_first',
+          task_preferences: {},
+          peak_energy_time: 'morning',
+          lowest_energy_time: 'evening',
+          onboarding_completed: false
+        };
+
+        const { error: createError } = await supabase
+          .from('profiles')
+          .insert(defaultProfile);
+
+        if (createError) {
+          console.error('Error creating default profile:', createError);
+          toast({
+            title: "Error",
+            description: "Failed to create user profile. Please try refreshing the page.",
+            variant: "destructive",
+          });
+        } else {
+          setUserProfile({
+            task_start_preference: defaultProfile.task_start_preference,
+            task_preferences: defaultProfile.task_preferences,
+            peak_energy_time: defaultProfile.peak_energy_time,
+            lowest_energy_time: defaultProfile.lowest_energy_time
+          });
+          toast({
+            title: "Profile Created",
+            description: "A default profile has been created for you.",
+          });
+        }
       }
     };
     getUser();
-  }, []);
+  }, [toast]);
 
   const handleBrainDumpSubmit = async () => {
     console.log('handleBrainDumpSubmit called with text:', brainDumpText);
@@ -475,6 +522,16 @@ const Tasks = () => {
   const handleManualOrder = async () => {
     console.log('📋 Play in Order button clicked - Using manual task order...');
     
+    // Check if user profile exists before proceeding
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please sign in to save tasks.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Get AI categorization for logging purposes
     console.log('🤖 Getting AI categorization for manual order logging...');
     const taskCategories = await categorizeTasks(reviewedTasks);
@@ -517,7 +574,14 @@ const Tasks = () => {
   };
 
   const saveTasks = async () => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please sign in to save tasks.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       // Create tasks based on the current order in reviewedTasks
@@ -534,11 +598,16 @@ const Tasks = () => {
         };
       });
 
+      console.log('💾 Saving tasks to database:', tasksToSave);
+
       const { error } = await supabase
         .from('tasks')
         .insert(tasksToSave);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error saving tasks:', error);
+        throw error;
+      }
 
       toast({
         title: "Success!",
@@ -548,23 +617,44 @@ const Tasks = () => {
       setCurrentStep('game-loading');
     } catch (error) {
       console.error('Error saving tasks:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to save tasks";
+      if (error.code === '23503') {
+        errorMessage = "Profile setup incomplete. Please complete onboarding first.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to save tasks",
+        description: errorMessage,
         variant: "destructive",
       });
     }
   };
 
   const savePrioritizedTasks = async (tasksToSave: any[]) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please sign in to save tasks.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
+      console.log('💾 Saving prioritized tasks to database:', tasksToSave);
+
       const { error } = await supabase
         .from('tasks')
         .insert(tasksToSave);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error saving prioritized tasks:', error);
+        throw error;
+      }
 
       toast({
         title: "Success!",
@@ -574,9 +664,18 @@ const Tasks = () => {
       setCurrentStep('game-loading');
     } catch (error) {
       console.error('Error saving prioritized tasks:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to save prioritized tasks";
+      if (error.code === '23503') {
+        errorMessage = "Profile setup incomplete. Please complete onboarding first.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to save prioritized tasks",
+        description: errorMessage,
         variant: "destructive",
       });
     }

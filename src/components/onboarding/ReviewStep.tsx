@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,14 +15,15 @@ interface ReviewStepProps {
   onEdit: (step: number) => void;
 }
 
+// Updated to match TaskSwipeCards categories
 const taskTypes = [
   { id: "creative_work", title: "Creative Work" },
-  { id: "analytical_technical", title: "Analytical + Technical Work" },
-  { id: "focused_deep_work", title: "Focused Deep Work" },
-  { id: "admin_life", title: "Admin + Life Tasks" },
-  { id: "chores_errands", title: "Chores + Errands" },
-  { id: "talking_people", title: "Talking to People" },
-  { id: "emotional_reflective", title: "Emotional + Reflective Work" }
+  { id: "data_analysis", title: "Data Analysis" },
+  { id: "team_meetings", title: "Team Meetings" },
+  { id: "physical_tasks", title: "Physical Tasks" },
+  { id: "admin_work", title: "Admin Work" },
+  { id: "learning_new_skills", title: "Learning New Skills" },
+  { id: "project_planning", title: "Project Planning" }
 ];
 
 export const ReviewStep = ({ data, onEdit }: ReviewStepProps) => {

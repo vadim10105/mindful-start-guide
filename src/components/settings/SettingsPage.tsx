@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,14 +33,15 @@ const taskPreferences = [
   { value: "not_sure", label: "I'm not sure..." },
 ];
 
+// Updated to match onboarding task categories
 const taskTypes = [
-  { id: "creative", title: "Creative tasks" },
-  { id: "analytical", title: "Analytical tasks" },
-  { id: "social", title: "Social tasks" },
-  { id: "physical", title: "Physical tasks" },
-  { id: "routine", title: "Routine tasks" },
-  { id: "learning", title: "Learning tasks" },
-  { id: "planning", title: "Planning tasks" },
+  { id: "creative_work", title: "Creative Work" },
+  { id: "data_analysis", title: "Data Analysis" },
+  { id: "team_meetings", title: "Team Meetings" },
+  { id: "physical_tasks", title: "Physical Tasks" },
+  { id: "admin_work", title: "Admin Work" },
+  { id: "learning_new_skills", title: "Learning New Skills" },
+  { id: "project_planning", title: "Project Planning" }
 ];
 
 export const SettingsPage = () => {
