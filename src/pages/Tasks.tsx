@@ -5,13 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, AlertTriangle, Trash2, Settings, Plus, X } from "lucide-react";
+import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Trash2, Settings, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
-import { useLoadingTypewriter } from "@/hooks/use-loading-typewriter";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -248,7 +246,25 @@ const Tasks = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const { text: loadingText, showCursor: showLoadingCursor } = useLoadingTypewriter(isProcessing);
+  // Rotating loading messages
+  const loadingMessages = [
+    "Organizing thoughts...",
+    "Finding patterns...",
+    "Creating structure...",
+    "Making sense of it all...",
+    "Almost there..."
+  ];
+  
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  
+  useEffect(() => {
+    if (isProcessing || isTransitioning) {
+      const interval = setInterval(() => {
+        setCurrentMessageIndex(prev => (prev + 1) % loadingMessages.length);
+      }, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [isProcessing, isTransitioning, loadingMessages.length]);
   const [user, setUser] = useState(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -343,10 +359,11 @@ const Tasks = () => {
       return;
     }
 
-    // Start magical transition
+    // Start clean transition - toggle immediately switches to list
     setIsProcessing(true);
     setIsTransitioning(true);
-    console.log('Starting magical transition...');
+    setInputMode('list'); // Toggle immediately transitions to list position
+    console.log('Starting clean transition...');
 
     try {
       console.log('Calling edge function with brain dump text...');
@@ -382,10 +399,10 @@ const Tasks = () => {
         // Also set reviewedTasks for compatibility with existing flow
         setReviewedTasks(extractedTaskTitles);
         
-        // End transition after content is populated
+        // End transition when first tasks start appearing (blur should fade by then)
         setTimeout(() => {
           setIsTransitioning(false);
-        }, 300); // Allow time for content to fade in
+        }, 200); // Quick transition so blur fades as tasks start dropping
       }, 600); // Container expansion time
       
 
@@ -838,8 +855,6 @@ const Tasks = () => {
         {currentStep === 'input' && (
           <Card className={`border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out ${
             isTransitioning ? 'shadow-2xl border-primary/20 scale-[1.02]' : ''
-          } ${
-            inputMode === 'list' && listTasks.length > 0 ? 'sm:max-w-4xl' : ''
           }`}>
             <CardHeader className="text-center px-4 sm:px-6">
               {/* Mode Toggle with Magical Transition */}
@@ -851,28 +866,14 @@ const Tasks = () => {
                   Brain Dump
                 </Label>
                 
-                {/* Magical Toggle */}
-                {isTransitioning ? (
-                  <div className="relative w-11 h-6 bg-primary rounded-full overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary animate-pulse" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-primary-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    </div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <div className="w-1 h-1 bg-primary-foreground/60 rounded-full animate-ping" />
-                    </div>
-                  </div>
-                ) : (
-                  <Switch
-                    id="input-mode"
-                    checked={inputMode === 'list'}
-                    onCheckedChange={(checked) => !isTransitioning && setInputMode(checked ? 'list' : 'brain-dump')}
-                    disabled={isTransitioning}
-                    className={`transition-all duration-600 ease-out ${
-                      isTransitioning ? 'scale-110 shadow-lg' : ''
-                    }`}
-                  />
-                )}
+                {/* Clean Toggle Transition */}
+                <Switch
+                  id="input-mode"
+                  checked={inputMode === 'list'}
+                  onCheckedChange={(checked) => !isTransitioning && setInputMode(checked ? 'list' : 'brain-dump')}
+                  disabled={isTransitioning}
+                  className="transition-all duration-300 ease-out"
+                />
                 
                 <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
                   isTransitioning ? 'text-muted-foreground' : 
@@ -909,19 +910,6 @@ const Tasks = () => {
                       rows={8}
                     />
                     <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
-                    
-                    {/* Processing overlay */}
-                    {isTransitioning && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md">
-                        <div className="text-center space-y-2">
-                          <Brain className="w-8 h-8 mx-auto text-primary animate-pulse" />
-                          <div className="text-sm text-muted-foreground">
-                            {loadingText}
-                            {showLoadingCursor && <span className="animate-pulse">|</span>}
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                   <Button 
                     onClick={handleBrainDumpSubmit}
@@ -933,9 +921,8 @@ const Tasks = () => {
                   >
                     {isProcessing || isTransitioning ? (
                       <>
-                        <Brain className="mr-2 h-4 w-4 animate-pulse" />
-                        {isTransitioning ? 'Creating Magic...' : loadingText}
-                        {showLoadingCursor && <span className="animate-pulse">|</span>}
+                        <div className="w-4 h-4 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        {loadingMessages[currentMessageIndex]}
                       </>
                     ) : (
                       <>
@@ -950,7 +937,28 @@ const Tasks = () => {
                 <>
                   <div className="space-y-3 min-h-[250px]">
                     {/* Task List with Tagging */}
-                    {listTasks.length > 0 && (
+                    <div className="relative">
+                      {/* Selective blur overlay just for task area */}
+                      {isTransitioning && listTasks.length === 0 && (
+                        <div className="absolute inset-0 bg-background/70 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center min-h-[200px]">
+                          <div className="text-center space-y-4">
+                            <div className="flex justify-center space-x-3">
+                              {[...Array(5)].map((_, i) => (
+                                <div
+                                  key={i}
+                                  className="w-3 h-3 bg-primary rounded-full animate-bounce"
+                                  style={{ animationDelay: `${i * 0.15}s` }}
+                                />
+                              ))}
+                            </div>
+                            <div className="text-base font-medium text-foreground">
+                              {loadingMessages[currentMessageIndex]}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {listTasks.length > 0 && (
                       <DndContext 
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -1006,7 +1014,8 @@ const Tasks = () => {
                           </div>
                         </SortableContext>
                       </DndContext>
-                    )}
+                      )}
+                    </div>
                     
                     {/* Add Task Input */}
                     <div className="flex gap-2">
@@ -1027,7 +1036,7 @@ const Tasks = () => {
                       </Button>
                     </div>
                     
-                    {listTasks.length === 0 && (
+                    {listTasks.length === 0 && !isTransitioning && (
                       <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
                         Start adding tasks above...
                       </div>
