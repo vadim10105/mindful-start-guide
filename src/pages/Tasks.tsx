@@ -246,13 +246,13 @@ const Tasks = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  // Rotating loading messages
+  // Mr. Intent's sarcastic loading messages
   const loadingMessages = [
-    "Organizing thoughts...",
-    "Finding patterns...",
-    "Creating structure...",
-    "Making sense of it all...",
-    "Almost there..."
+    "I guess I'll do something with this",
+    "Ok..ok..I'll sort your thoughts", 
+    "Woah this is your brain at work?",
+    "Cool. Let me wrangle this mess",
+    "Alright, let's pretend I know what I'm doing"
   ];
   
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
@@ -399,10 +399,10 @@ const Tasks = () => {
         // Also set reviewedTasks for compatibility with existing flow
         setReviewedTasks(extractedTaskTitles);
         
-        // End transition when first tasks start appearing (blur should fade by then)
+        // End transition earlier so box can expand first, then tasks drop in
         setTimeout(() => {
           setIsTransitioning(false);
-        }, 200); // Quick transition so blur fades as tasks start dropping
+        }, 100); // Very quick transition so blur fades and box expands first
       }, 600); // Container expansion time
       
 
@@ -854,8 +854,10 @@ const Tasks = () => {
         {/* Input Step */}
         {currentStep === 'input' && (
           <Card className={`border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out ${
-            isTransitioning ? 'shadow-2xl border-primary/20 scale-[1.02]' : ''
-          }`}>
+            isTransitioning ? 'shadow-2xl border-primary/20' : ''
+          }`} style={{ 
+            transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
             <CardHeader className="text-center px-4 sm:px-6">
               {/* Mode Toggle with Magical Transition */}
               <div className="flex items-center justify-center gap-4 mb-4">
@@ -890,7 +892,7 @@ const Tasks = () => {
                 }
               </p>
             </CardHeader>
-            <CardContent className="flex-1 sm:flex-none flex flex-col space-y-4 px-4 sm:px-6">
+            <CardContent className="flex-1 sm:flex-none flex flex-col space-y-4 px-4 sm:px-6 transition-all duration-500 ease-out">
               
               {inputMode === 'brain-dump' ? (
                 // Brain Dump Mode
@@ -935,7 +937,7 @@ const Tasks = () => {
               ) : (
                 // List Mode with Full Tagging Interface
                 <>
-                  <div className="space-y-3 min-h-[250px]">
+                  <div className="space-y-3 min-h-[250px] transition-all duration-500 ease-out">
                     {/* Task List with Tagging */}
                     <div className="relative">
                       {/* Selective blur overlay just for task area */}
@@ -977,7 +979,7 @@ const Tasks = () => {
                           items={listTasks}
                           strategy={verticalListSortingStrategy}
                         >
-                          <div className="space-y-2">
+                          <div className="space-y-2 transition-all duration-300 ease-out">
                             {listTasks.map((task, index) => {
                               const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
                               return (
@@ -1045,7 +1047,7 @@ const Tasks = () => {
                   
                   {/* Action Buttons - Show Shuffle/Manual Order when tasks exist */}
                   {listTasks.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${listTasks.length * 100 + 200}ms` }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-300" style={{ animationDelay: '400ms' }}>
                       <Button
                         onClick={() => {
                           // Convert list tasks to reviewed tasks and shuffle
