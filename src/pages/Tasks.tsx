@@ -6,7 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle, Trash2, Settings } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, AlertTriangle, Trash2, Settings, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { useLoadingTypewriter } from "@/hooks/use-loading-typewriter";
@@ -35,7 +37,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type FlowStep = 'input' | 'processing' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
+type FlowStep = 'input' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
 
 interface ExtractedTask {
   title: string;
@@ -116,15 +118,20 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
     <div 
       ref={setNodeRef}
       style={style}
-      className={`bg-card border rounded-lg hover:bg-muted/50 transition-colors ${
-        isDragging ? 'opacity-50' : ''
+      className={`border-b border-border/30 hover:bg-muted/20 transition-colors ${
+        isDragging ? 'bg-card border border-border rounded-lg shadow-sm opacity-80' : ''
       }`}
     >
       {/* Mobile Layout */}
       <div className="block sm:hidden">
         <div className="flex items-center gap-3 p-3">
-          {/* Task Number */}
-          <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+          {/* Draggable Task Number */}
+          <div 
+            {...attributes}
+            {...listeners}
+            className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
+            aria-label="Drag to reorder"
+          >
             {index + 1}
           </div>
           
@@ -133,16 +140,6 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
             <p className="text-sm font-medium leading-5 text-foreground break-words">
               {task}
             </p>
-          </div>
-          
-          {/* Drag Handle - Right side on mobile */}
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab hover:cursor-grabbing p-2 rounded-lg hover:bg-muted/30 active:bg-muted/50 transition-colors touch-manipulation"
-            aria-label="Drag to reorder"
-          >
-            <GripVertical className="h-6 w-6 text-muted-foreground hover:text-foreground" />
           </div>
         </div>
         
@@ -190,17 +187,13 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
 
       {/* Desktop Layout - Original */}
       <div className="hidden sm:flex items-center gap-4 p-4">
-        {/* Drag Handle */}
-        <div
+        {/* Draggable Task Number */}
+        <div 
           {...attributes}
           {...listeners}
-          className="cursor-grab hover:cursor-grabbing"
+          className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
+          aria-label="Drag to reorder"
         >
-          <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-        </div>
-        
-        {/* Task Number */}
-        <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
           {index + 1}
         </div>
         
@@ -254,10 +247,14 @@ const Tasks = () => {
   const [prioritizedTasks, setPrioritizedTasks] = useState<PrioritizedTask[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const { text: loadingText, showCursor: showLoadingCursor } = useLoadingTypewriter(isProcessing || currentStep === 'processing');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const { text: loadingText, showCursor: showLoadingCursor } = useLoadingTypewriter(isProcessing);
   const [user, setUser] = useState(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [inputMode, setInputMode] = useState<'brain-dump' | 'list'>('brain-dump');
+  const [listTasks, setListTasks] = useState<string[]>([]);
+  const [newTaskInput, setNewTaskInput] = useState('');
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -346,9 +343,10 @@ const Tasks = () => {
       return;
     }
 
+    // Start magical transition
     setIsProcessing(true);
-    setCurrentStep('processing');
-    console.log('Set processing state and step to processing');
+    setIsTransitioning(true);
+    console.log('Starting magical transition...');
 
     try {
       console.log('Calling edge function with brain dump text...');
@@ -371,8 +369,24 @@ const Tasks = () => {
 
       console.log('Successfully extracted tasks:', data.tasks);
       setExtractedTasks(data.tasks);
-      setReviewedTasks(data.tasks.map((task: ExtractedTask) => task.title));
-      setCurrentStep('review');
+      
+      // Prepare for smooth transition
+      const extractedTaskTitles = data.tasks.map((task: ExtractedTask) => task.title);
+      
+      // Small delay to show the transition animation
+      setTimeout(() => {
+        // Switch to list mode and populate with extracted tasks
+        setListTasks(extractedTaskTitles);
+        setInputMode('list');
+        
+        // Also set reviewedTasks for compatibility with existing flow
+        setReviewedTasks(extractedTaskTitles);
+        
+        // End transition after content is populated
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 300); // Allow time for content to fade in
+      }, 600); // Container expansion time
       
 
     } catch (error) {
@@ -393,7 +407,9 @@ const Tasks = () => {
         description: errorMessage,
         variant: "destructive",
       });
-      setCurrentStep('input');
+      
+      // Reset transition states on error
+      setIsTransitioning(false);
     } finally {
       setIsProcessing(false);
       console.log('Processing finished, set isProcessing to false');
@@ -406,6 +422,38 @@ const Tasks = () => {
     setExtractedTasks([]);
     setReviewedTasks([]);
     setTaggedTasks([]);
+    setListTasks([]);
+    setNewTaskInput('');
+    setTaskTags({});
+    setIsTransitioning(false);
+    setInputMode('brain-dump'); // Reset to brain-dump mode
+  };
+
+  // List mode handlers
+  const handleAddTask = () => {
+    if (newTaskInput.trim()) {
+      setListTasks(prev => [...prev, newTaskInput.trim()]);
+      setNewTaskInput('');
+    }
+  };
+
+  const handleAddTaskKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAddTask();
+    }
+  };
+
+  const handleRemoveTask = (index: number) => {
+    setListTasks(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleListSubmit = () => {
+    if (listTasks.length === 0) return;
+    
+    // Convert list tasks to the same format as brain dump extracted tasks
+    setReviewedTasks(listTasks);
+    setCurrentStep('review');
   };
 
   const handleReorder = (dragIndex: number, hoverIndex: number) => {
@@ -784,78 +832,257 @@ const Tasks = () => {
         </Button>
       )}
       
-      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input') ? 'sm:max-w-6xl sm:mx-auto sm:flex sm:items-center sm:justify-center sm:min-h-screen fixed inset-0 flex items-center justify-center pt-16 pb-6 px-2 sm:relative sm:pt-0 sm:pb-0 sm:px-4' : (currentStep === 'review' || currentStep === 'processing') ? 'max-w-6xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-6xl mx-auto'} space-y-6`}>
+      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input') ? 'sm:max-w-6xl sm:mx-auto sm:flex sm:items-center sm:justify-center sm:min-h-screen fixed inset-0 flex items-center justify-center pt-16 pb-6 px-2 sm:relative sm:pt-0 sm:pb-0 sm:px-4' : currentStep === 'review' ? 'max-w-6xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-6xl mx-auto'} space-y-6`}>
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <Card className="border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl h-full sm:h-auto flex flex-col">
+          <Card className={`border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out ${
+            isTransitioning ? 'shadow-2xl border-primary/20 scale-[1.02]' : ''
+          } ${
+            inputMode === 'list' && listTasks.length > 0 ? 'sm:max-w-4xl' : ''
+          }`}>
             <CardHeader className="text-center px-4 sm:px-6">
+              {/* Mode Toggle with Magical Transition */}
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
+                  isTransitioning ? 'text-muted-foreground' : 
+                  inputMode === 'brain-dump' ? 'text-foreground' : 'text-muted-foreground'
+                }`}>
+                  Brain Dump
+                </Label>
+                
+                {/* Magical Toggle */}
+                {isTransitioning ? (
+                  <div className="relative w-11 h-6 bg-primary rounded-full overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary animate-pulse" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-primary-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    </div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                      <div className="w-1 h-1 bg-primary-foreground/60 rounded-full animate-ping" />
+                    </div>
+                  </div>
+                ) : (
+                  <Switch
+                    id="input-mode"
+                    checked={inputMode === 'list'}
+                    onCheckedChange={(checked) => !isTransitioning && setInputMode(checked ? 'list' : 'brain-dump')}
+                    disabled={isTransitioning}
+                    className={`transition-all duration-600 ease-out ${
+                      isTransitioning ? 'scale-110 shadow-lg' : ''
+                    }`}
+                  />
+                )}
+                
+                <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
+                  isTransitioning ? 'text-muted-foreground' : 
+                  inputMode === 'list' ? 'text-foreground' : 'text-muted-foreground'
+                }`}>
+                  List
+                </Label>
+              </div>
+              
               <p className="text-foreground text-base sm:text-lg text-center leading-relaxed">
-                Type what's on your mind.<br />
-                Or just list your tasks, I'm not picky...
+                {inputMode === 'brain-dump' 
+                  ? 'Type what\'s on your mind.\nI\'ll help organize your thoughts...' 
+                  : 'Add your tasks one by one.\nDirect and organized...'
+                }
               </p>
             </CardHeader>
             <CardContent className="flex-1 sm:flex-none flex flex-col space-y-4 px-4 sm:px-6">
-              <div className="relative flex-1 sm:flex-none">
-                <Textarea
-                  value={brainDumpText}
-                  onChange={(e) => setBrainDumpText(e.target.value)}
-                  onFocus={() => setIsTextareaFocused(true)}
-                  onBlur={() => setIsTextareaFocused(false)}
-                  className="h-full sm:h-auto sm:min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
-                  rows={8}
-                />
-                <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused} />
-              </div>
-              <Button 
-                onClick={handleBrainDumpSubmit}
-                disabled={!brainDumpText.trim() || isProcessing}
-                className="w-full h-12 sm:h-11"
-                size="lg"
-              >
-                {isProcessing ? (
-                  <>
-                    <Brain className="mr-2 h-4 w-4 animate-pulse" />
-                    {loadingText}
-                    {showLoadingCursor && <span className="animate-pulse">|</span>}
-                  </>
-                ) : (
-                  <>
-                    Share with Mr.Intent
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
+              
+              {inputMode === 'brain-dump' ? (
+                // Brain Dump Mode
+                <>
+                  <div className={`relative flex-1 sm:flex-none transition-all duration-600 ease-out ${
+                    isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
+                  }`}>
+                    <Textarea
+                      value={brainDumpText}
+                      onChange={(e) => setBrainDumpText(e.target.value)}
+                      onFocus={() => setIsTextareaFocused(true)}
+                      onBlur={() => setIsTextareaFocused(false)}
+                      disabled={isTransitioning}
+                      className={`h-full sm:h-auto sm:min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-all duration-300 ${
+                        isTransitioning ? 'bg-muted/30 text-muted-foreground' : ''
+                      }`}
+                      rows={8}
+                    />
+                    <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
+                    
+                    {/* Processing overlay */}
+                    {isTransitioning && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md">
+                        <div className="text-center space-y-2">
+                          <Brain className="w-8 h-8 mx-auto text-primary animate-pulse" />
+                          <div className="text-sm text-muted-foreground">
+                            {loadingText}
+                            {showLoadingCursor && <span className="animate-pulse">|</span>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={handleBrainDumpSubmit}
+                    disabled={!brainDumpText.trim() || isProcessing || isTransitioning}
+                    className={`w-full h-12 sm:h-11 transition-all duration-300 ${
+                      isTransitioning ? 'scale-95 shadow-sm' : ''
+                    }`}
+                    size="lg"
+                  >
+                    {isProcessing || isTransitioning ? (
+                      <>
+                        <Brain className="mr-2 h-4 w-4 animate-pulse" />
+                        {isTransitioning ? 'Creating Magic...' : loadingText}
+                        {showLoadingCursor && <span className="animate-pulse">|</span>}
+                      </>
+                    ) : (
+                      <>
+                        Share with Mr.Intent
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                // List Mode with Full Tagging Interface
+                <>
+                  <div className="space-y-3 min-h-[250px]">
+                    {/* Task List with Tagging */}
+                    {listTasks.length > 0 && (
+                      <DndContext 
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(event) => {
+                          const { active, over } = event;
+                          if (active.id !== over?.id) {
+                            const oldIndex = listTasks.findIndex((task) => task === active.id);
+                            const newIndex = listTasks.findIndex((task) => task === over?.id);
+                            if (oldIndex !== -1 && newIndex !== -1) {
+                              setListTasks((items) => arrayMove(items, oldIndex, newIndex));
+                            }
+                          }
+                        }}
+                      >
+                        <SortableContext 
+                          items={listTasks}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="space-y-2">
+                            {listTasks.map((task, index) => {
+                              const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                              return (
+                                <div
+                                  key={task}
+                                  className="animate-in fade-in slide-in-from-top-2 fill-mode-both"
+                                  style={{ 
+                                    animationDelay: `${index * 100}ms`,
+                                    animationDuration: '400ms',
+                                    animationTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                  }}
+                                >
+                                  <TaskListItem
+                                    task={task}
+                                    index={index}
+                                    isLiked={tags.isLiked}
+                                    isUrgent={tags.isUrgent}
+                                    isQuick={tags.isQuick}
+                                    onReorder={() => {}} // Handled by DndContext
+                                    onDelete={(taskIndex) => handleRemoveTask(taskIndex)}
+                                    onTagUpdate={(tag, value) => {
+                                      setTaskTags(prev => ({
+                                        ...prev,
+                                        [task]: {
+                                          ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                          [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
+                                        }
+                                      }));
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    )}
+                    
+                    {/* Add Task Input */}
+                    <div className="flex gap-2">
+                      <Input
+                        value={newTaskInput}
+                        onChange={(e) => setNewTaskInput(e.target.value)}
+                        onKeyDown={handleAddTaskKeyPress}
+                        placeholder="Add a task..."
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={handleAddTask}
+                        disabled={!newTaskInput.trim()}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    
+                    {listTasks.length === 0 && (
+                      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                        Start adding tasks above...
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Action Buttons - Show Shuffle/Manual Order when tasks exist */}
+                  {listTasks.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${listTasks.length * 100 + 200}ms` }}>
+                      <Button
+                        onClick={() => {
+                          // Convert list tasks to reviewed tasks and shuffle
+                          setReviewedTasks(listTasks);
+                          handleShuffle();
+                        }}
+                        disabled={isProcessing || isTransitioning}
+                        className="h-14 md:h-16 flex-col gap-1 md:gap-2 transition-all duration-300 hover:scale-105"
+                        size="lg"
+                      >
+                        <Shuffle className="h-5 w-5 md:h-6 md:w-6" />
+                        <div className="font-semibold text-sm md:text-base">Shuffle the Deck</div>
+                      </Button>
+
+                      <Button
+                        onClick={() => {
+                          // Convert list tasks to reviewed tasks and play in order
+                          setReviewedTasks(listTasks);
+                          handleManualOrder();
+                        }}
+                        variant="outline"
+                        disabled={isProcessing || isTransitioning}
+                        className="h-14 md:h-16 flex-col gap-1 md:gap-2 transition-all duration-300 hover:scale-105"
+                        size="lg"
+                      >
+                        <Check className="h-5 w-5 md:h-6 md:w-6" />
+                        <div className="font-semibold text-sm md:text-base">Play in Order</div>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={handleListSubmit}
+                      disabled={listTasks.length === 0}
+                      className="w-full h-12 sm:h-11"
+                      size="lg"
+                    >
+                      <ArrowRight className="w-4 h-4 mr-2" />
+                      Continue ({listTasks.length} task{listTasks.length !== 1 ? 's' : ''})
+                    </Button>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Processing Step */}
-        {currentStep === 'processing' && (
-          <div className="h-64 flex items-center justify-center">
-            <div className="text-center space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold">
-                  {loadingText}
-                </h3>
-                <p className="text-muted-foreground">
-                  Mr. Intent is working his magic...
-                </p>
-              </div>
-
-              {/* Bouncing dots animation */}
-              <div className="flex justify-center space-x-2">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                    style={{ animationDelay: `${i * 0.1}s` }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Review & Tag Step */}
         {currentStep === 'review' && (
