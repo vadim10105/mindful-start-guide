@@ -684,9 +684,9 @@ const Tasks = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-2 sm:p-4">
       {/* Theme Toggle and Settings - Fixed Top Right */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
         {currentStep === 'input' && (
           <Button
             variant="ghost"
@@ -711,7 +711,7 @@ const Tasks = () => {
           }}
           variant="ghost"
           size="sm"
-          className="fixed top-4 left-4 z-50 flex items-center gap-2"
+          className="fixed top-2 left-2 sm:top-4 sm:left-4 z-50 flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -722,29 +722,29 @@ const Tasks = () => {
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <Card className="border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl min-w-[500px]">
-            <CardHeader className="text-center">
-              <p className="text-foreground text-lg text-center leading-relaxed">
+          <Card className="border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl mx-4 sm:mx-0">
+            <CardHeader className="text-center px-4 sm:px-6">
+              <p className="text-foreground text-base sm:text-lg text-center leading-relaxed">
                 Type what's on your mind.<br />
                 Or just list your tasks, I'm not picky...
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-4 sm:px-6">
               <div className="relative">
                 <Textarea
                   value={brainDumpText}
                   onChange={(e) => setBrainDumpText(e.target.value)}
                   onFocus={() => setIsTextareaFocused(true)}
                   onBlur={() => setIsTextareaFocused(false)}
-                  className="min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
-                  rows={12}
+                  className="min-h-[200px] sm:min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-colors"
+                  rows={8}
                 />
                 <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused} />
               </div>
               <Button 
                 onClick={handleBrainDumpSubmit}
                 disabled={!brainDumpText.trim() || isProcessing}
-                className="w-full"
+                className="w-full h-12 sm:h-11"
                 size="lg"
               >
                 {isProcessing ? (
