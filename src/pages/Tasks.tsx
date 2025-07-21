@@ -6,13 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle, Trash2 } from "lucide-react";
+import { Brain, Shuffle, ArrowRight, Check, Heart, Clock, Zap, ArrowLeft, GripVertical, AlertTriangle, Trash2, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { useLoadingTypewriter } from "@/hooks/use-loading-typewriter";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { SettingsModal } from "@/components/settings/SettingsModal";
 import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categorizeTasks, getCurrentEnergyState } from "@/utils/taskCategorization";
 import {
   DndContext,
@@ -185,6 +186,7 @@ const Tasks = () => {
   const { text: loadingText, showCursor: showLoadingCursor } = useLoadingTypewriter(isProcessing || currentStep === 'processing');
   const [user, setUser] = useState(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -199,7 +201,7 @@ const Tasks = () => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        window.location.href = '/auth';
+        window.location.href = '/welcome';
         return;
       }
       setUser(user);
@@ -683,8 +685,15 @@ const Tasks = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      {/* Theme Toggle - Fixed Top Right */}
-      <div className="fixed top-4 right-4 z-50">
+      {/* Theme Toggle and Settings - Fixed Top Right */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsSettingsOpen(true)}
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
         <ThemeToggle />
       </div>
       
@@ -985,6 +994,12 @@ const Tasks = () => {
           />
         )}
       </div>
+      
+      {/* Settings Modal */}
+      <SettingsModal
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+      />
     </div>
   );
 };

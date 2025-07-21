@@ -1,44 +1,52 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CardLibrary } from "@/components/tasks/CardLibrary";
 
 const Index = () => {
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCardLibrary, setShowCardLibrary] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-
+      
       if (user) {
+        // Redirect authenticated users to the main app
         const { data } = await supabase
           .from('profiles')
-          .select('display_name, onboarding_completed')
+          .select('onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle();
         
-        setProfile(data);
+        if (data?.onboarding_completed) {
+          navigate('/', { replace: true });
+          return;
+        } else {
+          navigate('/onboarding', { replace: true });
+          return;
+        }
       }
+      
+      setUser(user);
       setIsLoading(false);
     };
 
     getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
       if (session?.user) {
         getUser();
+      } else {
+        setUser(null);
+        setIsLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   if (isLoading) {
     return (
@@ -58,77 +66,20 @@ const Index = () => {
           </p>
         </div>
 
-        {!user ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Get Started</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Please sign in to access your personalized task management experience.
-              </p>
-              <Button asChild className="w-full">
-                <Link to="/auth">Sign In / Sign Up</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : profile?.onboarding_completed ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Welcome back, {profile.display_name}!</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Your personalized task management is ready.
-              </p>
-              <div className="space-y-3">
-                <div className="flex gap-4">
-                  <Button asChild className="flex-1">
-                    <Link to="/settings">Settings</Link>
-                  </Button>
-                  <Button asChild variant="outline" className="flex-1">
-                    <Link to="/tasks">Start Tasks</Link>
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                    }}
-                  >
-                    Logout
-                  </Button>
-                </div>
-                <Button 
-                  onClick={() => setShowCardLibrary(true)}
-                  variant="secondary"
-                  className="w-full"
-                >
-                  🏆 View Card Collection
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Complete Your Setup</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Let's personalize your task management experience with a quick onboarding.
-              </p>
-              <Button asChild className="w-full">
-                <Link to="/onboarding">Start Onboarding</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Get Started</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              Please sign in to access your personalized task management experience.
+            </p>
+            <Button asChild className="w-full">
+              <Link to="/auth">Sign In / Sign Up</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
-      
-      <CardLibrary 
-        isOpen={showCardLibrary} 
-        onClose={() => setShowCardLibrary(false)} 
-      />
     </div>
   );
 };
