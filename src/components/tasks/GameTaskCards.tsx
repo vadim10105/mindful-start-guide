@@ -118,6 +118,20 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     gameState.setCompletedTasks(prev => new Set([...prev, taskId]));
     gameState.setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
     
+    // Immediately add to collection (UI state update)
+    const taskIndex = tasks.findIndex(t => t.id === taskId);
+    const newCollectedTask: CompletedTask = {
+      id: taskId,
+      title: task.title,
+      timeSpent: timeSpent,
+      completedAt: new Date(),
+      sunsetImageUrl: sunsetImages[taskIndex % sunsetImages.length]
+    };
+    gameState.setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
+    
+    // Handle database operations asynchronously (don't block UI)
+    handleAddToCollectionDB();
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -144,7 +158,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     onTaskComplete?.(taskId);
   };
 
-  const handleAddToCollection = async () => {
+  const handleAddToCollectionDB = async () => {
     if (!gameState.lastCompletedTask) return;
     
     try {
@@ -155,25 +169,10 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
           .update({ collection_added_at: new Date().toISOString() })
           .eq('id', gameState.lastCompletedTask.id);
 
-        const newCollectedTask: CompletedTask = {
-          id: gameState.lastCompletedTask.id,
-          title: gameState.lastCompletedTask.title,
-          timeSpent: gameState.lastCompletedTask.timeSpent,
-          completedAt: new Date(),
-          sunsetImageUrl: sunsetImages[Math.floor(Math.random() * sunsetImages.length)]
-        };
-        
-        gameState.setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
-
         await supabase.rpc('update_daily_stats', {
           p_user_id: user.id,
           p_date: new Date().toISOString().split('T')[0],
           p_cards_collected: 1
-        });
-
-        toast({
-          title: "Card Added to Collection!",
-          description: "Your sunset card has been saved to your collection.",
         });
       }
     } catch (error) {
@@ -183,22 +182,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         description: "Failed to add card to collection",
         variant: "destructive",
       });
-    }
-    
-    // Move to next task after adding to collection
-    const nextIndex = gameState.currentViewingIndex + 1;
-    
-    if (nextIndex < tasks.length) {
-      gameState.setCurrentViewingIndex(nextIndex);
-      gameState.setActiveCommittedIndex(nextIndex);
-      gameState.setHasCommittedToTask(false);
-      gameState.setNavigationUnlocked(false);
-      gameState.setFlowStartTime(null);
-      gameState.setFlowProgress(0);
-      
-      const nextTask = tasks[nextIndex];
-      const message = characterMessages.getRandomMessage(characterMessages.getNewCardMessages(nextTask?.title || ''));
-      characterMessages.showMessage(message);
     }
   };
 
@@ -367,7 +350,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               onCarryOn={handleCarryOn}
               onSkip={handleSkip}
               onBackToActive={handleBackToActiveCard}
-              onAddToCollection={handleAddToCollection}
               formatTime={formatTime}
             />
 
@@ -439,6 +421,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
         characterMessage={characterMessages.characterMessage}
         onClose={() => characterMessages.setShowCharacter(false)}
       />
+
     </div>
   );
 };

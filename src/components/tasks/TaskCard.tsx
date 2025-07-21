@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Clock, Zap, Check } from "lucide-react";
-import { ProgressBorder } from "@/components/ui/progress-border";
 import { TaskActions } from "./TaskActions";
 
 interface TaskCardData {
@@ -33,8 +32,6 @@ interface TaskCardProps {
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
-  
-  onAddToCollection: () => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
 }
@@ -58,8 +55,6 @@ export const TaskCard = ({
   onCarryOn,
   onSkip,
   onBackToActive,
-  
-  onAddToCollection,
   navigationUnlocked,
   formatTime
 }: TaskCardProps) => {
@@ -68,25 +63,14 @@ export const TaskCard = ({
       isCompleted ? '[transform:rotateY(180deg)]' : ''
     }`} style={{ transformStyle: 'preserve-3d' }}>
       
-      {/* Progress Border - Only show when committed and not completed */}
-      {isActiveCommitted && hasCommittedToTask && !isCompleted && (
-        <ProgressBorder
-          progress={flowProgress / 100}
-          width={320}
-          height={447}
-          stroke={6}
-          color="hsl(var(--primary))"
-          className="pointer-events-none z-[15]"
-        />
-      )}
       
       {/* Front of Card */}
       <Card className={`w-full h-full border-2 shadow-xl z-[10] ${
         isCompleted
-          ? 'border-green-500' 
+          ? 'border-gray-300' 
           : !isActiveCommitted && hasCommittedToTask
           ? 'border-muted-foreground/50'
-          : 'border-primary/30 hover:border-primary/50'
+          : 'border-gray-300 hover:border-gray-300'
       }`} style={{ 
         backfaceVisibility: 'hidden',
         backgroundColor: 'hsl(202 10% 16%)',
@@ -165,7 +149,7 @@ export const TaskCard = ({
       {/* Back of Card (Sunset Image) */}
       {isCompleted && (
         <div 
-          className="absolute inset-0 rounded-lg shadow-xl border-2 border-green-500 [transform:rotateY(180deg)] z-20"
+          className="absolute inset-0 rounded-lg shadow-xl border-2 border-gray-300 [transform:rotateY(180deg)] z-20"
           style={{ backfaceVisibility: 'hidden' }}
         >
           <div 
@@ -175,19 +159,10 @@ export const TaskCard = ({
             }}
           />
           <div className="absolute inset-0 bg-black/40 rounded-lg" />
-          <div className="relative h-full flex flex-col justify-between p-6 text-white z-10">
+          <div className="relative h-full flex flex-col justify-center p-6 text-white z-10">
             <div className="text-center">
               <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
               <p className="text-sm opacity-90">{task.title}</p>
-            </div>
-            
-            <div className="text-center">
-              <button 
-                onClick={onAddToCollection}
-                className="w-full bg-white/20 hover:bg-white/30 border border-white/30 rounded-md py-2 px-4 text-sm transition-colors"
-              >
-                Add to Collection
-              </button>
             </div>
           </div>
         </div>

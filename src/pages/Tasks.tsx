@@ -612,11 +612,6 @@ const Tasks = () => {
     // Show loading screen immediately
     setCurrentStep('game-loading');
     
-    toast({
-      title: "Tasks Ready!",
-      description: `${orderedTaggedTasks.length} tasks organized in your order - let's start!`,
-    });
-    
     // Run AI categorization in background for logging (optional)
     setTimeout(async () => {
       try {
@@ -866,9 +861,6 @@ const Tasks = () => {
         {currentStep === 'review' && (
           <Card className="mx-2 sm:mx-0 mt-16 sm:mt-0">
             <CardHeader className="px-4 sm:px-6">
-              <CardTitle className="text-lg sm:text-xl">
-                Add some tags… or don't. I'll figure it out.
-              </CardTitle>
               <p className="text-muted-foreground text-sm sm:text-base">
                 Tag anything that might be fun, urgent or quick.
               </p>
