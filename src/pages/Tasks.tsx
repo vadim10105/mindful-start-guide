@@ -301,10 +301,6 @@ const Tasks = () => {
       setReviewedTasks(data.tasks.map((task: ExtractedTask) => task.title));
       setCurrentStep('review');
       
-      toast({
-        title: "Brain dump processed!",
-        description: `Extracted ${data.tasks.length} tasks`,
-      });
 
     } catch (error) {
       console.error('Error processing brain dump:', error);
@@ -500,20 +496,12 @@ const Tasks = () => {
     setCurrentStep('game-loading');
     setIsProcessing(true);
     
-    toast({
-      title: "Starting AI Shuffle!",
-      description: "Organizing your tasks - this will just take a moment!",
-    });
     
     try {
       // Run AI prioritization in background while loading screen shows
       const prioritized = await prioritizeTasks();
       setPrioritizedTasks(prioritized);
       
-      toast({
-        title: "Tasks Shuffled!",
-        description: `AI organized ${prioritized.length} tasks - ready to start!`,
-      });
     } catch (error) {
       console.error('Error during shuffling:', error);
       toast({
