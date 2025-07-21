@@ -521,6 +521,8 @@ const Tasks = () => {
 
   const handleManualOrder = async () => {
     console.log('📋 Play in Order button clicked - Using manual task order...');
+    console.log('Current user state:', user);
+    console.log('Current userProfile state:', userProfile);
     
     // Check if user profile exists before proceeding
     if (!user) {
@@ -530,6 +532,44 @@ const Tasks = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // Double-check profile exists in database before saving tasks
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    console.log('Profile check result:', { profile, profileError });
+
+    if (!profile) {
+      console.log('No profile found, creating one before saving tasks...');
+      const defaultProfile = {
+        user_id: user.id,
+        display_name: user.email?.split('@')[0] || 'User',
+        task_start_preference: 'easier_first',
+        task_preferences: {},
+        peak_energy_time: 'morning',
+        lowest_energy_time: 'evening',
+        onboarding_completed: false
+      };
+
+      const { error: createError } = await supabase
+        .from('profiles')
+        .insert(defaultProfile);
+
+      if (createError) {
+        console.error('Error creating profile for manual order:', createError);
+        toast({
+          title: "Error",
+          description: "Failed to create user profile. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      } else {
+        console.log('Profile created successfully for manual order');
+      }
     }
 
     // Get AI categorization for logging purposes
