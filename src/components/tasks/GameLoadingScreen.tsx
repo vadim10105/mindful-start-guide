@@ -5,9 +5,10 @@ import { Progress } from "@/components/ui/progress";
 interface GameLoadingScreenProps {
   onLoadingComplete: () => void;
   taskCount: number;
+  isProcessing?: boolean;
 }
 
-export const GameLoadingScreen = ({ onLoadingComplete, taskCount }: GameLoadingScreenProps) => {
+export const GameLoadingScreen = ({ onLoadingComplete, taskCount, isProcessing = false }: GameLoadingScreenProps) => {
   const [progress, setProgress] = useState(0);
   const [loadingText, setLoadingText] = useState("Shuffling your cards...");
 
@@ -24,10 +25,17 @@ export const GameLoadingScreen = ({ onLoadingComplete, taskCount }: GameLoadingS
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         const newProgress = prev + 2;
-        if (newProgress >= 100) {
+        
+        // Don't complete if still processing AI
+        if (newProgress >= 100 && !isProcessing) {
           clearInterval(progressInterval);
           setTimeout(onLoadingComplete, 500);
           return 100;
+        }
+        
+        // Cap at 95% while processing, allow natural completion when done
+        if (isProcessing && newProgress >= 95) {
+          return 95;
         }
         
         // Change message every 20% progress
@@ -41,7 +49,17 @@ export const GameLoadingScreen = ({ onLoadingComplete, taskCount }: GameLoadingS
     }, 60); // 3 second total duration
 
     return () => clearInterval(progressInterval);
-  }, [onLoadingComplete]);
+  }, [onLoadingComplete, isProcessing]);
+
+  // Complete loading when processing finishes
+  useEffect(() => {
+    if (!isProcessing && progress >= 95) {
+      setTimeout(() => {
+        setProgress(100);
+        setTimeout(onLoadingComplete, 500);
+      }, 300);
+    }
+  }, [isProcessing, progress, onLoadingComplete]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">

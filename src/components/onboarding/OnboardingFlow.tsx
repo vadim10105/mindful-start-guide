@@ -81,6 +81,7 @@ export const OnboardingFlow = () => {
         .from('profiles')
         .upsert({
           user_id: user.id,
+          id: user.id,
           display_name: data.displayName,
           peak_energy_time: data.peakEnergyTime,
           lowest_energy_time: data.lowestEnergyTime,

@@ -228,6 +228,7 @@ const Tasks = () => {
         console.log('No profile found, creating default profile...');
         const defaultProfile = {
           user_id: user.id,
+          id: user.id,
           display_name: user.email?.split('@')[0] || 'User',
           task_start_preference: 'easier_first',
           task_preferences: {},
@@ -494,18 +495,24 @@ const Tasks = () => {
 
   const handleShuffle = async () => {
     console.log('🎲 Shuffle button clicked - Starting AI prioritization...');
+    
+    // Show loading screen immediately
+    setCurrentStep('game-loading');
     setIsProcessing(true);
     
+    toast({
+      title: "Starting AI Shuffle!",
+      description: "Organizing your tasks - this will just take a moment!",
+    });
+    
     try {
+      // Run AI prioritization in background while loading screen shows
       const prioritized = await prioritizeTasks();
       setPrioritizedTasks(prioritized);
       
-      // Go directly to game loading screen
-      setCurrentStep('game-loading');
-      
       toast({
         title: "Tasks Shuffled!",
-        description: `AI organized ${prioritized.length} tasks - let's start your adventure!`,
+        description: `AI organized ${prioritized.length} tasks - ready to start!`,
       });
     } catch (error) {
       console.error('Error during shuffling:', error);
@@ -514,6 +521,8 @@ const Tasks = () => {
         description: "Failed to prioritize tasks",
         variant: "destructive",
       });
+      // Go back to review step on error
+      setCurrentStep('review');
     } finally {
       setIsProcessing(false);
     }
@@ -521,80 +530,8 @@ const Tasks = () => {
 
   const handleManualOrder = async () => {
     console.log('📋 Play in Order button clicked - Using manual task order...');
-    console.log('Current user state:', user);
-    console.log('Current userProfile state:', userProfile);
     
-    // Check if user profile exists before proceeding
-    if (!user) {
-      toast({
-        title: "Error",
-        description: "Please sign in to save tasks.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Double-check profile exists in database before saving tasks
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    console.log('Profile check result:', { profile, profileError });
-
-    if (!profile) {
-      console.log('No profile found, creating one before saving tasks...');
-      const defaultProfile = {
-        user_id: user.id,
-        display_name: user.email?.split('@')[0] || 'User',
-        task_start_preference: 'easier_first',
-        task_preferences: {},
-        peak_energy_time: 'morning',
-        lowest_energy_time: 'evening',
-        onboarding_completed: false
-      };
-
-      const { error: createError } = await supabase
-        .from('profiles')
-        .insert(defaultProfile);
-
-      if (createError) {
-        console.error('Error creating profile for manual order:', createError);
-        toast({
-          title: "Error",
-          description: "Failed to create user profile. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      } else {
-        console.log('Profile created successfully for manual order');
-      }
-    }
-
-    // Get AI categorization for logging purposes
-    console.log('🤖 Getting AI categorization for manual order logging...');
-    const taskCategories = await categorizeTasks(reviewedTasks);
-    
-    // Log the manual order with AI categorization details
-    console.log('🎯 Manual Task Organization:');
-    reviewedTasks.forEach((taskTitle, index) => {
-      const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-      const category = taskCategories[taskTitle] || 'Routine';
-      
-      console.log(`📝 Task #${index + 1}: "${taskTitle}"`, {
-        position: index + 1,
-        category: category,
-        tags: {
-          liked: tags.isLiked,
-          urgent: tags.isUrgent,
-          quick: tags.isQuick
-        },
-        reasoning: 'User-defined order - no AI scoring applied'
-      });
-    });
-
-    // Update tagged tasks with the current order before saving
+    // Update tagged tasks with the current order for game cards
     const orderedTaggedTasks = reviewedTasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
       return {
@@ -608,9 +545,44 @@ const Tasks = () => {
       };
     });
     
-    console.log('💾 Saving tasks in manual order...');
+    console.log('📋 Setting tasks in manual order for game cards...');
     setTaggedTasks(orderedTaggedTasks);
-    await saveTasks();
+    
+    // Show loading screen immediately
+    setCurrentStep('game-loading');
+    
+    toast({
+      title: "Tasks Ready!",
+      description: `${orderedTaggedTasks.length} tasks organized in your order - let's start!`,
+    });
+    
+    // Run AI categorization in background for logging (optional)
+    setTimeout(async () => {
+      try {
+        console.log('🤖 Getting AI categorization for manual order logging...');
+        const taskCategories = await categorizeTasks(reviewedTasks);
+        
+        // Log the manual order with AI categorization details
+        console.log('🎯 Manual Task Organization:');
+        reviewedTasks.forEach((taskTitle, index) => {
+          const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+          const category = taskCategories[taskTitle] || 'Routine';
+          
+          console.log(`📝 Task #${index + 1}: "${taskTitle}"`, {
+            position: index + 1,
+            category: category,
+            tags: {
+              liked: tags.isLiked,
+              urgent: tags.isUrgent,
+              quick: tags.isQuick
+            },
+            reasoning: 'User-defined order - no AI scoring applied'
+          });
+        });
+      } catch (error) {
+        console.log('AI categorization failed (non-critical):', error);
+      }
+    }, 100);
   };
 
   const saveTasks = async () => {
@@ -994,19 +966,20 @@ const Tasks = () => {
         {/* Game Loading Step */}
         {currentStep === 'game-loading' && (
           <GameLoadingScreen
-            taskCount={prioritizedTasks.length || taggedTasks.length}
+            taskCount={reviewedTasks.length}
             onLoadingComplete={() => setCurrentStep('game-cards')}
+            isProcessing={isProcessing}
           />
         )}
 
         {/* Game Cards Step */}
         {currentStep === 'game-cards' && (
           <GameTaskCards
-            tasks={prioritizedTasks.length > 0 ? prioritizedTasks : taggedTasks.map((task, index) => ({
+            tasks={prioritizedTasks.length > 0 ? prioritizedTasks : taggedTasks.map((task) => ({
               id: task.id,
               title: task.title,
-              priority_score: index + 1,
-              explanation: `Task ${index + 1} in your manual order`,
+              priority_score: task.card_position,
+              explanation: `Task ${task.card_position} in your manual order`,
               is_liked: task.is_liked,
               is_urgent: task.is_urgent,
               is_quick: task.is_quick
