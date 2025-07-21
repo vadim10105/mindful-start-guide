@@ -116,58 +116,129 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
     <div 
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-4 p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors ${
+      className={`bg-card border rounded-lg hover:bg-muted/50 transition-colors ${
         isDragging ? 'opacity-50' : ''
       }`}
     >
-      {/* Drag Handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab hover:cursor-grabbing"
-      >
-        <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-      </div>
-      
-      {/* Task Number */}
-      <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-        {index + 1}
-      </div>
-      
-      {/* Task Title */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-6 text-foreground truncate">
-          {task}
-        </p>
-      </div>
-      
-      {/* Tag Controls */}
-      <div className="flex items-center gap-2">
-        <Heart
-          className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-            isLiked ? 'text-red-500 fill-red-500' : 'text-gray-300 hover:text-red-400'
-          }`}
-          onClick={() => onTagUpdate('liked', !isLiked)}
-        />
+      {/* Mobile Layout */}
+      <div className="block sm:hidden">
+        <div className="flex items-center gap-3 p-3">
+          {/* Task Number */}
+          <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+            {index + 1}
+          </div>
+          
+          {/* Task Title - Full width, no truncation */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium leading-5 text-foreground break-words">
+              {task}
+            </p>
+          </div>
+          
+          {/* Drag Handle - Right side on mobile */}
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab hover:cursor-grabbing p-2 rounded-lg hover:bg-muted/30 active:bg-muted/50 transition-colors touch-manipulation"
+            aria-label="Drag to reorder"
+          >
+            <GripVertical className="h-6 w-6 text-muted-foreground hover:text-foreground" />
+          </div>
+        </div>
         
-        <AlertTriangle
-          className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-            isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300 hover:text-yellow-400'
-          }`}
-          onClick={() => onTagUpdate('urgent', !isUrgent)}
-        />
+        {/* Mobile Tag Controls - Horizontal row of 4 icons */}
+        <div className="flex items-center justify-center gap-3 px-3 pb-3 pt-1">
+          <button
+            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              isLiked ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'
+            }`}
+            onClick={() => onTagUpdate('liked', !isLiked)}
+            aria-label="Mark as loved"
+          >
+            <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+          </button>
+          
+          <button
+            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              isUrgent ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-500'
+            }`}
+            onClick={() => onTagUpdate('urgent', !isUrgent)}
+            aria-label="Mark as urgent"
+          >
+            <AlertTriangle className={`h-5 w-5 ${isUrgent ? 'fill-current' : ''}`} />
+          </button>
+          
+          <button
+            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              isQuick ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+            }`}
+            onClick={() => onTagUpdate('quick', !isQuick)}
+            aria-label="Mark as quick"
+          >
+            <Zap className={`h-5 w-5 ${isQuick ? 'fill-current' : ''}`} />
+          </button>
+          
+          <button
+            className="p-3 rounded-lg bg-gray-200 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+            onClick={() => onDelete(index)}
+            aria-label="Delete task"
+          >
+            <Trash2 className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Layout - Original */}
+      <div className="hidden sm:flex items-center gap-4 p-4">
+        {/* Drag Handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab hover:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+        </div>
         
-        <Zap
-          className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-            isQuick ? 'text-green-500 fill-green-500' : 'text-gray-300 hover:text-green-400'
-          }`}
-          onClick={() => onTagUpdate('quick', !isQuick)}
-        />
+        {/* Task Number */}
+        <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+          {index + 1}
+        </div>
         
-        <Trash2
-          className="h-5 w-5 cursor-pointer transition-colors hover:scale-110 text-gray-300 hover:text-red-400"
-          onClick={() => onDelete(index)}
-        />
+        {/* Task Title */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium leading-6 text-foreground truncate">
+            {task}
+          </p>
+        </div>
+        
+        {/* Tag Controls */}
+        <div className="flex items-center gap-2">
+          <Heart
+            className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+              isLiked ? 'text-red-500 fill-red-500' : 'text-gray-300 hover:text-red-400'
+            }`}
+            onClick={() => onTagUpdate('liked', !isLiked)}
+          />
+          
+          <AlertTriangle
+            className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+              isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300 hover:text-yellow-400'
+            }`}
+            onClick={() => onTagUpdate('urgent', !isUrgent)}
+          />
+          
+          <Zap
+            className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+              isQuick ? 'text-green-500 fill-green-500' : 'text-gray-300 hover:text-green-400'
+            }`}
+            onClick={() => onTagUpdate('quick', !isQuick)}
+          />
+          
+          <Trash2
+            className="h-5 w-5 cursor-pointer transition-colors hover:scale-110 text-gray-300 hover:text-red-400"
+            onClick={() => onDelete(index)}
+          />
+        </div>
       </div>
     </div>
   );
@@ -793,16 +864,16 @@ const Tasks = () => {
 
         {/* Review & Tag Step */}
         {currentStep === 'review' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>
+          <Card className="mx-2 sm:mx-0 mt-16 sm:mt-0">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-lg sm:text-xl">
                 Add some tags… or don't. I'll figure it out.
               </CardTitle>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Tag anything that might be fun, urgent or quick.
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
               <DndContext 
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -812,7 +883,7 @@ const Tasks = () => {
                   items={reviewedTasks}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {reviewedTasks.map((task, index) => {
                       const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
                       return (
@@ -842,25 +913,25 @@ const Tasks = () => {
               </DndContext>
               
               {/* Direct Action Buttons */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-4 md:pt-6">
                 <Button
                   onClick={handleShuffle}
                   disabled={isProcessing}
-                  className="h-24 flex-col gap-2"
+                  className="h-14 md:h-24 flex-col gap-1 md:gap-2"
                   size="lg"
                 >
-                  <Shuffle className="h-6 w-6" />
-                  <div className="font-semibold">Shuffle the Deck</div>
+                  <Shuffle className="h-5 w-5 md:h-6 md:w-6" />
+                  <div className="font-semibold text-sm md:text-base">Shuffle the Deck</div>
                 </Button>
 
                 <Button
                   onClick={handleManualOrder}
                   variant="outline"
-                  className="h-24 flex-col gap-2"
+                  className="h-14 md:h-24 flex-col gap-1 md:gap-2"
                   size="lg"
                 >
-                  <Check className="h-6 w-6" />
-                  <div className="font-semibold">Play in Order</div>
+                  <Check className="h-5 w-5 md:h-6 md:w-6" />
+                  <div className="font-semibold text-sm md:text-base">Play in Order</div>
                 </Button>
               </div>
             </CardContent>
