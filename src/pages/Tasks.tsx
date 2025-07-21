@@ -687,13 +687,15 @@ const Tasks = () => {
     <div className="min-h-screen bg-background p-4">
       {/* Theme Toggle and Settings - Fixed Top Right */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsSettingsOpen(true)}
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
+        {currentStep === 'input' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSettingsOpen(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        )}
         <ThemeToggle />
       </div>
       
