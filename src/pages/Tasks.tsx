@@ -149,8 +149,8 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
         {/* Mobile Tag Controls - Horizontal row of 4 icons */}
         <div className="flex items-center justify-center gap-3 px-3 pb-3 pt-1">
           <button
-            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
-              isLiked ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'
+            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+              isLiked ? 'border-border text-red-500' : 'border-border text-gray-400'
             }`}
             onClick={() => onTagUpdate('liked', !isLiked)}
             aria-label="Mark as loved"
@@ -159,8 +159,8 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
           </button>
           
           <button
-            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
-              isUrgent ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-500'
+            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+              isUrgent ? 'border-border text-yellow-500' : 'border-border text-gray-400'
             }`}
             onClick={() => onTagUpdate('urgent', !isUrgent)}
             aria-label="Mark as urgent"
@@ -169,8 +169,8 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
           </button>
           
           <button
-            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
-              isQuick ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+              isQuick ? 'border-border text-green-500' : 'border-border text-gray-400'
             }`}
             onClick={() => onTagUpdate('quick', !isQuick)}
             aria-label="Mark as quick"
@@ -179,7 +179,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
           </button>
           
           <button
-            className="p-3 rounded-lg bg-gray-200 text-gray-500 hover:bg-red-100 hover:text-red-500 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-3 rounded-lg bg-card border border-border text-gray-400 hover:text-red-500 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
             onClick={() => onDelete(index)}
             aria-label="Delete task"
           >
