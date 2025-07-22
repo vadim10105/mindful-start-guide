@@ -167,7 +167,7 @@ export const TaskCard = ({
               )}
             </Button>
             
-            <div className="flex items-center justify-center gap-1 mb-3">
+            <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px' }}>
               <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
                 {index + 1}
               </span>
