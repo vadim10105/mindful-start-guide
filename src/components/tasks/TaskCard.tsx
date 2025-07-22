@@ -75,19 +75,30 @@ export const TaskCard = ({
     
     let currentPos = 0;
     for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const lineStart = currentPos;
-      const lineEnd = currentPos + lines[i].length;
+      const lineEnd = currentPos + line.length;
       
+      // Check if click is within this line
       if (clickPos >= lineStart && clickPos <= lineEnd) {
-        const line = lines[i];
-        if (line.includes('☐')) {
+        // Calculate relative position within the line
+        const relativePos = clickPos - lineStart;
+        
+        // Find checkbox positions in the line
+        const uncheckedPos = line.indexOf('☐');
+        const checkedPos = line.indexOf('☑');
+        
+        // Only toggle if click is precisely on a checkbox character (☐ or ☑)
+        // Allow a small tolerance of 1 character before/after for easier clicking
+        if (uncheckedPos !== -1 && relativePos >= uncheckedPos && relativePos <= uncheckedPos + 1) {
           lines[i] = line.replace('☐', '☑');
           setNotes(lines.join('\n'));
-        } else if (line.includes('☑')) {
+          break;
+        } else if (checkedPos !== -1 && relativePos >= checkedPos && relativePos <= checkedPos + 1) {
           lines[i] = line.replace('☑', '☐');
           setNotes(lines.join('\n'));
+          break;
         }
-        break;
       }
       currentPos = lineEnd + 1; // +1 for the newline character
     }
@@ -134,19 +145,13 @@ export const TaskCard = ({
       
       
       {/* Front of Card */}
-      <Card className={`w-full h-full border-2 shadow-xl z-[10] ${
-        isCompleted
-          ? 'border-gray-300' 
-          : !isActiveCommitted && hasCommittedToTask
-          ? 'border-muted-foreground/50'
-          : 'border-gray-300 hover:border-gray-300'
-      }`} style={{ 
+      <Card className={`w-full h-full border-2 border-transparent shadow-xl z-[10] overflow-visible`} style={{ 
         backfaceVisibility: 'hidden',
         backgroundColor: 'hsl(202 10% 16%)',
         color: 'hsl(48 100% 96%)'
       }}>
         <div className="h-full flex flex-col">
-          <CardHeader className="text-center pb-4 flex-shrink-0 relative">
+          <CardHeader className="text-center pb-4 flex-shrink-0 relative overflow-visible">
             {/* Magic Wand - Top Right */}
             <Button
               variant="ghost"
@@ -215,8 +220,8 @@ export const TaskCard = ({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   onClick={handleNotesClick}
-                  placeholder="Add notes or use the wand for subtasks..."
-                  className="resize-none !text-sm leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[hsl(48_100%_96%)] placeholder:text-[hsl(48_100%_96%_/_0.5)] h-full min-h-[80px] cursor-text"
+                  placeholder="Add notes..."
+                  className="resize-none !text-sm leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[hsl(48_100%_96%)] placeholder:text-[hsl(48_100%_96%_/_0.5)] h-full min-h-[80px] cursor-text hover:cursor-pointer"
                   style={{ backgroundColor: 'transparent' }}
                 />
               </div>
@@ -248,7 +253,7 @@ export const TaskCard = ({
       {/* Back of Card (Sunset Image) */}
       {isCompleted && (
         <div 
-          className="absolute inset-0 rounded-lg shadow-xl border-2 border-gray-300 [transform:rotateY(180deg)] z-20"
+          className="absolute inset-0 rounded-lg shadow-xl border-2 border-transparent [transform:rotateY(180deg)] z-20"
           style={{ backfaceVisibility: 'hidden' }}
         >
           <div 
