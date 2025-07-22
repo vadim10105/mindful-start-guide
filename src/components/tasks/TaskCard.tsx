@@ -145,13 +145,13 @@ export const TaskCard = ({
       
       
       {/* Front of Card */}
-      <Card className={`w-full h-full border-2 border-transparent shadow-xl z-[10] overflow-visible`} style={{ 
+      <Card className={`w-full h-full border-2 border-transparent shadow-xl z-[10] overflow-visible rounded-2xl`} style={{ 
         backfaceVisibility: 'hidden',
         backgroundColor: 'hsl(202 10% 16%)',
         color: 'hsl(48 100% 96%)'
       }}>
         <div className="h-full flex flex-col">
-          <CardHeader className="text-center pb-4 flex-shrink-0 relative overflow-visible">
+          <CardHeader className="text-center pb-4 flex-shrink-0 relative overflow-visible px-8 py-6">
             {/* Magic Wand - Top Right */}
             <Button
               variant="ghost"
@@ -175,7 +175,7 @@ export const TaskCard = ({
                 of {totalTasks}
               </span>
             </div>
-            <CardTitle className="text-lg leading-tight" style={{ color: 'hsl(48 100% 96%)' }}>
+            <CardTitle className="text-2xl leading-tight tracking-wide" style={{ color: 'hsl(48 100% 96%)' }}>
               {task.title}
             </CardTitle>
             {!isActiveCommitted && hasCommittedToTask && (
@@ -253,16 +253,16 @@ export const TaskCard = ({
       {/* Back of Card (Sunset Image) */}
       {isCompleted && (
         <div 
-          className="absolute inset-0 rounded-lg shadow-xl border-2 border-transparent [transform:rotateY(180deg)] z-20"
+          className="absolute inset-0 rounded-2xl shadow-xl border-2 border-transparent [transform:rotateY(180deg)] z-20"
           style={{ backfaceVisibility: 'hidden' }}
         >
           <div 
-            className="absolute inset-0 bg-cover bg-center rounded-lg"
+            className="absolute inset-0 bg-cover bg-center rounded-2xl"
             style={{ 
               backgroundImage: `url('${sunsetImageUrl}')` 
             }}
           />
-          <div className="absolute inset-0 bg-black/40 rounded-lg" />
+          <div className="absolute inset-0 bg-black/40 rounded-2xl" />
           <div className="relative h-full flex flex-col justify-center p-6 text-white z-10">
             <div className="text-center">
               <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
