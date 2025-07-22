@@ -9,6 +9,7 @@ export interface TaskCardData {
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
+  notes?: string;
 }
 
 export interface CompletedTask {

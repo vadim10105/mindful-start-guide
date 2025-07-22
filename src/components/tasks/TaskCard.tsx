@@ -1,7 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Clock, Zap, Check } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Heart, Clock, Zap, Check, Wand2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 interface TaskCardData {
   id: string;
@@ -11,6 +16,7 @@ interface TaskCardData {
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
+  notes?: string;
 }
 
 interface TaskCardProps {
@@ -58,6 +64,69 @@ export const TaskCard = ({
   navigationUnlocked,
   formatTime
 }: TaskCardProps) => {
+  const [notes, setNotes] = useState(task.notes || "");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleNotesClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    const clickPos = textarea.selectionStart;
+    const text = textarea.value;
+    const lines = text.split('\n');
+    
+    let currentPos = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const lineStart = currentPos;
+      const lineEnd = currentPos + lines[i].length;
+      
+      if (clickPos >= lineStart && clickPos <= lineEnd) {
+        const line = lines[i];
+        if (line.includes('☐')) {
+          lines[i] = line.replace('☐', '☑');
+          setNotes(lines.join('\n'));
+        } else if (line.includes('☑')) {
+          lines[i] = line.replace('☑', '☐');
+          setNotes(lines.join('\n'));
+        }
+        break;
+      }
+      currentPos = lineEnd + 1; // +1 for the newline character
+    }
+  };
+
+  const generateSubtasks = async () => {
+    if (isGenerating) return;
+    
+    setIsGenerating(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('breakdown-task', {
+        body: {
+          task: task.title,
+          context: `Break down this task into actionable subtasks for someone with ADHD/neurodivergent traits. Make steps clear, specific, and not overwhelming.`
+        }
+      });
+
+      if (error) throw error;
+
+      // Format the AI response into checkbox list
+      const subtasks = data.subtasks.map((subtask: any) => `☐ ${subtask.subtask}`);
+      setNotes(subtasks.join('\n'));
+      
+    } catch (error) {
+      console.error('Error generating subtasks:', error);
+      // Fallback to simple breakdown
+      const fallbackSubtasks = [
+        "☐ Break down the task",
+        "☐ Complete the first step", 
+        "☐ Review progress",
+        "☐ Finish and wrap up"
+      ];
+      setNotes(fallbackSubtasks.join('\n'));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className={`w-full h-full transition-transform duration-700 ${
       isCompleted ? '[transform:rotateY(180deg)]' : ''
@@ -77,18 +146,29 @@ export const TaskCard = ({
         color: 'hsl(48 100% 96%)'
       }}>
         <div className="h-full flex flex-col">
-          <CardHeader className="text-center pb-4 flex-shrink-0">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                !isActiveCommitted && hasCommittedToTask
-                  ? 'bg-muted text-muted-foreground' 
-                  : 'bg-primary text-primary-foreground'
-              }`}>
+          <CardHeader className="text-center pb-4 flex-shrink-0 relative">
+            {/* Magic Wand - Top Right */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={generateSubtasks}
+              disabled={isGenerating}
+              className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-muted/20 disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-3 h-3 animate-spin" style={{ color: 'hsl(48 100% 96% / 0.6)' }} />
+              ) : (
+                <Wand2 className="w-3 h-3" style={{ color: 'hsl(48 100% 96% / 0.6)' }} />
+              )}
+            </Button>
+            
+            <div className="flex items-center justify-center gap-1 mb-3">
+              <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
                 {index + 1}
-              </div>
-              <div className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
+              </span>
+              <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
                 of {totalTasks}
-              </div>
+              </span>
             </div>
             <CardTitle className="text-lg leading-tight" style={{ color: 'hsl(48 100% 96%)' }}>
               {task.title}
@@ -121,6 +201,25 @@ export const TaskCard = ({
                   Quick
                 </Badge>
               )}
+            </div>
+
+            {/* Separator */}
+            <div className="mx-4">
+              <div className="h-px bg-border"></div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="flex-1 flex flex-col">
+              <div className="bg-card focus-within:bg-muted/20 transition-all duration-300 rounded-md relative flex-1">
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  onClick={handleNotesClick}
+                  placeholder="Add notes or use the wand for subtasks..."
+                  className="resize-none !text-sm leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[hsl(48_100%_96%)] placeholder:text-[hsl(48_100%_96%_/_0.5)] h-full min-h-[80px] cursor-text"
+                  style={{ backgroundColor: 'transparent' }}
+                />
+              </div>
             </div>
 
             {/* Task Actions */}
