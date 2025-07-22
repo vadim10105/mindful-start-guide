@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -274,6 +274,10 @@ const Tasks = () => {
   const [newTaskInput, setNewTaskInput] = useState('');
   const { toast } = useToast();
 
+  // Refs for global auto-focus functionality
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const taskInputRef = useRef<HTMLInputElement>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -351,6 +355,95 @@ const Tasks = () => {
     };
     getUser();
   }, [toast]);
+
+  // Global keyboard auto-focus functionality
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Skip if we're not on the input step (only work on the main input screen)
+      if (currentStep !== 'input') return;
+      
+      // Skip if settings modal is open
+      if (isSettingsOpen) return;
+      
+      // Skip if processing or transitioning
+      if (isProcessing || isTransitioning) return;
+      
+      // Skip if any input is already focused
+      const activeElement = document.activeElement;
+      if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+      
+      // Skip function keys, modifiers, and navigation keys
+      if (e.key.length > 1 && !['Space', 'Backspace', 'Delete'].includes(e.key)) return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      
+      // Only capture printable characters, space, backspace, and delete
+      const isPrintableChar = e.key.length === 1 || ['Space', 'Backspace', 'Delete'].includes(e.key);
+      if (!isPrintableChar) return;
+      
+      // Route to the appropriate input based on current mode
+      if (inputMode === 'brain-dump' && textareaRef.current) {
+        // Focus textarea and add the character
+        textareaRef.current.focus();
+        
+        if (e.key === 'Space') {
+          setBrainDumpText(prev => prev + ' ');
+        } else if (e.key === 'Backspace') {
+          setBrainDumpText(prev => prev.slice(0, -1));
+        } else if (e.key === 'Delete') {
+          // For Delete key, don't add anything (just focus)
+        } else {
+          setBrainDumpText(prev => prev + e.key);
+        }
+      } else if (inputMode === 'list' && taskInputRef.current) {
+        // Focus task input and add the character
+        taskInputRef.current.focus();
+        
+        if (e.key === 'Space') {
+          setNewTaskInput(prev => prev + ' ');
+        } else if (e.key === 'Backspace') {
+          setNewTaskInput(prev => prev.slice(0, -1));
+        } else if (e.key === 'Delete') {
+          // For Delete key, don't add anything (just focus)
+        } else {
+          setNewTaskInput(prev => prev + e.key);
+        }
+      }
+      
+      // Prevent default behavior for the handled keys
+      e.preventDefault();
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [currentStep, isSettingsOpen, isProcessing, isTransitioning, inputMode]);
+
+  // Phantom focus effect to activate keyboard capture while preserving typewriter animation
+  useEffect(() => {
+    // Only phantom focus when we're on the input step and not processing/transitioning
+    if (currentStep === 'input' && !isProcessing && !isTransitioning && !isSettingsOpen) {
+      // Brief delay to ensure components are rendered
+      const timeoutId = setTimeout(() => {
+        let targetRef = null;
+        if (inputMode === 'brain-dump' && textareaRef.current) {
+          targetRef = textareaRef.current;
+        } else if (inputMode === 'list' && taskInputRef.current) {
+          targetRef = taskInputRef.current;
+        }
+        
+        if (targetRef) {
+          // Phantom focus: briefly focus then immediately blur to activate page
+          targetRef.focus();
+          setTimeout(() => {
+            targetRef.blur();
+          }, 50);
+        }
+      }, 10);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentStep, inputMode, isProcessing, isTransitioning, isSettingsOpen]);
 
   const handleBrainDumpSubmit = async () => {
     console.log('handleBrainDumpSubmit called with text:', brainDumpText);
@@ -902,6 +995,7 @@ const Tasks = () => {
                   }`} style={{ marginTop: '12px' }}>
                     <div className="bg-card focus-within:bg-muted/50 transition-all duration-300 rounded-md relative">
                       <Textarea
+                        ref={textareaRef}
                         value={brainDumpText}
                         onChange={(e) => setBrainDumpText(e.target.value)}
                         onFocus={() => setIsTextareaFocused(true)}
@@ -931,7 +1025,6 @@ const Tasks = () => {
                     ) : (
                       <>
                         Organise my Thoughts
-                        <ArrowRight className="ml-2 h-4 w-4" />
                       </>
                     )}
                   </Button>
@@ -1024,6 +1117,7 @@ const Tasks = () => {
                     {/* Add Task Input */}
                     <div className="flex rounded-md bg-card focus-within:bg-muted/50 transition-all duration-300">
                       <Input
+                        ref={taskInputRef}
                         value={newTaskInput}
                         onChange={(e) => setNewTaskInput(e.target.value)}
                         onKeyDown={handleAddTaskKeyPress}
