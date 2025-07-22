@@ -342,6 +342,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
               isNavigationLocked={gameState.isNavigationLocked}
               flowProgress={gameState.flowProgress}
               sunsetImages={sunsetImages}
+              taskStartTimes={gameState.taskStartTimes}
               navigationUnlocked={gameState.navigationUnlocked}
               onSlideChange={(activeIndex) => gameState.setCurrentViewingIndex(activeIndex)}
               onCommit={handleCommitToCurrentTask}

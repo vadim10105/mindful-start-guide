@@ -32,6 +32,7 @@ interface TaskCardProps {
   activeCommittedIndex: number;
   flowProgress: number;
   sunsetImageUrl: string;
+  taskStartTimes: Record<string, number>;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
   onMoveOn: (taskId: string) => void;
@@ -55,6 +56,7 @@ export const TaskCard = ({
   activeCommittedIndex,
   flowProgress,
   sunsetImageUrl,
+  taskStartTimes,
   onCommit,
   onComplete,
   onMoveOn,
@@ -66,6 +68,16 @@ export const TaskCard = ({
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Helper function to format timestamp to HH:MM format
+  const formatStartTime = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
 
   const handleNotesClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
     const textarea = e.currentTarget;
@@ -168,12 +180,20 @@ export const TaskCard = ({
             </Button>
             
             <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px' }}>
-              <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
-                {index + 1}
-              </span>
-              <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
-                of {totalTasks}
-              </span>
+              {taskStartTimes[task.id] ? (
+                <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
+                  {formatStartTime(taskStartTimes[task.id])}
+                </span>
+              ) : (
+                <>
+                  <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
+                    {index + 1}
+                  </span>
+                  <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
+                    of {totalTasks}
+                  </span>
+                </>
+              )}
             </div>
             <CardTitle className="text-2xl leading-tight tracking-wide" style={{ color: 'hsl(48 100% 96%)' }}>
               {task.title}

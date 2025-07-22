@@ -26,6 +26,7 @@ interface TaskSwiperProps {
   isNavigationLocked: boolean;
   flowProgress: number;
   sunsetImages: string[];
+  taskStartTimes: Record<string, number>;
   navigationUnlocked: boolean;
   onSlideChange: (activeIndex: number) => void;
   onCommit: () => void;
@@ -49,6 +50,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   isNavigationLocked,
   flowProgress,
   sunsetImages,
+  taskStartTimes,
   navigationUnlocked,
   onSlideChange,
   onCommit,
@@ -101,6 +103,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 activeCommittedIndex={activeCommittedIndex}
                 flowProgress={flowProgress}
                 sunsetImageUrl={sunsetImages[index % sunsetImages.length]}
+                taskStartTimes={taskStartTimes}
                 onCommit={onCommit}
                 onComplete={onComplete}
                 onMoveOn={onMoveOn}
