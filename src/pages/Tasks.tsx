@@ -127,7 +127,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
           <div 
             {...attributes}
             {...listeners}
-            className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
+            className="flex-shrink-0 w-8 h-8 bg-gray-500 text-white rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
             aria-label="Drag to reorder"
           >
             {index + 1}
@@ -145,7 +145,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
         <div className="flex items-center justify-center gap-3 px-3 pb-3 pt-1">
           <button
             className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-              isLiked ? 'border-border text-red-500' : 'border-border text-gray-400'
+              isLiked ? 'border-border text-red-500' : 'border-border text-gray-600'
             }`}
             onClick={() => onTagUpdate('liked', !isLiked)}
             aria-label="Mark as loved"
@@ -155,7 +155,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
           
           <button
             className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-              isUrgent ? 'border-border text-yellow-500' : 'border-border text-gray-400'
+              isUrgent ? 'border-border text-yellow-500' : 'border-border text-gray-600'
             }`}
             onClick={() => onTagUpdate('urgent', !isUrgent)}
             aria-label="Mark as urgent"
@@ -165,7 +165,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
           
           <button
             className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-              isQuick ? 'border-border text-green-500' : 'border-border text-gray-400'
+              isQuick ? 'border-border text-green-500' : 'border-border text-gray-600'
             }`}
             onClick={() => onTagUpdate('quick', !isQuick)}
             aria-label="Mark as quick"
@@ -174,7 +174,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
           </button>
           
           <button
-            className="p-3 rounded-lg bg-card border border-border text-gray-400 hover:text-red-500 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-3 rounded-lg bg-card border border-border text-gray-600 hover:text-red-500 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
             onClick={() => onDelete(index)}
             aria-label="Delete task"
           >
@@ -189,7 +189,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
         <div 
           {...attributes}
           {...listeners}
-          className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
+          className="flex-shrink-0 w-8 h-8 bg-gray-500 text-white rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
           aria-label="Drag to reorder"
         >
           {index + 1}
@@ -206,27 +206,27 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
         <div className="flex items-center gap-2">
           <Heart
             className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-              isLiked ? 'text-red-500 fill-red-500' : 'text-gray-300 hover:text-red-400'
+              isLiked ? 'text-red-500 fill-red-500' : 'text-gray-500 hover:text-red-400'
             }`}
             onClick={() => onTagUpdate('liked', !isLiked)}
           />
           
           <AlertTriangle
             className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-              isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300 hover:text-yellow-400'
+              isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500 hover:text-yellow-400'
             }`}
             onClick={() => onTagUpdate('urgent', !isUrgent)}
           />
           
           <Zap
             className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-              isQuick ? 'text-green-500 fill-green-500' : 'text-gray-300 hover:text-green-400'
+              isQuick ? 'text-green-500 fill-green-500' : 'text-gray-500 hover:text-green-400'
             }`}
             onClick={() => onTagUpdate('quick', !isQuick)}
           />
           
           <Trash2
-            className="h-5 w-5 cursor-pointer transition-colors hover:scale-110 text-gray-300 hover:text-red-400"
+            className="h-5 w-5 cursor-pointer transition-colors hover:scale-110 text-gray-500 hover:text-red-400"
             onClick={() => onDelete(index)}
           />
         </div>
@@ -261,7 +261,7 @@ const Tasks = () => {
     if (isProcessing || isTransitioning) {
       const interval = setInterval(() => {
         setCurrentMessageIndex(prev => (prev + 1) % loadingMessages.length);
-      }, 1500);
+      }, 2500);
       return () => clearInterval(interval);
     }
   }, [isProcessing, isTransitioning, loadingMessages.length]);
@@ -269,6 +269,7 @@ const Tasks = () => {
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inputMode, setInputMode] = useState<'brain-dump' | 'list'>('brain-dump');
+  const [cameFromBrainDump, setCameFromBrainDump] = useState(false);
   const [listTasks, setListTasks] = useState<string[]>([]);
   const [newTaskInput, setNewTaskInput] = useState('');
   const { toast } = useToast();
@@ -362,6 +363,7 @@ const Tasks = () => {
     // Start clean transition - toggle immediately switches to list
     setIsProcessing(true);
     setIsTransitioning(true);
+    setCameFromBrainDump(true); // Track that we came from brain dump
     setInputMode('list'); // Toggle immediately transitions to list position
     console.log('Starting clean transition...');
 
@@ -443,6 +445,7 @@ const Tasks = () => {
     setNewTaskInput('');
     setTaskTags({});
     setIsTransitioning(false);
+    setCameFromBrainDump(false); // Reset brain dump flag
     setInputMode('brain-dump'); // Reset to brain-dump mode
   };
 
@@ -858,12 +861,12 @@ const Tasks = () => {
           }`} style={{ 
             transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)'
           }}>
-            <CardHeader className="text-center px-4 sm:px-6">
+            <CardHeader className="text-center px-4 sm:px-6 pb-2">
               {/* Mode Toggle with Magical Transition */}
-              <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="flex items-center justify-center gap-4 mb-2">
                 <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
                   isTransitioning ? 'text-muted-foreground' : 
-                  inputMode === 'brain-dump' ? 'text-foreground' : 'text-muted-foreground'
+                  inputMode === 'brain-dump' ? 'text-foreground' : 'text-foreground/30'
                 }`}>
                   Brain Dump
                 </Label>
@@ -874,49 +877,48 @@ const Tasks = () => {
                   checked={inputMode === 'list'}
                   onCheckedChange={(checked) => !isTransitioning && setInputMode(checked ? 'list' : 'brain-dump')}
                   disabled={isTransitioning}
-                  className="transition-all duration-300 ease-out"
+                  className="transition-all duration-300 ease-out data-[state=checked]:bg-input data-[state=unchecked]:bg-input"
                 />
                 
                 <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
                   isTransitioning ? 'text-muted-foreground' : 
-                  inputMode === 'list' ? 'text-foreground' : 'text-muted-foreground'
+                  inputMode === 'list' ? 'text-foreground' : 'text-foreground/30'
                 }`}>
-                  List
+                  List View
                 </Label>
               </div>
               
-              <p className="text-foreground text-base sm:text-lg text-center leading-relaxed">
-                {inputMode === 'brain-dump' 
-                  ? 'Type what\'s on your mind.\nI\'ll help organize your thoughts...' 
-                  : 'Add your tasks one by one.\nDirect and organized...'
-                }
-              </p>
+              {/* Separator Line - aligned with content */}
+              <div className="h-px bg-border mt-4 mx-4 sm:mx-6"></div>
+              
             </CardHeader>
-            <CardContent className="flex-1 sm:flex-none flex flex-col space-y-4 px-4 sm:px-6 transition-all duration-500 ease-out">
+            <CardContent className="flex-1 sm:flex-none flex flex-col px-4 sm:px-6 transition-all duration-500 ease-out">
               
               {inputMode === 'brain-dump' ? (
                 // Brain Dump Mode
                 <>
-                  <div className={`relative flex-1 sm:flex-none transition-all duration-600 ease-out ${
+                  <div className={`relative transition-all duration-600 ease-out ${
                     isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
-                  }`}>
-                    <Textarea
-                      value={brainDumpText}
-                      onChange={(e) => setBrainDumpText(e.target.value)}
-                      onFocus={() => setIsTextareaFocused(true)}
-                      onBlur={() => setIsTextareaFocused(false)}
-                      disabled={isTransitioning}
-                      className={`h-full sm:h-auto sm:min-h-[250px] resize-none text-base leading-relaxed border-none bg-muted/50 focus:bg-background transition-all duration-300 ${
-                        isTransitioning ? 'bg-muted/30 text-muted-foreground' : ''
-                      }`}
-                      rows={8}
-                    />
-                    <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
+                  }`} style={{ marginTop: '12px' }}>
+                    <div className="bg-card focus-within:bg-muted/50 transition-all duration-300 rounded-md relative">
+                      <Textarea
+                        value={brainDumpText}
+                        onChange={(e) => setBrainDumpText(e.target.value)}
+                        onFocus={() => setIsTextareaFocused(true)}
+                        onBlur={() => setIsTextareaFocused(false)}
+                        disabled={isTransitioning}
+                        className={`h-full sm:h-auto sm:min-h-[250px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 ${
+                          isTransitioning ? 'text-muted-foreground' : ''
+                        }`}
+                        rows={8}
+                      />
+                      <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
+                    </div>
                   </div>
                   <Button 
                     onClick={handleBrainDumpSubmit}
                     disabled={!brainDumpText.trim() || isProcessing || isTransitioning}
-                    className={`w-full h-12 sm:h-11 transition-all duration-300 ${
+                    className={`w-full h-12 sm:h-11 transition-all duration-300 mt-3 ${
                       isTransitioning ? 'scale-95 shadow-sm' : ''
                     }`}
                     size="lg"
@@ -928,7 +930,7 @@ const Tasks = () => {
                       </>
                     ) : (
                       <>
-                        Share with Mr.Intent
+                        Organise my Thoughts
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </>
                     )}
@@ -937,12 +939,12 @@ const Tasks = () => {
               ) : (
                 // List Mode with Full Tagging Interface
                 <>
-                  <div className="space-y-3 min-h-[250px] transition-all duration-500 ease-out">
+                  <div className="space-y-3 min-h-[250px] transition-all duration-500 ease-out" style={{ marginTop: '12px' }}>
                     {/* Task List with Tagging */}
                     <div className="relative">
-                      {/* Selective blur overlay just for task area */}
+                      {/* Loading overlay with clean background */}
                       {isTransitioning && listTasks.length === 0 && (
-                        <div className="absolute inset-0 bg-background/70 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center min-h-[200px]">
+                        <div className="absolute inset-0 bg-card rounded-lg z-10 flex items-center justify-center min-h-[200px]">
                           <div className="text-center space-y-4">
                             <div className="flex justify-center space-x-3">
                               {[...Array(5)].map((_, i) => (
@@ -1020,46 +1022,52 @@ const Tasks = () => {
                     </div>
                     
                     {/* Add Task Input */}
-                    <div className="flex gap-2">
+                    <div className="flex rounded-md bg-card focus-within:bg-muted/50 transition-all duration-300">
                       <Input
                         value={newTaskInput}
                         onChange={(e) => setNewTaskInput(e.target.value)}
                         onKeyDown={handleAddTaskKeyPress}
                         placeholder="Add a task..."
-                        className="flex-1"
+                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent"
+                        style={{ backgroundColor: 'transparent !important' }}
                       />
                       <Button 
                         onClick={handleAddTask}
                         disabled={!newTaskInput.trim()}
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
+                        className="border-0 rounded-l-none hover:bg-transparent"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
                     </div>
                     
-                    {listTasks.length === 0 && !isTransitioning && (
-                      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-                        Start adding tasks above...
-                      </div>
-                    )}
                   </div>
                   
-                  {/* Action Buttons - Show Shuffle/Manual Order when tasks exist */}
-                  {listTasks.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-300" style={{ animationDelay: '400ms' }}>
+                  {/* Action Buttons - Show appropriate buttons based on state */}
+                  {cameFromBrainDump && listTasks.length === 0 && !isTransitioning ? (
+                    <Button 
+                      onClick={handleListSubmit}
+                      disabled={listTasks.length === 0 && !cameFromBrainDump}
+                      className="w-full h-12 sm:h-11"
+                      size="lg"
+                    >
+                      <ArrowRight className="w-4 h-4 mr-2" />
+                      Share with Mr.Intent
+                    </Button>
+                  ) : (listTasks.length > 0 || !isTransitioning) ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-3">
                       <Button
                         onClick={() => {
                           // Convert list tasks to reviewed tasks and shuffle
                           setReviewedTasks(listTasks);
                           handleShuffle();
                         }}
-                        disabled={isProcessing || isTransitioning}
-                        className="h-14 md:h-16 flex-col gap-1 md:gap-2 transition-all duration-300 hover:scale-105"
+                        disabled={listTasks.length === 0 || isProcessing || isTransitioning}
+                        className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
-                        <Shuffle className="h-5 w-5 md:h-6 md:w-6" />
-                        <div className="font-semibold text-sm md:text-base">Shuffle the Deck</div>
+                        Shuffle the Deck
                       </Button>
 
                       <Button
@@ -1069,25 +1077,14 @@ const Tasks = () => {
                           handleManualOrder();
                         }}
                         variant="outline"
-                        disabled={isProcessing || isTransitioning}
-                        className="h-14 md:h-16 flex-col gap-1 md:gap-2 transition-all duration-300 hover:scale-105"
+                        disabled={listTasks.length === 0 || isProcessing || isTransitioning}
+                        className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
-                        <Check className="h-5 w-5 md:h-6 md:w-6" />
-                        <div className="font-semibold text-sm md:text-base">Play in Order</div>
+                        Play in Order
                       </Button>
                     </div>
-                  ) : (
-                    <Button 
-                      onClick={handleListSubmit}
-                      disabled={listTasks.length === 0}
-                      className="w-full h-12 sm:h-11"
-                      size="lg"
-                    >
-                      <ArrowRight className="w-4 h-4 mr-2" />
-                      Continue ({listTasks.length} task{listTasks.length !== 1 ? 's' : ''})
-                    </Button>
-                  )}
+                  ) : null}
                 </>
               )}
             </CardContent>
@@ -1147,21 +1144,19 @@ const Tasks = () => {
                 <Button
                   onClick={handleShuffle}
                   disabled={isProcessing}
-                  className="h-14 md:h-24 flex-col gap-1 md:gap-2"
+                  className="w-full h-12 sm:h-11"
                   size="lg"
                 >
-                  <Shuffle className="h-5 w-5 md:h-6 md:w-6" />
-                  <div className="font-semibold text-sm md:text-base">Shuffle the Deck</div>
+                  Shuffle the Deck
                 </Button>
 
                 <Button
                   onClick={handleManualOrder}
                   variant="outline"
-                  className="h-14 md:h-24 flex-col gap-1 md:gap-2"
+                  className="w-full h-12 sm:h-11"
                   size="lg"
                 >
-                  <Check className="h-5 w-5 md:h-6 md:w-6" />
-                  <div className="font-semibold text-sm md:text-base">Play in Order</div>
+                  Play in Order
                 </Button>
               </div>
             </CardContent>
@@ -1186,7 +1181,7 @@ const Tasks = () => {
                   <div key={task.id} className="p-4 bg-card border rounded-lg">
                     <div className="flex items-start gap-4">
                       {/* Priority Position */}
-                      <div className="flex-shrink-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-lg font-bold">
+                      <div className="flex-shrink-0 w-10 h-10 bg-gray-500 text-white rounded-full flex items-center justify-center text-lg font-bold">
                         {index + 1}
                       </div>
                       
