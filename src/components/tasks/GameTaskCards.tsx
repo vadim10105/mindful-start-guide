@@ -49,6 +49,14 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = f
     onNavigationUnlock: characterMessages.showMessage
   });
 
+  // Auto-activate first card on initial load (skip "Play Card" step)
+  useEffect(() => {
+    if (tasks.length > 0 && gameState.isInitialLoad && !gameState.hasCommittedToTask && !gameState.navigationUnlocked) {
+      console.log('Auto-activating first card on initial load');
+      handleCommitToCurrentTask();
+    }
+  }, [tasks, gameState.isInitialLoad, gameState.hasCommittedToTask, gameState.navigationUnlocked]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -200,15 +208,54 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = f
     const startTime = gameState.taskStartTimes[taskId];
     const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
     
+    // Clear current timer
     if (gameState.timerRef.current) {
       clearInterval(gameState.timerRef.current);
     }
     gameState.setFlowProgress(0);
-    gameState.setNavigationUnlocked(true);
-    gameState.setIsInitialLoad(false);
     
+    // Mark current task as paused
     gameState.setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
     
+    // Find next available task
+    const nextIndex = gameState.currentViewingIndex + 1;
+    const hasNextTask = nextIndex < tasks.length;
+    
+    if (hasNextTask && !gameState.navigationUnlocked) {
+      // Navigation still locked - auto-activate next card and restart timer
+      console.log('Moving to next card during lock period - auto-activating');
+      gameState.setCurrentViewingIndex(nextIndex);
+      gameState.setActiveCommittedIndex(nextIndex);
+      gameState.setHasCommittedToTask(true); // Ensure task is marked as committed
+      
+      // Restart timer for new card
+      gameState.setFlowStartTime(Date.now());
+      gameState.setTaskStartTimes(prev => ({
+        ...prev,
+        [tasks[nextIndex].id]: Date.now()
+      }));
+      
+      // Navigate to next card
+      if (gameState.swiperRef.current?.swiper) {
+        gameState.swiperRef.current.swiper.slideNext();
+      }
+    } else {
+      // Navigation unlocked OR no more tasks - just pause and unlock navigation
+      gameState.setNavigationUnlocked(true);
+      gameState.setIsInitialLoad(false);
+      gameState.setHasCommittedToTask(false); // Reset commitment when navigation unlocks
+      gameState.setFlowStartTime(null); // Clear flow timer
+      
+      if (hasNextTask) {
+        // Navigate to next card but don't auto-activate it
+        gameState.setCurrentViewingIndex(nextIndex);
+        if (gameState.swiperRef.current?.swiper) {
+          gameState.swiperRef.current.swiper.slideNext();
+        }
+      }
+    }
+    
+    // Save pause state to database
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -225,35 +272,25 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = f
       console.error('Error pausing task:', error);
     }
     
-    const nextTask = tasks.find((t, index) => 
-      index > gameState.currentViewingIndex && 
-      !gameState.completedTasks.has(t.id) && 
-      !gameState.pausedTasks.has(t.id)
-    );
-
-    if (nextTask) {
-      const nextIndex = tasks.indexOf(nextTask);
-      gameState.setCurrentViewingIndex(nextIndex);
-      gameState.setActiveCommittedIndex(nextIndex);
-      gameState.setHasCommittedToTask(false);
-      gameState.setNavigationUnlocked(true);
-      gameState.setFlowStartTime(null);
-      
+    // Show appropriate message and toast
+    if (hasNextTask && !gameState.navigationUnlocked) {
+      const nextTask = tasks[nextIndex];
       const message = characterMessages.getRandomMessage(characterMessages.getMoveOnMessages(nextTask.title));
       characterMessages.showMessage(message);
-    } else {
-      gameState.setHasCommittedToTask(false);
-      gameState.setNavigationUnlocked(false);
-      gameState.setFlowStartTime(null);
       
+      toast({
+        title: "Moving On", 
+        description: `Moving to "${nextTask.title}" - timer restarted`,
+      });
+    } else {
       const message = characterMessages.getRandomMessage(characterMessages.getPauseMessages(task.title));
       characterMessages.showMessage(message);
+      
+      toast({
+        title: "Task Paused", 
+        description: hasNextTask ? `Navigation unlocked! Choose your next task.` : `You can continue "${task.title}" later.`,
+      });
     }
-    
-    toast({
-      title: "Task Paused", 
-      description: nextTask ? `Moving on to "${nextTask.title}"` : `You can continue "${task.title}" later or skip it entirely.`,
-    });
   };
 
   const handleCarryOn = (taskId: string) => {

@@ -114,15 +114,24 @@ export const TaskActions = ({
   }
 
   if (!hasCommittedToTask || !isActiveCommitted) {
+    // Only show "Play Card" button when navigation is unlocked
+    if (navigationUnlocked) {
+      return (
+        <Button 
+          onClick={onCommit}
+          size="sm"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <Play className="w-4 h-4 mr-2" />
+          Play this card
+        </Button>
+      );
+    }
+    // During navigation lock, cards should auto-activate (no button shown)
     return (
-      <Button 
-        onClick={onCommit}
-        size="sm"
-        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-      >
-        <Play className="w-4 h-4 mr-2" />
-        Play this card
-      </Button>
+      <div className="text-sm text-card-foreground/70 text-center">
+        Starting task...
+      </div>
     );
   }
 
@@ -138,17 +147,15 @@ export const TaskActions = ({
           <Check className="w-4 h-4 mr-1" />
           Mark Complete
         </Button>
-        {navigationUnlocked && (
-          <Button 
-            onClick={() => onMoveOn(task.id)}
-            size="sm"
-            variant="outline"
-            className="flex-1"
-          >
-            <Pause className="w-4 h-4 mr-1" />
-            Move On
-          </Button>
-        )}
+        <Button 
+          onClick={() => onMoveOn(task.id)}
+          size="sm"
+          variant="outline"
+          className="flex-1"
+        >
+          <Pause className="w-4 h-4 mr-1" />
+          Move On
+        </Button>
       </div>
     </div>
   );
