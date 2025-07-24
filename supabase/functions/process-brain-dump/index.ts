@@ -42,16 +42,7 @@ RULES:
 3. Make tasks specific and actionable (e.g., "Email John about the meeting" not "John meeting")
 4. If a complex item has multiple steps, break it into separate tasks
 5. Return ONLY a JSON array of task objects
-6. Each task object should have: {"title": "task description", "estimated_urgency": "low|medium|high", "estimated_effort": "quick|medium|long"}
-
-Example input: "Need to call mom, also grocery shopping for dinner party this weekend, fix the leaky faucet sometime, send that report to Sarah by friday"
-
-Example output: [
-  {"title": "Call mom", "estimated_urgency": "medium", "estimated_effort": "quick"},
-  {"title": "Buy groceries for dinner party", "estimated_urgency": "high", "estimated_effort": "medium"}, 
-  {"title": "Fix leaky faucet", "estimated_urgency": "low", "estimated_effort": "long"},
-  {"title": "Send report to Sarah", "estimated_urgency": "high", "estimated_effort": "medium"}
-]`
+6. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'mins' and 'hrs'"}`
           },
           {
             role: 'user',

@@ -39,8 +39,7 @@ type FlowStep = 'input' | 'review' | 'prioritized' | 'game-loading' | 'game-card
 
 interface ExtractedTask {
   title: string;
-  estimated_urgency: 'low' | 'medium' | 'high';
-  estimated_effort: 'quick' | 'medium' | 'long';
+  estimated_time: string;
 }
 
 interface Task {
@@ -77,6 +76,7 @@ interface TaskListItemProps {
   isLiked: boolean;
   isUrgent: boolean;
   isQuick: boolean;
+  estimatedTime?: string;
   onTagUpdate: (tag: 'liked' | 'urgent' | 'quick', value: boolean) => void;
   onReorder: (dragIndex: number, hoverIndex: number) => void;
   onDelete: (index: number) => void;
@@ -97,7 +97,8 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   );
 };
 
-const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, onReorder, onDelete }: TaskListItemProps) => {
+const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, onTagUpdate, onReorder, onDelete }: TaskListItemProps) => {
+  console.log('TaskListItem render:', { task, estimatedTime });
   const {
     attributes,
     listeners,
@@ -181,6 +182,15 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
             <Trash2 className="h-5 w-5" />
           </button>
         </div>
+        
+        {/* Time Estimate - Mobile */}
+        {estimatedTime && (
+          <div className="flex justify-center px-3 pb-2">
+            <div className="px-2 py-1 bg-muted/50 rounded text-xs text-muted-foreground w-16 text-center">
+              {estimatedTime}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Desktop Layout - Original */}
@@ -229,6 +239,13 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, onTagUpdate, on
             className="h-5 w-5 cursor-pointer transition-colors hover:scale-110 text-gray-500 hover:text-red-400"
             onClick={() => onDelete(index)}
           />
+          
+          {/* Time Estimate */}
+          {estimatedTime && (
+            <div className="ml-3 px-2 py-1 bg-muted/50 rounded text-xs text-muted-foreground w-16 text-center">
+              {estimatedTime}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -242,6 +259,7 @@ const Tasks = () => {
   const [reviewedTasks, setReviewedTasks] = useState<string[]>([]);
   const [taggedTasks, setTaggedTasks] = useState<Task[]>([]);
   const [taskTags, setTaskTags] = useState<Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }>>({});
+  const [taskTimeEstimates, setTaskTimeEstimates] = useState<Record<string, string>>({});
   const [prioritizedTasks, setPrioritizedTasks] = useState<PrioritizedTask[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -482,6 +500,15 @@ const Tasks = () => {
       console.log('Successfully extracted tasks:', data.tasks);
       setExtractedTasks(data.tasks);
       
+      // Store time estimates for each task
+      const timeEstimates: Record<string, string> = {};
+      data.tasks.forEach((task: ExtractedTask) => {
+        timeEstimates[task.title] = task.estimated_time;
+        console.log('Setting time estimate for task:', task.title, '=', task.estimated_time);
+      });
+      console.log('All time estimates:', timeEstimates);
+      setTaskTimeEstimates(timeEstimates);
+      
       // Prepare for smooth transition
       const extractedTaskTitles = data.tasks.map((task: ExtractedTask) => task.title);
       
@@ -537,6 +564,7 @@ const Tasks = () => {
     setListTasks([]);
     setNewTaskInput('');
     setTaskTags({});
+    setTaskTimeEstimates({});
     setIsTransitioning(false);
     setCameFromBrainDump(false); // Reset brain dump flag
     setInputMode('brain-dump'); // Reset to brain-dump mode
@@ -558,7 +586,23 @@ const Tasks = () => {
   };
 
   const handleRemoveTask = (index: number) => {
+    const taskToRemove = listTasks[index];
     setListTasks(prev => prev.filter((_, i) => i !== index));
+    
+    // Also remove from time estimates and tags if they exist
+    if (taskToRemove) {
+      setTaskTimeEstimates(prev => {
+        const newEstimates = { ...prev };
+        delete newEstimates[taskToRemove];
+        return newEstimates;
+      });
+      
+      setTaskTags(prev => {
+        const newTags = { ...prev };
+        delete newTags[taskToRemove];
+        return newTags;
+      });
+    }
   };
 
   const handleListSubmit = () => {
@@ -601,6 +645,13 @@ const Tasks = () => {
       const newTags = { ...prev };
       delete newTags[taskToDelete];
       return newTags;
+    });
+    
+    // Remove task from taskTimeEstimates
+    setTaskTimeEstimates(prev => {
+      const newEstimates = { ...prev };
+      delete newEstimates[taskToDelete];
+      return newEstimates;
     });
     
     toast({
@@ -1116,6 +1167,7 @@ const Tasks = () => {
                                     isLiked={tags.isLiked}
                                     isUrgent={tags.isUrgent}
                                     isQuick={tags.isQuick}
+                                    estimatedTime={taskTimeEstimates[task]}
                                     onReorder={() => {}} // Handled by DndContext
                                     onDelete={(taskIndex) => handleRemoveTask(taskIndex)}
                                     onTagUpdate={(tag, value) => {
@@ -1214,6 +1266,7 @@ const Tasks = () => {
                            isLiked={tags.isLiked}
                            isUrgent={tags.isUrgent}
                            isQuick={tags.isQuick}
+                           estimatedTime={taskTimeEstimates[task]}
                            onReorder={handleReorder}
                            onDelete={handleTaskDelete}
                            onTagUpdate={(tag, value) => {
