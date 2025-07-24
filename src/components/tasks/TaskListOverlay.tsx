@@ -104,7 +104,7 @@ export const TaskListOverlay = ({
                           {task.is_liked && (
                             <Badge variant="outline" className="text-xs h-5 px-1.5">
                               <Heart className="h-2.5 w-2.5 mr-1 fill-current" />
-                              Liked
+                              Fun
                             </Badge>
                           )}
                           {task.is_urgent && (

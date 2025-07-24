@@ -308,7 +308,7 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
                       {/* Tags */}
                       <div className="flex flex-wrap gap-1 justify-center">
                         {card.isLiked && (
-                          <Badge className="bg-rose-500/80 text-white text-xs px-1 py-0">Love</Badge>
+                          <Badge className="bg-rose-500/80 text-white text-xs px-1 py-0">Fun</Badge>
                         )}
                         {card.isUrgent && (
                           <Badge className="bg-orange-500/80 text-white text-xs px-1 py-0">Urgent</Badge>

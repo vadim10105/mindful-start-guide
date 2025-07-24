@@ -609,19 +609,20 @@ const Tasks = () => {
     });
   };
 
-  const prioritizeTasks = async () => {
+  const prioritizeTasks = async (tasksToProcess?: string[]) => {
+    const tasks = tasksToProcess || reviewedTasks;
     console.log('🎯 Starting AI Task Prioritization...');
     console.log('📊 User profile:', userProfile);
     console.log('🏷️ Task tags state:', taskTags);
-    console.log('📝 Tasks to prioritize:', reviewedTasks);
+    console.log('📝 Tasks to prioritize:', tasks);
 
     // Use AI categorization for batch processing
     console.log('🤖 Getting AI categorization for all tasks...');
-    const taskCategories = await categorizeTasks(reviewedTasks);
+    const taskCategories = await categorizeTasks(tasks);
     console.log('📋 AI categorization results:', taskCategories);
 
     // Create task input format for the edge function with AI categorization
-    const taskInputs = reviewedTasks.map((taskTitle, index) => {
+    const taskInputs = tasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
       const category = taskCategories[taskTitle] || 'Routine'; // Fallback to Routine if categorization failed
       
@@ -723,17 +724,16 @@ const Tasks = () => {
     }
   };
 
-  const handleShuffle = async () => {
+  const handleShuffle = async (tasksToProcess?: string[]) => {
     console.log('🎲 Shuffle button clicked - Starting AI prioritization...');
     
-    // Show loading screen immediately
-    setCurrentStep('game-loading');
+    // Go directly to game-cards with loading state
+    setCurrentStep('game-cards');
     setIsProcessing(true);
     
-    
     try {
-      // Run AI prioritization in background while loading screen shows
-      const prioritized = await prioritizeTasks();
+      // Run AI prioritization in background while loading card shows
+      const prioritized = await prioritizeTasks(tasksToProcess);
       setPrioritizedTasks(prioritized);
       
     } catch (error) {
@@ -750,11 +750,12 @@ const Tasks = () => {
     }
   };
 
-  const handleManualOrder = async () => {
+  const handleManualOrder = async (tasksToProcess?: string[]) => {
+    const tasks = tasksToProcess || reviewedTasks;
     console.log('📋 Play in Order button clicked - Using manual task order...');
     
     // Update tagged tasks with the current order for game cards
-    const orderedTaggedTasks = reviewedTasks.map((taskTitle, index) => {
+    const orderedTaggedTasks = tasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
       return {
         id: `temp-${index}`,
@@ -777,11 +778,11 @@ const Tasks = () => {
     setTimeout(async () => {
       try {
         console.log('🤖 Getting AI categorization for manual order logging...');
-        const taskCategories = await categorizeTasks(reviewedTasks);
+        const taskCategories = await categorizeTasks(tasks);
         
         // Log the manual order with AI categorization details
         console.log('🎯 Manual Task Organization:');
-        reviewedTasks.forEach((taskTitle, index) => {
+        tasks.forEach((taskTitle, index) => {
           const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
           const category = taskCategories[taskTitle] || 'Routine';
           
@@ -1033,6 +1034,28 @@ const Tasks = () => {
                 // List Mode with Full Tagging Interface
                 <>
                   <div className="space-y-3 min-h-[250px] transition-all duration-500 ease-out" style={{ marginTop: '12px' }}>
+                    {/* Add Task Input - Fixed at top */}
+                    <div className="flex rounded-md bg-card focus-within:bg-muted/50 transition-all duration-300">
+                      <Input
+                        ref={taskInputRef}
+                        value={newTaskInput}
+                        onChange={(e) => setNewTaskInput(e.target.value)}
+                        onKeyDown={handleAddTaskKeyPress}
+                        placeholder="Add a task..."
+                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent"
+                        style={{ backgroundColor: 'transparent !important' }}
+                      />
+                      <Button 
+                        onClick={handleAddTask}
+                        disabled={!newTaskInput.trim()}
+                        size="sm"
+                        variant="ghost"
+                        className="border-0 rounded-l-none hover:bg-transparent"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    
                     {/* Task List with Tagging */}
                     <div className="relative">
                       {/* Loading overlay with clean background */}
@@ -1114,28 +1137,6 @@ const Tasks = () => {
                       )}
                     </div>
                     
-                    {/* Add Task Input */}
-                    <div className="flex rounded-md bg-card focus-within:bg-muted/50 transition-all duration-300">
-                      <Input
-                        ref={taskInputRef}
-                        value={newTaskInput}
-                        onChange={(e) => setNewTaskInput(e.target.value)}
-                        onKeyDown={handleAddTaskKeyPress}
-                        placeholder="Add a task..."
-                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent"
-                        style={{ backgroundColor: 'transparent !important' }}
-                      />
-                      <Button 
-                        onClick={handleAddTask}
-                        disabled={!newTaskInput.trim()}
-                        size="sm"
-                        variant="ghost"
-                        className="border-0 rounded-l-none hover:bg-transparent"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    
                   </div>
                   
                   {/* Action Buttons - Show appropriate buttons based on state */}
@@ -1153,9 +1154,8 @@ const Tasks = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-3">
                       <Button
                         onClick={() => {
-                          // Convert list tasks to reviewed tasks and shuffle
-                          setReviewedTasks(listTasks);
-                          handleShuffle();
+                          // Pass list tasks directly to shuffle, avoiding async state issue
+                          handleShuffle(listTasks);
                         }}
                         disabled={listTasks.length === 0 || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
@@ -1166,9 +1166,8 @@ const Tasks = () => {
 
                       <Button
                         onClick={() => {
-                          // Convert list tasks to reviewed tasks and play in order
-                          setReviewedTasks(listTasks);
-                          handleManualOrder();
+                          // Pass list tasks directly to manual order, avoiding async state issue
+                          handleManualOrder(listTasks);
                         }}
                         variant="outline"
                         disabled={listTasks.length === 0 || isProcessing || isTransitioning}
@@ -1373,6 +1372,12 @@ const Tasks = () => {
               is_urgent: task.is_urgent,
               is_quick: task.is_quick
             }))}
+            isLoading={isProcessing}
+            isProcessing={isProcessing}
+            onLoadingComplete={() => {
+              // Loading complete is handled by the AI processing completion
+              // The isProcessing state will be set to false in the finally block
+            }}
             onComplete={() => {
               toast({
                 title: "Session Complete!",

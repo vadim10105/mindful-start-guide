@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Heart, Clock, Zap, Check, Wand2 } from "lucide-react";
+import { Heart, AlertTriangle, Zap, Check, Wand2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -209,22 +209,13 @@ export const TaskCard = ({
             {/* Task Tags */}
             <div className="flex flex-wrap gap-1 justify-center">
               {task.is_liked && (
-                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-300">
-                  <Heart className="w-3 h-3 mr-1" />
-                  Love
-                </Badge>
+                <Heart className="w-4 h-4 fill-red-500 text-red-500" />
               )}
               {task.is_urgent && (
-                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-300 border border-orange-300">
-                  <Clock className="w-3 h-3 mr-1" />
-                  Urgent
-                </Badge>
+                <AlertTriangle className="w-4 h-4 fill-yellow-500 text-yellow-500" />
               )}
               {task.is_quick && (
-                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-green-500/20 text-green-300 border border-green-300">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Quick
-                </Badge>
+                <Zap className="w-4 h-4 fill-green-500 text-green-500" />
               )}
             </div>
 

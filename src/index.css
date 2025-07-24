@@ -107,4 +107,45 @@ All colors MUST be HSL.
   }
 }
 
+/* Realistic deck shuffle animations */
+@keyframes shuffle-card-top {
+  0% { transform: translateX(0px) translateY(0px) rotate(0deg); z-index: 6; }
+  20% { transform: translateX(30px) translateY(-10px) rotate(5deg); z-index: 6; }
+  40% { transform: translateX(60px) translateY(-5px) rotate(8deg); z-index: 1; }
+  60% { transform: translateX(30px) translateY(5px) rotate(-3deg); z-index: 1; }
+  80% { transform: translateX(-10px) translateY(2px) rotate(1deg); z-index: 6; }
+  100% { transform: translateX(0px) translateY(0px) rotate(0deg); z-index: 6; }
+}
+
+@keyframes shuffle-card-middle {
+  0% { transform: translateX(0px) translateY(0px) rotate(0deg); z-index: 5; }
+  15% { transform: translateX(-25px) translateY(-8px) rotate(-4deg); z-index: 5; }
+  35% { transform: translateX(-50px) translateY(-3px) rotate(-7deg); z-index: 7; }
+  55% { transform: translateX(-25px) translateY(3px) rotate(2deg); z-index: 7; }
+  75% { transform: translateX(15px) translateY(-1px) rotate(-1deg); z-index: 5; }
+  100% { transform: translateX(0px) translateY(0px) rotate(0deg); z-index: 5; }
+}
+
+@keyframes shuffle-card-bottom {
+  0% { transform: translateX(0px) translateY(0px) rotate(0deg); z-index: 4; }
+  10% { transform: translateX(40px) translateY(-12px) rotate(6deg); z-index: 4; }
+  30% { transform: translateX(70px) translateY(-8px) rotate(10deg); z-index: 8; }
+  50% { transform: translateX(35px) translateY(4px) rotate(-2deg); z-index: 8; }
+  70% { transform: translateX(-20px) translateY(1px) rotate(2deg); z-index: 4; }
+  90% { transform: translateX(5px) translateY(-1px) rotate(0deg); z-index: 4; }
+  100% { transform: translateX(0px) translateY(0px) rotate(0deg); z-index: 4; }
+}
+
+.animate-shuffle-card-top {
+  animation: shuffle-card-top 2s ease-in-out infinite;
+}
+
+.animate-shuffle-card-middle {
+  animation: shuffle-card-middle 2s ease-in-out infinite 0.3s;
+}
+
+.animate-shuffle-card-bottom {
+  animation: shuffle-card-bottom 2s ease-in-out infinite 0.6s;
+}
+
 

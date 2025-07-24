@@ -8,6 +8,7 @@ import { TaskListOverlay } from "./TaskListOverlay";
 import { CharacterDisplay, useCharacterMessages } from "./CharacterMessages";
 import { useGameState, TaskCardData, CompletedTask } from "./GameState";
 import { useTaskTimer } from "./TaskTimer";
+import { ShuffleAnimation } from "./ShuffleAnimation";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,9 +18,12 @@ interface GameTaskCardsProps {
   tasks: TaskCardData[];
   onComplete: () => void;
   onTaskComplete?: (taskId: string) => void;
+  isLoading?: boolean;
+  isProcessing?: boolean;
+  onLoadingComplete?: () => void;
 }
 
-export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCardsProps) => {
+export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = false, isProcessing = false, onLoadingComplete }: GameTaskCardsProps) => {
   const gameState = useGameState(tasks);
   const characterMessages = useCharacterMessages();
   const { toast } = useToast();
@@ -325,10 +329,24 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete }: GameTaskCar
     gameState.setShowTaskList(false);
   };
 
+  // Show loading state if tasks are being processed
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-full px-4">
+          <ShuffleAnimation
+            isProcessing={isProcessing}
+            onLoadingComplete={onLoadingComplete}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-full px-4">
-        <div className="w-full">
+        <div className="w-full animate-in fade-in-0 duration-500 ease-out">
           {/* Main Card Display */}
           <div className="relative">
             <TaskSwiper
