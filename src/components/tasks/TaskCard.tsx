@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, AlertTriangle, Zap, Check, Wand2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
+import { TaskProgressBar } from "./TaskProgressBar";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -223,10 +224,13 @@ export const TaskCard = ({
               )}
             </div>
 
-            {/* Separator */}
-            <div className="mx-4">
-              <div className="h-px bg-border"></div>
-            </div>
+            {/* Progress Bar */}
+            <TaskProgressBar
+              taskId={task.id}
+              startTime={taskStartTimes[task.id]}
+              estimatedTime={task.estimated_time}
+              isActiveCommitted={isActiveCommitted}
+            />
 
             {/* Notes Section */}
             <div className="flex-1 flex flex-col">

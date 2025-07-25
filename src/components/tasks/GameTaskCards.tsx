@@ -61,7 +61,7 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = f
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        if (!gameState.isNavigationLocked && gameState.swiperRef.current?.swiper) {
+        if (gameState.swiperRef.current?.swiper) {
           e.preventDefault();
           if (e.key === 'ArrowLeft') {
             gameState.swiperRef.current.swiper.slidePrev();
@@ -189,11 +189,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = f
       }
     } catch (error) {
       console.error('Error adding to collection:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add card to collection",
-        variant: "destructive",
-      });
     }
   };
 
@@ -272,24 +267,14 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = f
       console.error('Error pausing task:', error);
     }
     
-    // Show appropriate message and toast
+    // Show appropriate Mr Intent message
     if (hasNextTask && !gameState.navigationUnlocked) {
       const nextTask = tasks[nextIndex];
       const message = characterMessages.getRandomMessage(characterMessages.getMoveOnMessages(nextTask.title));
       characterMessages.showMessage(message);
-      
-      toast({
-        title: "Moving On", 
-        description: `Moving to "${nextTask.title}" - timer restarted`,
-      });
     } else {
       const message = characterMessages.getRandomMessage(characterMessages.getPauseMessages(task.title));
       characterMessages.showMessage(message);
-      
-      toast({
-        title: "Task Paused", 
-        description: hasNextTask ? `Navigation unlocked! Choose your next task.` : `You can continue "${task.title}" later.`,
-      });
     }
   };
 
@@ -344,11 +329,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = f
     
     const message = characterMessages.getRandomMessage(characterMessages.getSkipMessages(task.title));
     characterMessages.showMessage(message);
-    
-    toast({
-      title: "Task Skipped",
-      description: `"${task.title}" has been removed from your list.`,
-    });
   };
 
   const formatTime = (minutes: number) => {
@@ -409,28 +389,6 @@ export const GameTaskCards = ({ tasks, onComplete, onTaskComplete, isLoading = f
               formatTime={formatTime}
             />
 
-            {/* Navigation Status */}
-            <div className="text-center mb-6">
-              <div className="text-sm text-muted-foreground">
-                {gameState.isNavigationLocked ? (
-                  gameState.hasCommittedToTask ? (
-                    (() => {
-                      const minutesRemaining = Math.max(0, Math.ceil((5 * 60 * 1000 - (Date.now() - (gameState.flowStartTime || 0))) / 60000));
-                      const hasTimeElapsed = gameState.flowStartTime && (Date.now() - gameState.flowStartTime) >= 5 * 60 * 1000;
-                      
-                      if (hasTimeElapsed || minutesRemaining === 0) {
-                        return "Swipe, use arrow keys (←/→), or press ↓ to commit";
-                      }
-                      return `Navigation unlocks in ${minutesRemaining} minutes. Focus first, swipe later.`;
-                    })()
-                  ) : (
-                    "Start your focus session by playing this card."
-                  )
-                ) : (
-                  "Swipe, use arrow keys (←/→), or press ↓ to commit"
-                )}
-              </div>
-            </div>
 
             {/* Navigation Dots */}
             <NavigationDots

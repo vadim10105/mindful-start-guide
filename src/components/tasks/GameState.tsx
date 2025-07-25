@@ -40,7 +40,7 @@ export const useGameState = (tasks: TaskCardData[]) => {
   const swiperRef = useRef<any>(null);
 
   // Calculate navigation state
-  const isNavigationLocked = isInitialLoad || (hasCommittedToTask && !navigationUnlocked);
+  const isNavigationLocked = false; // Navigation is now always unlocked
   const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   const getTaskStatus = (task: TaskCardData, index: number) => {

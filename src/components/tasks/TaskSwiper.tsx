@@ -79,12 +79,10 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
             slideShadows: true,
           }}
           onSlideChange={(swiper) => {
-            if (!isNavigationLocked) {
-              onSlideChange(swiper.activeIndex);
-            }
+            onSlideChange(swiper.activeIndex);
           }}
-          allowSlideNext={!isNavigationLocked}
-          allowSlidePrev={!isNavigationLocked}
+          allowSlideNext={true}
+          allowSlidePrev={true}
           key={currentViewingIndex} // Force re-render when index changes
           initialSlide={currentViewingIndex} // Start at the current viewing index
           className="w-full h-full"

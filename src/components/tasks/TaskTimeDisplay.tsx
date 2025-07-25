@@ -75,23 +75,24 @@ export const TaskTimeDisplay = ({
     );
   }
 
-  // Overtime state: show start → ~~estimated~~ → current
+  // Overtime state: show start → current ~~estimated~~
   return (
     <span className="text-sm">
-      <span style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
-        {startTimeFormatted} → 
+      <span style={{ color: '#fbbf24' }}>
+        {startTimeFormatted}
       </span>
+      <span style={{ color: '#fbbf24' }}> → </span>
+      <span style={{ color: '#fbbf24' }}>
+        {currentTimeFormatted}
+      </span>
+      <span style={{ color: 'hsl(48 100% 96% / 0.7)' }}>  </span>
       <span 
         style={{ 
           color: 'hsl(48 100% 96% / 0.5)', 
           textDecoration: 'line-through' 
         }}
       >
-        {estimatedFinishTimeFormatted}
-      </span>
-      <span style={{ color: 'hsl(48 100% 96% / 0.7)' }}> → </span>
-      <span style={{ color: '#fbbf24' }}>
-        {currentTimeFormatted}
+        ({estimatedFinishTimeFormatted})
       </span>
     </span>
   );
