@@ -1063,7 +1063,7 @@ const Tasks = () => {
                   isTransitioning ? 'text-muted-foreground' : 
                   inputMode === 'brain-dump' ? 'text-foreground' : 'text-foreground/30'
                 }`}>
-                  Brain Dump
+                  Capture
                 </Label>
                 
                 {/* Clean Toggle Transition */}
@@ -1079,7 +1079,7 @@ const Tasks = () => {
                   isTransitioning ? 'text-muted-foreground' : 
                   inputMode === 'list' ? 'text-foreground' : 'text-foreground/30'
                 }`}>
-                  List View
+                  Plan
                 </Label>
               </div>
               
@@ -1270,7 +1270,7 @@ const Tasks = () => {
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
-                        Shuffle the Deck
+                        Shuffle
                       </Button>
 
                       <Button
@@ -1495,14 +1495,18 @@ const Tasks = () => {
         {/* Game Cards Step */}
         {currentStep === 'game-cards' && (
           <GameTaskCards
-            tasks={prioritizedTasks.length > 0 ? prioritizedTasks : taggedTasks.map((task) => ({
+            tasks={prioritizedTasks.length > 0 ? prioritizedTasks.map((task) => ({
+              ...task,
+              estimated_time: taskTimeEstimates[task.title]
+            })) : taggedTasks.map((task) => ({
               id: task.id,
               title: task.title,
               priority_score: task.card_position,
               explanation: `Task ${task.card_position} in your manual order`,
               is_liked: task.is_liked,
               is_urgent: task.is_urgent,
-              is_quick: task.is_quick
+              is_quick: task.is_quick,
+              estimated_time: taskTimeEstimates[task.title]
             }))}
             isLoading={isProcessing}
             isProcessing={isProcessing}

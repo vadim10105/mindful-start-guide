@@ -14,6 +14,7 @@ interface TaskCardData {
   is_urgent?: boolean;
   is_quick?: boolean;
   notes?: string;
+  estimated_time?: string;
 }
 
 interface TaskSwiperProps {

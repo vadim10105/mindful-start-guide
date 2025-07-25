@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Heart, AlertTriangle, Zap, Check, Wand2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
+import { TaskTimeDisplay } from "./TaskTimeDisplay";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -17,6 +18,7 @@ interface TaskCardData {
   is_urgent?: boolean;
   is_quick?: boolean;
   notes?: string;
+  estimated_time?: string;
 }
 
 interface TaskCardProps {
@@ -70,15 +72,6 @@ export const TaskCard = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
 
-  // Helper function to format timestamp to HH:MM format
-  const formatStartTime = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  };
 
   const handleNotesClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
     const textarea = e.currentTarget;
@@ -182,9 +175,12 @@ export const TaskCard = ({
             
             <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px' }}>
               {taskStartTimes[task.id] ? (
-                <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
-                  {formatStartTime(taskStartTimes[task.id])}
-                </span>
+                <TaskTimeDisplay
+                  taskId={task.id}
+                  startTime={taskStartTimes[task.id]}
+                  estimatedTime={task.estimated_time}
+                  isActiveCommitted={isActiveCommitted}
+                />
               ) : (
                 <>
                   <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
