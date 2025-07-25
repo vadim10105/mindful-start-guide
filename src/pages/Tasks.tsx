@@ -1142,7 +1142,7 @@ const Tasks = () => {
                         value={newTaskInput}
                         onChange={(e) => setNewTaskInput(e.target.value)}
                         onKeyDown={handleAddTaskKeyPress}
-                        placeholder="Add a task..."
+                        placeholder="Share your Intention..."
                         className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent"
                         style={{ backgroundColor: 'transparent !important' }}
                       />
