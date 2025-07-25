@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Trash2, Settings, Plus } from "lucide-react";
+import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
@@ -15,6 +15,8 @@ import { GameTaskCards } from "@/components/tasks/GameTaskCards";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categorizeTasks, getCurrentEnergyState } from "@/utils/taskCategorization";
+import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
+import { validateAndFormatTimeInput } from "@/utils/timeUtils";
 import {
   DndContext,
   closestCenter,
@@ -77,9 +79,10 @@ interface TaskListItemProps {
   isUrgent: boolean;
   isQuick: boolean;
   estimatedTime?: string;
+  isLoadingTime?: boolean;
   onTagUpdate: (tag: 'liked' | 'urgent' | 'quick', value: boolean) => void;
+  onTimeUpdate?: (newTime: string) => void;
   onReorder: (dragIndex: number, hoverIndex: number) => void;
-  onDelete: (index: number) => void;
 }
 
 const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
@@ -97,8 +100,8 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   );
 };
 
-const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, onTagUpdate, onReorder, onDelete }: TaskListItemProps) => {
-  console.log('TaskListItem render:', { task, estimatedTime });
+const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, isLoadingTime, onTagUpdate, onTimeUpdate, onReorder }: TaskListItemProps) => {
+  const [isHovering, setIsHovering] = useState(false);
   const {
     attributes,
     listeners,
@@ -120,6 +123,8 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
       className={`border-b border-border/30 hover:bg-muted/20 transition-colors ${
         isDragging ? 'bg-card border border-border rounded-lg shadow-sm opacity-80' : ''
       }`}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
     >
       {/* Mobile Layout */}
       <div className="block sm:hidden">
@@ -142,53 +147,54 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
           </div>
         </div>
         
-        {/* Mobile Tag Controls - Horizontal row of 4 icons */}
+        {/* Mobile Tag Controls - Horizontal row of 3 icons */}
         <div className="flex items-center justify-center gap-3 px-3 pb-3 pt-1">
-          <button
-            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-              isLiked ? 'border-border text-red-500' : 'border-border text-gray-600'
-            }`}
-            onClick={() => onTagUpdate('liked', !isLiked)}
-            aria-label="Mark as loved"
-          >
-            <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-          </button>
+          {(isLiked || isHovering) && (
+            <button
+              className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+                isLiked ? 'border-border text-red-500' : 'border-border text-gray-400'
+              }`}
+              onClick={() => onTagUpdate('liked', !isLiked)}
+              aria-label="Mark as loved"
+            >
+              <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+            </button>
+          )}
           
-          <button
-            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-              isUrgent ? 'border-border text-yellow-500' : 'border-border text-gray-600'
-            }`}
-            onClick={() => onTagUpdate('urgent', !isUrgent)}
-            aria-label="Mark as urgent"
-          >
-            <AlertTriangle className={`h-5 w-5 ${isUrgent ? 'fill-current' : ''}`} />
-          </button>
+          {(isUrgent || isHovering) && (
+            <button
+              className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+                isUrgent ? 'border-border text-yellow-500' : 'border-border text-gray-400'
+              }`}
+              onClick={() => onTagUpdate('urgent', !isUrgent)}
+              aria-label="Mark as urgent"
+            >
+              <AlertTriangle className={`h-5 w-5 ${isUrgent ? 'fill-current' : ''}`} />
+            </button>
+          )}
           
-          <button
-            className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-              isQuick ? 'border-border text-green-500' : 'border-border text-gray-600'
-            }`}
-            onClick={() => onTagUpdate('quick', !isQuick)}
-            aria-label="Mark as quick"
-          >
-            <Zap className={`h-5 w-5 ${isQuick ? 'fill-current' : ''}`} />
-          </button>
-          
-          <button
-            className="p-3 rounded-lg bg-card border border-border text-gray-600 hover:text-red-500 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
-            onClick={() => onDelete(index)}
-            aria-label="Delete task"
-          >
-            <Trash2 className="h-5 w-5" />
-          </button>
+          {(isQuick || isHovering) && (
+            <button
+              className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+                isQuick ? 'border-border text-green-500' : 'border-border text-gray-400'
+              }`}
+              onClick={() => onTagUpdate('quick', !isQuick)}
+              aria-label="Mark as quick"
+            >
+              <Zap className={`h-5 w-5 ${isQuick ? 'fill-current' : ''}`} />
+            </button>
+          )}
         </div>
         
         {/* Time Estimate - Mobile */}
-        {estimatedTime && (
+        {(estimatedTime || isLoadingTime) && (
           <div className="flex justify-center px-3 pb-2">
-            <div className="px-2 py-1 bg-muted/50 rounded text-xs text-muted-foreground w-16 text-center">
-              {estimatedTime}
-            </div>
+            <InlineTimeEditor
+              value={estimatedTime}
+              isLoading={isLoadingTime}
+              onChange={onTimeUpdate}
+              placeholder="15m"
+            />
           </div>
         )}
       </div>
@@ -214,37 +220,42 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
         
         {/* Tag Controls */}
         <div className="flex items-center gap-2">
-          <Heart
-            className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-              isLiked ? 'text-red-500 fill-red-500' : 'text-gray-500 hover:text-red-400'
-            }`}
-            onClick={() => onTagUpdate('liked', !isLiked)}
-          />
+          {(isLiked || isHovering) && (
+            <Heart
+              className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+                isLiked ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-400'
+              }`}
+              onClick={() => onTagUpdate('liked', !isLiked)}
+            />
+          )}
           
-          <AlertTriangle
-            className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-              isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500 hover:text-yellow-400'
-            }`}
-            onClick={() => onTagUpdate('urgent', !isUrgent)}
-          />
+          {(isUrgent || isHovering) && (
+            <AlertTriangle
+              className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+                isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400 hover:text-yellow-400'
+              }`}
+              onClick={() => onTagUpdate('urgent', !isUrgent)}
+            />
+          )}
           
-          <Zap
-            className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-              isQuick ? 'text-green-500 fill-green-500' : 'text-gray-500 hover:text-green-400'
-            }`}
-            onClick={() => onTagUpdate('quick', !isQuick)}
-          />
-          
-          <Trash2
-            className="h-5 w-5 cursor-pointer transition-colors hover:scale-110 text-gray-500 hover:text-red-400"
-            onClick={() => onDelete(index)}
-          />
+          {(isQuick || isHovering) && (
+            <Zap
+              className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
+                isQuick ? 'text-green-500 fill-green-500' : 'text-gray-400 hover:text-green-400'
+              }`}
+              onClick={() => onTagUpdate('quick', !isQuick)}
+            />
+          )}
           
           {/* Time Estimate */}
-          {estimatedTime && (
-            <div className="ml-3 px-2 py-1 bg-muted/50 rounded text-xs text-muted-foreground w-16 text-center">
-              {estimatedTime}
-            </div>
+          {(estimatedTime || isLoadingTime) && (
+            <InlineTimeEditor
+              value={estimatedTime}
+              isLoading={isLoadingTime}
+              onChange={onTimeUpdate}
+              placeholder="15m"
+              className="ml-3"
+            />
           )}
         </div>
       </div>
@@ -290,6 +301,7 @@ const Tasks = () => {
   const [cameFromBrainDump, setCameFromBrainDump] = useState(false);
   const [listTasks, setListTasks] = useState<string[]>([]);
   const [newTaskInput, setNewTaskInput] = useState('');
+  const [loadingTimeEstimates, setLoadingTimeEstimates] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Refs for global auto-focus functionality
@@ -503,10 +515,10 @@ const Tasks = () => {
       // Store time estimates for each task
       const timeEstimates: Record<string, string> = {};
       data.tasks.forEach((task: ExtractedTask) => {
-        timeEstimates[task.title] = task.estimated_time;
-        console.log('Setting time estimate for task:', task.title, '=', task.estimated_time);
+        // Format AI time estimates to match our standard format (m/h)
+        const formattedTime = validateAndFormatTimeInput(task.estimated_time) || task.estimated_time;
+        timeEstimates[task.title] = formattedTime;
       });
-      console.log('All time estimates:', timeEstimates);
       setTaskTimeEstimates(timeEstimates);
       
       // Prepare for smooth transition
@@ -570,11 +582,48 @@ const Tasks = () => {
     setInputMode('brain-dump'); // Reset to brain-dump mode
   };
 
+  // Extract time estimate for a single task
+  const extractTimeEstimate = async (taskTitle: string) => {
+    try {
+      setLoadingTimeEstimates(prev => new Set(prev).add(taskTitle));
+      
+      const { data, error } = await supabase.functions.invoke('process-brain-dump', {
+        body: { brainDumpText: taskTitle }
+      });
+
+      if (error) {
+        console.error('Time extraction error:', error);
+        return;
+      }
+
+      if (data?.tasks?.[0]?.estimated_time) {
+        // Format AI time estimates to match our standard format (m/h)
+        const formattedTime = validateAndFormatTimeInput(data.tasks[0].estimated_time) || data.tasks[0].estimated_time;
+        setTaskTimeEstimates(prev => ({
+          ...prev,
+          [taskTitle]: formattedTime
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to extract time estimate:', error);
+    } finally {
+      setLoadingTimeEstimates(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(taskTitle);
+        return newSet;
+      });
+    }
+  };
+
   // List mode handlers
   const handleAddTask = () => {
     if (newTaskInput.trim()) {
-      setListTasks(prev => [...prev, newTaskInput.trim()]);
+      const taskTitle = newTaskInput.trim();
+      setListTasks(prev => [...prev, taskTitle]);
       setNewTaskInput('');
+      
+      // Extract time estimate for the new task
+      extractTimeEstimate(taskTitle);
     }
   };
 
@@ -585,25 +634,6 @@ const Tasks = () => {
     }
   };
 
-  const handleRemoveTask = (index: number) => {
-    const taskToRemove = listTasks[index];
-    setListTasks(prev => prev.filter((_, i) => i !== index));
-    
-    // Also remove from time estimates and tags if they exist
-    if (taskToRemove) {
-      setTaskTimeEstimates(prev => {
-        const newEstimates = { ...prev };
-        delete newEstimates[taskToRemove];
-        return newEstimates;
-      });
-      
-      setTaskTags(prev => {
-        const newTags = { ...prev };
-        delete newTags[taskToRemove];
-        return newTags;
-      });
-    }
-  };
 
   const handleListSubmit = () => {
     if (listTasks.length === 0) return;
@@ -634,31 +664,6 @@ const Tasks = () => {
     }
   };
 
-  const handleTaskDelete = (index: number) => {
-    const taskToDelete = reviewedTasks[index];
-    
-    // Remove task from reviewedTasks array
-    setReviewedTasks(prev => prev.filter((_, i) => i !== index));
-    
-    // Remove task from taskTags
-    setTaskTags(prev => {
-      const newTags = { ...prev };
-      delete newTags[taskToDelete];
-      return newTags;
-    });
-    
-    // Remove task from taskTimeEstimates
-    setTaskTimeEstimates(prev => {
-      const newEstimates = { ...prev };
-      delete newEstimates[taskToDelete];
-      return newEstimates;
-    });
-    
-    toast({
-      title: "Task deleted",
-      description: `"${taskToDelete}" has been removed from your list`,
-    });
-  };
 
   const prioritizeTasks = async (tasksToProcess?: string[]) => {
     const tasks = tasksToProcess || reviewedTasks;
@@ -1168,8 +1173,14 @@ const Tasks = () => {
                                     isUrgent={tags.isUrgent}
                                     isQuick={tags.isQuick}
                                     estimatedTime={taskTimeEstimates[task]}
+                                    isLoadingTime={loadingTimeEstimates.has(task)}
+                                    onTimeUpdate={(newTime) => {
+                                      setTaskTimeEstimates(prev => ({
+                                        ...prev,
+                                        [task]: newTime
+                                      }));
+                                    }}
                                     onReorder={() => {}} // Handled by DndContext
-                                    onDelete={(taskIndex) => handleRemoveTask(taskIndex)}
                                     onTagUpdate={(tag, value) => {
                                       setTaskTags(prev => ({
                                         ...prev,
@@ -1267,8 +1278,14 @@ const Tasks = () => {
                            isUrgent={tags.isUrgent}
                            isQuick={tags.isQuick}
                            estimatedTime={taskTimeEstimates[task]}
+                           isLoadingTime={loadingTimeEstimates.has(task)}
+                           onTimeUpdate={(newTime) => {
+                             setTaskTimeEstimates(prev => ({
+                               ...prev,
+                               [task]: newTime
+                             }));
+                           }}
                            onReorder={handleReorder}
-                           onDelete={handleTaskDelete}
                            onTagUpdate={(tag, value) => {
                              setTaskTags(prev => ({
                                ...prev,

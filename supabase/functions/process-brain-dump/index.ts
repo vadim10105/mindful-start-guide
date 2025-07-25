@@ -42,7 +42,7 @@ RULES:
 3. Make tasks specific and actionable (e.g., "Email John about the meeting" not "John meeting")
 4. If a complex item has multiple steps, break it into separate tasks
 5. Return ONLY a JSON array of task objects
-6. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'mins' and 'hrs'"}`
+6. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'm' and 'h' (e.g., '15m', '2h', '1h 30m')"}`
           },
           {
             role: 'user',

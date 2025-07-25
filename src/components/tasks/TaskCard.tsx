@@ -68,6 +68,7 @@ export const TaskCard = ({
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
 
   // Helper function to format timestamp to HH:MM format
   const formatStartTime = (timestamp: number): string => {
@@ -207,15 +208,22 @@ export const TaskCard = ({
           
           <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
             {/* Task Tags */}
-            <div className="flex flex-wrap gap-1 justify-center">
-              {task.is_liked && (
-                <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+            <div 
+              className="flex flex-wrap gap-1 justify-center"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
+              {/* Show liked tag if tagged, or show on hover */}
+              {(task.is_liked || isHovering) && (
+                <Heart className={`w-4 h-4 ${task.is_liked ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-500'} transition-colors`} />
               )}
-              {task.is_urgent && (
-                <AlertTriangle className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+              {/* Show urgent tag if tagged, or show on hover */}
+              {(task.is_urgent || isHovering) && (
+                <AlertTriangle className={`w-4 h-4 ${task.is_urgent ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400 hover:text-yellow-500'} transition-colors`} />
               )}
-              {task.is_quick && (
-                <Zap className="w-4 h-4 fill-green-500 text-green-500" />
+              {/* Show quick tag if tagged, or show on hover */}
+              {(task.is_quick || isHovering) && (
+                <Zap className={`w-4 h-4 ${task.is_quick ? 'fill-green-500 text-green-500' : 'text-gray-400 hover:text-green-500'} transition-colors`} />
               )}
             </div>
 
