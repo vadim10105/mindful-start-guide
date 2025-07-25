@@ -15,8 +15,67 @@ serve(async (req) => {
   }
 
   try {
-    const { brainDumpText } = await req.json();
+    const { brainDumpText, simplifyTasks, tasks } = await req.json();
 
+    // Handle task simplification
+    if (simplifyTasks && tasks) {
+      console.log('Simplifying tasks:', tasks);
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a task simplification assistant. Convert each task into a concise 2-word description suitable for a calendar timeline.
+
+RULES:
+1. Create exactly 2 words for each task
+2. Use action words + object (e.g., "Email John", "Write Report", "Call Mom")
+3. Keep the essence of the task but make it calendar-friendly
+4. Return ONLY a JSON object mapping original task titles to simplified versions
+5. Format: {"original task": "simplified version"}`
+            },
+            {
+              role: 'user',
+              content: `Simplify these tasks:\n${tasks.map((task: string) => `- ${task}`).join('\n')}`
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 1000,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('OpenAI API error:', data);
+        throw new Error(data.error?.message || 'Failed to simplify tasks');
+      }
+
+      const aiResponse = data.choices[0].message.content;
+      console.log('AI simplification response:', aiResponse);
+
+      let simplifiedTasks;
+      try {
+        const cleanedResponse = aiResponse.replace(/```json\n?|\n?```/g, '').trim();
+        simplifiedTasks = JSON.parse(cleanedResponse);
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', aiResponse);
+        throw new Error('Failed to parse simplified tasks');
+      }
+
+      return new Response(JSON.stringify({ simplifiedTasks }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Handle brain dump processing (existing functionality)
     if (!brainDumpText || brainDumpText.trim().length === 0) {
       throw new Error('Brain dump text is required');
     }
@@ -41,8 +100,9 @@ RULES:
 2. Each task should be a single, clear action
 3. Make tasks specific and actionable (e.g., "Email John about the meeting" not "John meeting")
 4. If a complex item has multiple steps, break it into separate tasks
-5. Return ONLY a JSON array of task objects
-6. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'm' and 'h' (e.g., '15m', '2h', '1h 30m')"}`
+5. PRESERVE THE ORIGINAL ORDER - extract tasks in the same sequence they appear in the text
+6. Return ONLY a JSON array of task objects
+7. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'm' and 'h' (e.g., '15m', '2h', '1h 30m')"}`
           },
           {
             role: 'user',

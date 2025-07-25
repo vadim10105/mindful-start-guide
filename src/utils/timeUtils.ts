@@ -105,3 +105,113 @@ export function validateAndFormatTimeInput(input: string): string | null {
   if (minutes === null) return null;
   return formatMinutesToDisplay(minutes);
 }
+
+/**
+ * Simplify task names for timeline display
+ * Extract key words while preserving context
+ */
+export function simplifyTaskName(taskName: string): string {
+  if (!taskName || taskName.length <= 20) return taskName;
+  
+  // Remove common filler words but keep important context
+  const fillerWords = ['with', 'the', 'for', 'on', 'in', 'at', 'to', 'of', 'and', 'or', 'but', 'a', 'an'];
+  
+  // Split into words and filter
+  const words = taskName.split(' ');
+  
+  // Always keep first 2-3 important words
+  const importantWords: string[] = [];
+  
+  for (let i = 0; i < words.length && importantWords.length < 3; i++) {
+    const word = words[i].toLowerCase();
+    
+    // Always include the first word
+    if (i === 0) {
+      importantWords.push(words[i]);
+      continue;
+    }
+    
+    // Skip common filler words unless it's short
+    if (!fillerWords.includes(word) || words.length <= 4) {
+      importantWords.push(words[i]);
+    }
+  }
+  
+  const simplified = importantWords.join(' ');
+  
+  // If still too long, truncate with ellipsis
+  return simplified.length > 25 ? simplified.substring(0, 22) + '...' : simplified;
+}
+
+/**
+ * Round time to nearest 10-minute block
+ */
+function roundToNearest10Minutes(date: Date): Date {
+  const rounded = new Date(date);
+  const minutes = rounded.getMinutes();
+  const roundedMinutes = Math.ceil(minutes / 10) * 10;
+  
+  if (roundedMinutes === 60) {
+    rounded.setHours(rounded.getHours() + 1);
+    rounded.setMinutes(0);
+  } else {
+    rounded.setMinutes(roundedMinutes);
+  }
+  
+  rounded.setSeconds(0);
+  rounded.setMilliseconds(0);
+  
+  return rounded;
+}
+
+/**
+ * Calculate timeline blocks from current time
+ */
+export interface TimelineBlock {
+  taskName: string;
+  simplifiedName: string;
+  startTime: Date;
+  endTime: Date;
+  durationMinutes: number;
+  startTimeString: string;
+  endTimeString: string;
+}
+
+export function calculateTimelineBlocks(
+  tasks: string[],
+  timeEstimates: Record<string, string>,
+  startTime: Date = new Date()
+): TimelineBlock[] {
+  const blocks: TimelineBlock[] = [];
+  let currentTime = roundToNearest10Minutes(startTime);
+  
+  tasks.forEach((taskName) => {
+    const timeEstimate = timeEstimates[taskName];
+    const durationMinutes = timeEstimate ? parseTimeToMinutes(timeEstimate) || 15 : 15;
+    
+    const blockStartTime = new Date(currentTime);
+    const blockEndTime = new Date(currentTime.getTime() + durationMinutes * 60000);
+    
+    blocks.push({
+      taskName,
+      simplifiedName: simplifyTaskName(taskName),
+      startTime: blockStartTime,
+      endTime: blockEndTime,
+      durationMinutes,
+      startTimeString: blockStartTime.toLocaleTimeString('en-GB', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      }),
+      endTimeString: blockEndTime.toLocaleTimeString('en-GB', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      })
+    });
+    
+    currentTime = blockEndTime;
+  });
+  
+  return blocks;
+}

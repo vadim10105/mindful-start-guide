@@ -17,6 +17,7 @@ import { SettingsModal } from "@/components/settings/SettingsModal";
 import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categorizeTasks, getCurrentEnergyState } from "@/utils/taskCategorization";
 import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
+import { TaskTimeline } from "@/components/tasks/TaskTimeline";
 import {
   DndContext,
   closestCenter,
@@ -83,6 +84,7 @@ interface TaskListItemProps {
   onTagUpdate: (tag: 'liked' | 'urgent' | 'quick', value: boolean) => void;
   onTimeUpdate?: (newTime: string) => void;
   onReorder: (dragIndex: number, hoverIndex: number) => void;
+  onHover?: (index: number | undefined) => void;
 }
 
 const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
@@ -100,7 +102,7 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   );
 };
 
-const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, isLoadingTime, onTagUpdate, onTimeUpdate, onReorder }: TaskListItemProps) => {
+const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, isLoadingTime, onTagUpdate, onTimeUpdate, onReorder, onHover }: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
     attributes,
@@ -123,8 +125,14 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
       className={`border-b border-border/30 hover:bg-muted/20 transition-colors ${
         isDragging ? 'bg-card border border-border rounded-lg shadow-sm opacity-80' : ''
       }`}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
+      onMouseEnter={() => {
+        setIsHovering(true);
+        onHover?.(index);
+      }}
+      onMouseLeave={() => {
+        setIsHovering(false);
+        onHover?.(undefined);
+      }}
     >
       {/* Mobile Layout */}
       <div className="block sm:hidden">
@@ -302,11 +310,16 @@ const Tasks = () => {
   const [listTasks, setListTasks] = useState<string[]>([]);
   const [newTaskInput, setNewTaskInput] = useState('');
   const [loadingTimeEstimates, setLoadingTimeEstimates] = useState<Set<string>>(new Set());
+  const [cardDimensions, setCardDimensions] = useState({ top: 0, height: 0 });
+  const [hoveredTaskIndex, setHoveredTaskIndex] = useState<number | undefined>(undefined);
   const { toast } = useToast();
 
   // Refs for global auto-focus functionality
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const taskInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const cardContentRef = useRef<HTMLDivElement>(null);
+  const taskListContentRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -314,6 +327,34 @@ const Tasks = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Track card dimensions for timeline positioning
+  useEffect(() => {
+    const updateCardDimensions = () => {
+      // Always use the entire card for timeline alignment
+      if (cardRef.current) {
+        const rect = cardRef.current.getBoundingClientRect();
+        setCardDimensions({
+          top: rect.top,
+          height: rect.height
+        });
+      }
+    };
+
+    updateCardDimensions();
+    
+    // Update on resize and when tasks change
+    window.addEventListener('resize', updateCardDimensions);
+    const observer = new ResizeObserver(updateCardDimensions);
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateCardDimensions);
+      observer.disconnect();
+    };
+  }, [listTasks, inputMode, currentStep]);
 
   // Enhanced user check with profile creation
   useEffect(() => {
@@ -1006,11 +1047,15 @@ const Tasks = () => {
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <Card className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out ${
-            isTransitioning ? 'shadow-2xl' : ''
-          }`} style={{ 
-            transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)'
-          }}>
+          <Card 
+            ref={cardRef}
+            id="main-task-container"
+            className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out relative ${
+              isTransitioning ? 'shadow-2xl' : ''
+            }`} 
+            style={{ 
+              transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
             <CardHeader className="text-center px-4 sm:px-6 pb-2">
               {/* Mode Toggle with Magical Transition */}
               <div className="flex items-center justify-center gap-4 mb-2">
@@ -1042,7 +1087,7 @@ const Tasks = () => {
               <div className="h-px bg-border mt-4 mx-4 sm:mx-6"></div>
               
             </CardHeader>
-            <CardContent className="flex-1 sm:flex-none flex flex-col px-4 sm:px-6 transition-all duration-500 ease-out">
+            <CardContent ref={cardContentRef} className="flex-1 sm:flex-none flex flex-col px-4 sm:px-6 transition-all duration-500 ease-out">
               
               {inputMode === 'brain-dump' ? (
                 // Brain Dump Mode
@@ -1088,7 +1133,7 @@ const Tasks = () => {
                 </>
               ) : (
                 // List Mode with Full Tagging Interface
-                <>
+                <div ref={taskListContentRef}>
                   <div className="space-y-3 min-h-[250px] transition-all duration-500 ease-out" style={{ marginTop: '12px' }}>
                     {/* Add Task Input - Fixed at top */}
                     <div className="flex rounded-md bg-card focus-within:bg-muted/50 transition-all duration-300">
@@ -1181,6 +1226,7 @@ const Tasks = () => {
                                       }));
                                     }}
                                     onReorder={() => {}} // Handled by DndContext
+                                    onHover={setHoveredTaskIndex}
                                     onTagUpdate={(tag, value) => {
                                       setTaskTags(prev => ({
                                         ...prev,
@@ -1241,9 +1287,25 @@ const Tasks = () => {
                       </Button>
                     </div>
                   ) : null}
-                </>
+                </div>
               )}
             </CardContent>
+            
+            {/* Timeline - Only show in List View - positioned relative to card */}
+            {inputMode === 'list' && listTasks.length > 0 && (
+              <div 
+                className="hidden lg:block absolute w-80 top-0 h-full"
+                style={{
+                  right: '-21rem' // Timeline width (20rem) + gap (1rem)
+                }}
+              >
+                <TaskTimeline 
+                  tasks={listTasks}
+                  timeEstimates={taskTimeEstimates}
+                  hoveredTaskIndex={hoveredTaskIndex}
+                />
+              </div>
+            )}
           </Card>
         )}
 
