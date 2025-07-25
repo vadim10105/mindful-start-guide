@@ -1006,8 +1006,8 @@ const Tasks = () => {
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <Card className={`border-2 border-dashed border-muted-foreground/30 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out ${
-            isTransitioning ? 'shadow-2xl border-primary/20' : ''
+          <Card className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out ${
+            isTransitioning ? 'shadow-2xl' : ''
           }`} style={{ 
             transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)'
           }}>
@@ -1214,7 +1214,7 @@ const Tasks = () => {
                       Share with Mr.Intent
                     </Button>
                   ) : (listTasks.length > 0 || !isTransitioning) ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-12">
                       <Button
                         onClick={() => {
                           // Pass list tasks directly to shuffle, avoiding async state issue
