@@ -154,43 +154,89 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
           </div>
         </div>
         
-        {/* Mobile Tag Controls - Horizontal row of 3 icons */}
-        <div className="flex items-center justify-center gap-3 px-3 pb-3 pt-1">
-          {(isLiked || isHovering) && (
+        {/* Mobile Tag Controls - Position-aware display with animations */}
+        <div className="flex items-center justify-center gap-3 px-3 pb-3 pt-1 relative">
+          {/* Hover state: All tags in original positions */}
+          <div className={`absolute inset-0 flex items-center justify-center gap-3 transition-all duration-300 ease-in-out transform ${
+            isHovering 
+              ? 'translate-x-0 opacity-100' 
+              : 'translate-x-4 opacity-0 pointer-events-none'
+          }`}>
+            {/* Heart - always in first position */}
             <button
-              className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+              className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
                 isLiked ? 'border-border text-red-500' : 'border-border text-gray-400'
               }`}
               onClick={() => onTagUpdate('liked', !isLiked)}
-              aria-label="Mark as loved"
+              aria-label={isLiked ? "Remove loved" : "Mark as loved"}
             >
               <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
             </button>
-          )}
-          
-          {(isUrgent || isHovering) && (
+            
+            {/* Warning Triangle - always in second position */}
             <button
-              className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+              className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
                 isUrgent ? 'border-border text-yellow-500' : 'border-border text-gray-400'
               }`}
               onClick={() => onTagUpdate('urgent', !isUrgent)}
-              aria-label="Mark as urgent"
+              aria-label={isUrgent ? "Remove urgent" : "Mark as urgent"}
             >
               <AlertTriangle className={`h-5 w-5 ${isUrgent ? 'fill-current' : ''}`} />
             </button>
-          )}
-          
-          {(isQuick || isHovering) && (
+            
+            {/* Lightning Bolt - always in third position */}
             <button
-              className={`p-3 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
+              className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
                 isQuick ? 'border-border text-green-500' : 'border-border text-gray-400'
               }`}
               onClick={() => onTagUpdate('quick', !isQuick)}
-              aria-label="Mark as quick"
+              aria-label={isQuick ? "Remove quick" : "Mark as quick"}
             >
               <Zap className={`h-5 w-5 ${isQuick ? 'fill-current' : ''}`} />
             </button>
-          )}
+          </div>
+          
+          {/* Non-hover state: Only selected tags grouped to the right */}
+          <div className={`absolute inset-0 flex items-center justify-end gap-3 pr-3 transition-all duration-300 ease-in-out transform ${
+            !isHovering && (isLiked || isUrgent || isQuick)
+              ? 'translate-x-0 opacity-100' 
+              : 'translate-x-4 opacity-0 pointer-events-none'
+          }`}>
+            {isLiked && (
+              <button
+                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border text-red-500"
+                onClick={() => onTagUpdate('liked', false)}
+                aria-label="Remove loved"
+              >
+                <Heart className="h-5 w-5 fill-current" />
+              </button>
+            )}
+            
+            {isUrgent && (
+              <button
+                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border text-yellow-500"
+                onClick={() => onTagUpdate('urgent', false)}
+                aria-label="Remove urgent"
+              >
+                <AlertTriangle className="h-5 w-5 fill-current" />
+              </button>
+            )}
+            
+            {isQuick && (
+              <button
+                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border text-green-500"
+                onClick={() => onTagUpdate('quick', false)}
+                aria-label="Remove quick"
+              >
+                <Zap className="h-5 w-5 fill-current" />
+              </button>
+            )}
+          </div>
+          
+          {/* Spacer to maintain height */}
+          <div className="invisible flex items-center gap-3">
+            <div className="p-3 min-w-[44px] min-h-[44px]"></div>
+          </div>
         </div>
         
         {/* Time Estimate - Mobile */}
@@ -227,34 +273,68 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
         
         {/* Tag Controls */}
         <div className="flex items-center gap-2">
-          {(isLiked || isHovering) && (
-            <Heart
-              className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-                isLiked ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-400'
-              }`}
-              onClick={() => onTagUpdate('liked', !isLiked)}
-            />
-          )}
+          <div className="relative">
+            {/* Hover state: All tags in original positions */}
+            <div className={`flex items-center gap-2 transition-all duration-300 ease-in-out transform ${
+              isHovering 
+                ? 'translate-x-0 opacity-100' 
+                : 'translate-x-4 opacity-0 pointer-events-none'
+            }`}>
+              {/* Heart - always in first position */}
+              <Heart
+                className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
+                  isLiked ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-400'
+                }`}
+                onClick={() => onTagUpdate('liked', !isLiked)}
+              />
+              
+              {/* Warning Triangle - always in second position */}
+              <AlertTriangle
+                className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
+                  isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400 hover:text-yellow-400'
+                }`}
+                onClick={() => onTagUpdate('urgent', !isUrgent)}
+              />
+              
+              {/* Lightning Bolt - always in third position */}
+              <Zap
+                className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
+                  isQuick ? 'text-green-500 fill-green-500' : 'text-gray-400 hover:text-green-400'
+                }`}
+                onClick={() => onTagUpdate('quick', !isQuick)}
+              />
+            </div>
+            
+            {/* Non-hover state: Only selected tags */}
+            <div className={`absolute top-0 right-0 flex items-center gap-2 transition-all duration-300 ease-in-out transform ${
+              !isHovering && (isLiked || isUrgent || isQuick)
+                ? 'translate-x-0 opacity-100' 
+                : 'translate-x-4 opacity-0 pointer-events-none'
+            }`}>
+              {isLiked && (
+                <Heart
+                  className="h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 text-red-500 fill-red-500"
+                  onClick={() => onTagUpdate('liked', false)}
+                />
+              )}
+              
+              {isUrgent && (
+                <AlertTriangle
+                  className="h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 text-yellow-500 fill-yellow-500"
+                  onClick={() => onTagUpdate('urgent', false)}
+                />
+              )}
+              
+              {isQuick && (
+                <Zap
+                  className="h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 text-green-500 fill-green-500"
+                  onClick={() => onTagUpdate('quick', false)}
+                />
+              )}
+            </div>
+          </div>
           
-          {(isUrgent || isHovering) && (
-            <AlertTriangle
-              className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-                isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400 hover:text-yellow-400'
-              }`}
-              onClick={() => onTagUpdate('urgent', !isUrgent)}
-            />
-          )}
-          
-          {(isQuick || isHovering) && (
-            <Zap
-              className={`h-5 w-5 cursor-pointer transition-colors hover:scale-110 ${
-                isQuick ? 'text-green-500 fill-green-500' : 'text-gray-400 hover:text-green-400'
-              }`}
-              onClick={() => onTagUpdate('quick', !isQuick)}
-            />
-          )}
-          
-          {/* Time Estimate */}
+          {/* Time Estimate - Always visible, separate from animated tags */}
           {(estimatedTime || isLoadingTime) && (
             <InlineTimeEditor
               value={estimatedTime}
@@ -1390,7 +1470,7 @@ const Tasks = () => {
               {/* Direct Action Buttons */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-4 md:pt-6">
                 <Button
-                  onClick={handleShuffle}
+                  onClick={() => handleShuffle()}
                   disabled={isProcessing}
                   className="w-full h-12 sm:h-11"
                   size="lg"
@@ -1399,7 +1479,7 @@ const Tasks = () => {
                 </Button>
 
                 <Button
-                  onClick={handleManualOrder}
+                  onClick={() => handleManualOrder()}
                   variant="outline"
                   className="w-full h-12 sm:h-11"
                   size="lg"

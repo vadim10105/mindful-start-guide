@@ -82,7 +82,7 @@ export function TaskTimeline({
   }
 
   return (
-    <div className={`bg-card/30 rounded-xl h-full flex flex-col ${className}`}>
+    <div className={`bg-card/30 rounded-lg h-full flex flex-col ${className}`}>
       {/* Timeline Blocks - Fit to available space */}
       <div className="flex-1 flex flex-col px-4 py-4 gap-3">
         {blocks.map((block, index) => {
