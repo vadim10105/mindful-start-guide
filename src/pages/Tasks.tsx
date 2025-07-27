@@ -10,14 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
-import { GameLoadingScreen } from "@/components/tasks/GameLoadingScreen";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categorizeTasks, getCurrentEnergyState } from "@/utils/taskCategorization";
 import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
 import { TaskTimeline } from "@/components/tasks/TaskTimeline";
+import { PiPProvider } from "@/components/tasks/PictureInPicture";
 import {
   DndContext,
   closestCenter,
@@ -38,7 +37,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-type FlowStep = 'input' | 'review' | 'prioritized' | 'game-loading' | 'game-cards';
+type FlowStep = 'input' | 'review' | 'prioritized' | 'game-cards';
 
 interface ExtractedTask {
   title: string;
@@ -141,7 +140,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
           <div 
             {...attributes}
             {...listeners}
-            className="flex-shrink-0 w-8 h-8 bg-gray-500 text-white rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
+            className="flex-shrink-0 w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
             aria-label="Drag to reorder"
           >
             {index + 1}
@@ -213,7 +212,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
         <div 
           {...attributes}
           {...listeners}
-          className="flex-shrink-0 w-8 h-8 bg-gray-500 text-white rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
+          className="flex-shrink-0 w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
           aria-label="Drag to reorder"
         >
           {index + 1}
@@ -283,7 +282,7 @@ const Tasks = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  // Mr. Intent's sarcastic loading messages
+  // Loading messages
   const loadingMessages = [
     "I guess I'll do something with this",
     "Ok..ok..I'll sort your thoughts", 
@@ -312,6 +311,7 @@ const Tasks = () => {
   const [loadingTimeEstimates, setLoadingTimeEstimates] = useState<Set<string>>(new Set());
   const [cardDimensions, setCardDimensions] = useState({ top: 0, height: 0 });
   const [hoveredTaskIndex, setHoveredTaskIndex] = useState<number | undefined>(undefined);
+  const [timelineExpanded, setTimelineExpanded] = useState(false);
   const { toast } = useToast();
 
   // Refs for global auto-focus functionality
@@ -824,7 +824,7 @@ const Tasks = () => {
   const handleShuffle = async (tasksToProcess?: string[]) => {
     console.log('🎲 Shuffle button clicked - Starting AI prioritization...');
     
-    // Go directly to game-cards with loading state
+    // Go directly to game cards with processing state
     setCurrentStep('game-cards');
     setIsProcessing(true);
     
@@ -832,6 +832,7 @@ const Tasks = () => {
       // Run AI prioritization in background while loading card shows
       const prioritized = await prioritizeTasks(tasksToProcess);
       setPrioritizedTasks(prioritized);
+      console.log('✅ Prioritization complete, tasks ready for game cards');
       
     } catch (error) {
       console.error('Error during shuffling:', error);
@@ -868,8 +869,9 @@ const Tasks = () => {
     console.log('📋 Setting tasks in manual order for game cards...');
     setTaggedTasks(orderedTaggedTasks);
     
-    // Show loading screen immediately
-    setCurrentStep('game-loading');
+    // Go directly to game cards with processing state
+    setCurrentStep('game-cards');
+    setIsProcessing(true);
     
     // Run AI categorization in background for logging (optional)
     setTimeout(async () => {
@@ -941,7 +943,8 @@ const Tasks = () => {
         description: `${tasksToSave.length} tasks saved in order`,
       });
 
-      setCurrentStep('game-loading');
+      // Already on game-cards step, just stop processing
+      setIsProcessing(false);
     } catch (error) {
       console.error('Error saving tasks:', error);
       
@@ -988,7 +991,8 @@ const Tasks = () => {
         description: `${tasksToSave.length} prioritized tasks saved`,
       });
 
-      setCurrentStep('game-loading');
+      // Already on game-cards step, just stop processing
+      setIsProcessing(false);
     } catch (error) {
       console.error('Error saving prioritized tasks:', error);
       
@@ -1009,10 +1013,11 @@ const Tasks = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4">
-      {/* Theme Toggle and Settings - Fixed Top Right */}
-      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
-        {currentStep === 'input' && (
+    <PiPProvider>
+      <div className="min-h-screen bg-background p-2 sm:p-4">
+      {/* Settings - Fixed Top Right */}
+      {currentStep === 'input' && (
+        <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
           <Button
             variant="ghost"
             size="icon"
@@ -1020,9 +1025,8 @@ const Tasks = () => {
           >
             <Settings className="h-4 w-4" />
           </Button>
-        )}
-        <ThemeToggle />
-      </div>
+        </div>
+      )}
       
       {/* Back Button - Fixed Top Left */}
       {currentStep !== 'input' && (
@@ -1047,15 +1051,17 @@ const Tasks = () => {
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <Card 
-            ref={cardRef}
-            id="main-task-container"
-            className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out relative ${
-              isTransitioning ? 'shadow-2xl' : ''
-            }`} 
-            style={{ 
-              transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)'
-            }}>
+          <div className="relative w-full h-full flex items-center justify-center">
+            <Card 
+              ref={cardRef}
+              id="main-task-container"
+              className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out shadow-xl ${
+                isTransitioning ? 'shadow-2xl' : ''
+              }`} 
+              style={{ 
+                transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                zIndex: 2 // Main container in middle layer
+              }}>
             <CardHeader className="text-center px-4 sm:px-6 pb-2">
               {/* Mode Toggle with Magical Transition */}
               <div className="flex items-center justify-center gap-4 mb-2">
@@ -1257,7 +1263,7 @@ const Tasks = () => {
                       size="lg"
                     >
                       <ArrowRight className="w-4 h-4 mr-2" />
-                      Share with Mr.Intent
+                      Share for AI Processing
                     </Button>
                   ) : (listTasks.length > 0 || !isTransitioning) ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-12">
@@ -1291,22 +1297,39 @@ const Tasks = () => {
               )}
             </CardContent>
             
-            {/* Timeline - Only show in List View - positioned relative to card */}
+            </Card>
+            
+            {/* Timeline - Now sibling of Card, positioned relative to wrapper */}
             {inputMode === 'list' && listTasks.length > 0 && (
               <div 
-                className="hidden lg:block absolute w-80 top-0 h-full"
+                className="hidden lg:block absolute w-80 h-full transition-all duration-500 ease-in-out cursor-pointer group"
                 style={{
-                  right: '-21rem' // Timeline width (20rem) + gap (1rem)
+                  top: 0,
+                  right: timelineExpanded ? '-7rem' : '13rem', // Reversed - visible when collapsed, hidden when expanded
+                  zIndex: timelineExpanded ? 0 : 0, // Swapped z-index - above when collapsed, behind when expanded
+                  transform: !timelineExpanded ? 'translateX(0)' : 'translateX(0)', // Base transform
                 }}
+                onMouseEnter={(e) => {
+                  if (!timelineExpanded) {
+                    e.currentTarget.style.transform = 'translateX(2rem)'; // Pull out slightly when collapsed and hovered
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!timelineExpanded) {
+                    e.currentTarget.style.transform = 'translateX(0)'; // Return to normal position
+                  }
+                }}
+                onClick={() => setTimelineExpanded(!timelineExpanded)}
               >
                 <TaskTimeline 
                   tasks={listTasks}
                   timeEstimates={taskTimeEstimates}
                   hoveredTaskIndex={hoveredTaskIndex}
+                  className={timelineExpanded ? 'bg-transparent' : ''}
                 />
               </div>
             )}
-          </Card>
+          </div>
         )}
 
 
@@ -1406,7 +1429,7 @@ const Tasks = () => {
                   <div key={task.id} className="p-4 bg-card border rounded-lg">
                     <div className="flex items-start gap-4">
                       {/* Priority Position */}
-                      <div className="flex-shrink-0 w-10 h-10 bg-gray-500 text-white rounded-full flex items-center justify-center text-lg font-bold">
+                      <div className="flex-shrink-0 w-10 h-10 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-lg font-bold">
                         {index + 1}
                       </div>
                       
@@ -1483,14 +1506,6 @@ const Tasks = () => {
           </Card>
         )}
 
-        {/* Game Loading Step */}
-        {currentStep === 'game-loading' && (
-          <GameLoadingScreen
-            taskCount={reviewedTasks.length}
-            onLoadingComplete={() => setCurrentStep('game-cards')}
-            isProcessing={isProcessing}
-          />
-        )}
 
         {/* Game Cards Step */}
         {currentStep === 'game-cards' && (
@@ -1510,10 +1525,7 @@ const Tasks = () => {
             }))}
             isLoading={isProcessing}
             isProcessing={isProcessing}
-            onLoadingComplete={() => {
-              // Loading complete is handled by the AI processing completion
-              // The isProcessing state will be set to false in the finally block
-            }}
+            onLoadingComplete={() => setIsProcessing(false)}
             onComplete={() => {
               toast({
                 title: "Session Complete!",
@@ -1533,7 +1545,8 @@ const Tasks = () => {
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
       />
-    </div>
+      </div>
+    </PiPProvider>
   );
 };
 

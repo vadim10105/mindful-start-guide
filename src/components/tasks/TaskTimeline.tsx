@@ -83,17 +83,13 @@ export function TaskTimeline({
 
   return (
     <div className={`bg-card/30 rounded-xl h-full flex flex-col ${className}`}>
-      {/* Header */}
-      <div className="text-xs font-medium text-muted-foreground/60 text-center tracking-widest flex-shrink-0 pt-4 px-4 pb-4">
-        DAY TIMELINE
-      </div>
-      
       {/* Timeline Blocks - Fit to available space */}
-      <div className="flex-1 flex flex-col px-4 pb-4 gap-3">
+      <div className="flex-1 flex flex-col px-4 py-4 gap-3">
         {blocks.map((block, index) => {
           // Calculate proportional height based on duration
           const totalMinutes = blocks.reduce((sum, b) => sum + b.durationMinutes, 0);
           const proportion = block.durationMinutes / totalMinutes;
+          const isLastTask = index === blocks.length - 1;
           
           return (
             <TimelineBlockItem
@@ -105,6 +101,7 @@ export function TaskTimeline({
               isLoadingSimplified={isLoading}
               totalTasks={blocks.length}
               heightProportion={proportion}
+              showEndTime={isLastTask}
             />
           );
         })}
@@ -121,9 +118,10 @@ interface TimelineBlockItemProps {
   isLoadingSimplified?: boolean;
   totalTasks: number;
   heightProportion: number;
+  showEndTime?: boolean;
 }
 
-function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplified, totalTasks, heightProportion }: TimelineBlockItemProps) {
+function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplified, totalTasks, heightProportion, showEndTime }: TimelineBlockItemProps) {
   // Use proportional height based on task duration
   
   return (
@@ -131,13 +129,6 @@ function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplifi
       className="flex items-start gap-3" 
       style={{ flex: `${heightProportion} 0 0` }}
     >
-      {/* Time Marker */}
-      <div className="w-12 flex-shrink-0 text-right">
-        <div className="text-xs text-muted-foreground/60 font-mono">
-          {block.startTimeString}
-        </div>
-      </div>
-      
       {/* Task Block */}
       <div 
         className={`flex-1 rounded-lg px-4 py-4 bg-muted/20 transition-all duration-200 flex h-full ${
@@ -145,7 +136,7 @@ function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplifi
         }`}
       >
         <div className="flex flex-col justify-center w-full h-full">
-          <div className="text-sm text-foreground/80 leading-tight font-normal">
+          <div className="text-sm text-foreground/65 leading-tight font-normal">
             {isLoadingSimplified ? (
               <div className="animate-pulse bg-muted/40 rounded h-4 w-20"></div>
             ) : (
@@ -153,6 +144,18 @@ function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplifi
             )}
           </div>
         </div>
+      </div>
+      
+      {/* Time Marker */}
+      <div className="w-12 flex-shrink-0 text-left flex flex-col justify-between h-full">
+        <div className="text-xs text-muted-foreground/60 font-mono">
+          {block.startTimeString}
+        </div>
+        {showEndTime && (
+          <div className="text-xs text-muted-foreground/60 font-mono">
+            {block.endTimeString}
+          </div>
+        )}
       </div>
     </div>
   );

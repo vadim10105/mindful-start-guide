@@ -8,47 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 48 100% 96%;
-    --foreground: 202 7% 24%;
-
-    --card: 48 100% 96%;
-    --card-foreground: 202 7% 24%;
-
-    --popover: 48 100% 96%;
-    --popover-foreground: 202 7% 24%;
-
-    --primary: 48 100% 50%;
-    --primary-foreground: 202 7% 24%;
-
-    --secondary: 202 7% 24%;
-    --secondary-foreground: 48 100% 96%;
-
-    --muted: 48 95% 92%;
-    --muted-foreground: 202 7% 40%;
-
-    --accent: 48 95% 92%;
-    --accent-foreground: 202 7% 24%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 48 100% 96%;
-
-    --border: 48 80% 88%;
-    --input: 48 80% 88%;
-    --ring: 48 100% 50%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 48 100% 96%;
-    --sidebar-foreground: 202 7% 24%;
-    --sidebar-primary: 48 100% 50%;
-    --sidebar-primary-foreground: 202 7% 24%;
-    --sidebar-accent: 48 95% 92%;
-    --sidebar-accent-foreground: 202 7% 24%;
-    --sidebar-border: 48 80% 88%;
-    --sidebar-ring: 48 100% 50%;
-  }
-
-  .dark {
+    /* Dark mode only - simplified CSS variables */
     --background: 202 7% 24%;
     --foreground: 48 100% 96%;
 
@@ -76,6 +36,9 @@ All colors MUST be HSL.
     --border: 202 7% 32%;
     --input: 202 7% 32%;
     --ring: 48 100% 50%;
+
+    --radius: 0.5rem;
+
     --sidebar-background: 202 7% 24%;
     --sidebar-foreground: 48 100% 96%;
     --sidebar-primary: 48 100% 50%;
@@ -146,6 +109,115 @@ All colors MUST be HSL.
 
 .animate-shuffle-card-bottom {
   animation: shuffle-card-bottom 2s ease-in-out infinite 0.6s;
+}
+
+/* Chrome Document Picture-in-Picture Styles */
+/* These styles apply to content rendered inside Chrome's native PiP window */
+#pip-react-root {
+  font-size: 14px; /* Slightly smaller text for compact display */
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Compact PiP interface adjustments */
+#pip-react-root .swiper {
+  height: auto !important;
+  max-height: calc(100% - 60px); /* Leave space for navigation */
+}
+
+#pip-react-root .swiper-slide {
+  padding: 6px;
+}
+
+#pip-react-root .task-card {
+  transform: scale(0.9); /* Slightly smaller cards for compact view */
+  transform-origin: center;
+}
+
+#pip-react-root .navigation-dots {
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+#pip-react-root .navigation-dots .dot {
+  width: 6px;
+  height: 6px;
+  margin: 0 3px;
+}
+
+#pip-react-root .character-display {
+  transform: scale(0.75); /* Smaller character for PiP */
+  bottom: 6px;
+  right: 6px;
+}
+
+#pip-react-root .todays-collection {
+  transform: scale(0.8); /* Smaller collection for PiP */
+  bottom: 6px;
+  left: 6px;
+}
+
+/* Adjust button sizes for PiP */
+#pip-react-root .btn-sm {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+#pip-react-root .btn-lg {
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+/* Adjust card content for smaller space */
+#pip-react-root .card-content {
+  padding: 12px;
+}
+
+#pip-react-root .card-title {
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+#pip-react-root .card-description {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Progress indicators */
+#pip-react-root .progress-ring {
+  width: 40px;
+  height: 40px;
+}
+
+/* Task time and status indicators */
+#pip-react-root .task-time {
+  font-size: 12px;
+}
+
+#pip-react-root .task-status {
+  font-size: 11px;
+}
+
+/* Custom scrollbar for PiP content */
+#pip-react-root *::-webkit-scrollbar {
+  width: 4px;
+}
+
+#pip-react-root *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
+}
+
+#pip-react-root *::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 2px;
+}
+
+#pip-react-root *::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
 }
 
 

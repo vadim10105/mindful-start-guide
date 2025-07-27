@@ -59,34 +59,18 @@ export const TaskActions = ({
 
   if (isPaused) {
     return (
-      <div className="space-y-2">
-        <div className="text-xs text-amber-400 font-medium">
-          Paused • {formatTime(pausedTime)} spent
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => onCarryOn(task.id)}
-            size="sm"
-            className="flex-1 bg-amber-500 text-white hover:bg-amber-600"
-          >
-            <Play className="w-4 h-4 mr-1" />
-            Carry On
-          </Button>
-          <Button 
-            onClick={() => onSkip(task.id)}
-            size="sm"
-            variant="outline"
-            className="flex-1"
-          >
-            <SkipForward className="w-4 h-4 mr-1" />
-            Skip
-          </Button>
-        </div>
-      </div>
+      <Button 
+        onClick={() => onCarryOn(task.id)}
+        size="sm"
+        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+      >
+        <Play className="w-4 h-4 mr-2" />
+        Play
+      </Button>
     );
   }
 
-  if (!isActiveCommitted && hasCommittedToTask) {
+  if (!isActiveCommitted && hasCommittedToTask && activeCommittedIndex >= 0) {
     return (
       <div className="space-y-2">
         <div className="text-xs text-card-foreground/70">
@@ -123,7 +107,7 @@ export const TaskActions = ({
           className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Play className="w-4 h-4 mr-2" />
-          Play this card
+          Play
         </Button>
       );
     }
@@ -142,10 +126,10 @@ export const TaskActions = ({
         <Button 
           onClick={() => onComplete(task.id)}
           size="sm"
-          className="flex-1 bg-green-600 text-white hover:bg-green-700"
+          variant="outline"
+          className="hover:bg-green-600 hover:text-white hover:border-green-600 px-3"
         >
-          <Check className="w-4 h-4 mr-1" />
-          Mark Complete
+          <Check className="w-4 h-4" />
         </Button>
         <Button 
           onClick={() => onMoveOn(task.id)}
@@ -154,7 +138,7 @@ export const TaskActions = ({
           className="flex-1"
         >
           <Pause className="w-4 h-4 mr-1" />
-          Move On
+          Pause
         </Button>
       </div>
     </div>

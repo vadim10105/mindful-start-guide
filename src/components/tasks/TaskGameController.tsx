@@ -1,0 +1,272 @@
+import { useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { TodaysCollection } from "./TodaysCollection";
+import { TaskSwiper } from "./TaskSwiper";
+import { NavigationDots } from "./NavigationDots";
+import { TaskListOverlay } from "./TaskListOverlay";
+import { useGameState, TaskCardData } from "./GameState";
+import { ShuffleAnimation } from "./ShuffleAnimation";
+
+// New decomposed managers
+import { useTaskTimerManager, useTaskTimerHelpers } from "./TaskTimerManager";
+import { useTaskNavigationManager } from "./TaskNavigationManager";
+import { useTaskProgressTracker } from "./TaskProgressTracker";
+import { usePictureInPictureManager, PictureInPictureManager } from "./PictureInPictureManager";
+
+// External dependencies
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface TaskGameControllerProps {
+  tasks: TaskCardData[];
+  onComplete: () => void;
+  onTaskComplete?: (taskId: string) => void;
+  isLoading?: boolean;
+  isProcessing?: boolean;
+  onLoadingComplete?: () => void;
+}
+
+export const TaskGameController = ({ 
+  tasks, 
+  onComplete, 
+  onTaskComplete, 
+  isLoading = false, 
+  isProcessing = false, 
+  onLoadingComplete 
+}: TaskGameControllerProps) => {
+  const gameState = useGameState(tasks);
+  const { toast } = useToast();
+  const { formatTime } = useTaskTimerHelpers();
+
+  // Sunset images for card backs
+  const sunsetImages = [
+    'https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=400&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?w=400&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=600&fit=crop',
+  ];
+
+  // PiP Manager
+  const pipManager = usePictureInPictureManager({
+    tasks,
+    isLoading,
+    isProcessing
+  });
+
+  // Define handleCommitToCurrentTask first since other hooks need it
+  const handleCommitToCurrentTask = useCallback(() => {
+    // Don't allow action if already committed to avoid conflicts with PiP
+    if (gameState.hasCommittedToTask && pipManager.isPiPActive) return;
+    
+    const currentTask = tasks[gameState.currentViewingIndex];
+    if (!currentTask) return;
+    
+    // Check if this task was previously paused
+    const pausedTime = gameState.pausedTasks.get(currentTask.id) || 0;
+    const isResumingPausedTask = pausedTime > 0;
+    
+    gameState.setHasCommittedToTask(true);
+    gameState.setActiveCommittedIndex(gameState.currentViewingIndex);
+    gameState.setFlowStartTime(Date.now());
+    gameState.setFlowProgress(0);
+    gameState.setNavigationUnlocked(false);
+    
+    if (isResumingPausedTask) {
+      // Resume from paused time - adjust start time to account for time already spent
+      const adjustedStartTime = Date.now() - (pausedTime * 60000);
+      
+      gameState.setTaskStartTimes(prev => ({
+        ...prev,
+        [currentTask.id]: adjustedStartTime
+      }));
+      
+      // Remove from paused tasks since we're resuming
+      gameState.setPausedTasks(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(currentTask.id);
+        return newMap;
+      });
+    } else {
+      // Fresh start for new task
+      gameState.setTaskStartTimes(prev => ({
+        ...prev,
+        [currentTask.id]: Date.now()
+      }));
+    }
+  }, [
+    gameState.hasCommittedToTask,
+    pipManager.isPiPActive,
+    tasks,
+    gameState.currentViewingIndex,
+    gameState.pausedTasks,
+    gameState.setHasCommittedToTask,
+    gameState.setActiveCommittedIndex,
+    gameState.setFlowStartTime,
+    gameState.setFlowProgress,
+    gameState.setNavigationUnlocked,
+    gameState.setTaskStartTimes,
+    gameState.setPausedTasks
+  ]);
+
+  // Task Progress Tracker
+  const progressTracker = useTaskProgressTracker({
+    tasks,
+    timerRef: gameState.timerRef,
+    taskStartTimes: gameState.taskStartTimes,
+    pausedTasks: gameState.pausedTasks,
+    lastCompletedTask: gameState.lastCompletedTask,
+    currentViewingIndex: gameState.currentViewingIndex,
+    activeCommittedIndex: gameState.activeCommittedIndex,
+    sunsetImages,
+    setFlowProgress: gameState.setFlowProgress,
+    setNavigationUnlocked: gameState.setNavigationUnlocked,
+    setHasCommittedToTask: gameState.setHasCommittedToTask,
+    setIsInitialLoad: gameState.setIsInitialLoad,
+    setCompletedTasks: gameState.setCompletedTasks,
+    setLastCompletedTask: gameState.setLastCompletedTask,
+    setTodaysCompletedTasks: gameState.setTodaysCompletedTasks,
+    setPausedTasks: gameState.setPausedTasks,
+    setTaskStartTimes: gameState.setTaskStartTimes,
+    setActiveCommittedIndex: gameState.setActiveCommittedIndex,
+    setFlowStartTime: gameState.setFlowStartTime,
+    onTaskComplete
+  });
+
+  // Navigation Manager
+  const navigationManager = useTaskNavigationManager({
+    tasks,
+    currentViewingIndex: gameState.currentViewingIndex,
+    activeCommittedIndex: gameState.activeCommittedIndex,
+    hasCommittedToTask: gameState.hasCommittedToTask,
+    completedTasks: gameState.completedTasks,
+    isNavigationLocked: gameState.isNavigationLocked,
+    swiperRef: gameState.swiperRef,
+    setCurrentViewingIndex: gameState.setCurrentViewingIndex,
+    setShowTaskList: gameState.setShowTaskList,
+    onCommitToCurrentTask: handleCommitToCurrentTask,
+    onTaskComplete: progressTracker.handleTaskComplete
+  });
+
+  // Timer Manager
+  useTaskTimerManager({
+    flowStartTime: gameState.flowStartTime,
+    hasCommittedToTask: gameState.hasCommittedToTask,
+    navigationUnlocked: gameState.navigationUnlocked,
+    activeCommittedIndex: gameState.activeCommittedIndex,
+    tasks,
+    timerRef: gameState.timerRef,
+    setFlowProgress: gameState.setFlowProgress,
+    setNavigationUnlocked: gameState.setNavigationUnlocked,
+    setIsInitialLoad: gameState.setIsInitialLoad
+  });
+
+  // Auto-activate first card on initial load (skip "Play Card" step)
+  useEffect(() => {
+    if (tasks.length > 0 && gameState.isInitialLoad && !gameState.hasCommittedToTask && !gameState.navigationUnlocked) {
+      console.log('Auto-activating first card on initial load');
+      handleCommitToCurrentTask();
+    }
+  }, [tasks, gameState.isInitialLoad, gameState.hasCommittedToTask, gameState.navigationUnlocked, handleCommitToCurrentTask]);
+
+  // Show loading state if tasks are being processed
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-full px-4">
+          <ShuffleAnimation
+            isProcessing={isProcessing}
+            onLoadingComplete={onLoadingComplete}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Picture-in-Picture Manager */}
+      <PictureInPictureManager
+        tasks={tasks}
+        onComplete={onComplete}
+        onTaskComplete={onTaskComplete}
+        isLoading={isLoading}
+        isProcessing={isProcessing}
+        onLoadingComplete={onLoadingComplete}
+        gameState={gameState}
+        pipManager={pipManager}
+      />
+
+      {/* Main Interface - Hide when PiP is active */}
+      {!pipManager.isPiPActive && (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="w-full px-4">
+            <div className="w-full animate-in fade-in-0 duration-500 ease-out">
+              {/* Main Card Display */}
+              <div className="relative">
+                <TaskSwiper
+                  ref={gameState.swiperRef}
+                  tasks={tasks}
+                  currentViewingIndex={gameState.currentViewingIndex}
+                  activeCommittedIndex={gameState.activeCommittedIndex}
+                  hasCommittedToTask={gameState.hasCommittedToTask}
+                  completedTasks={gameState.completedTasks}
+                  pausedTasks={gameState.pausedTasks}
+                  isNavigationLocked={gameState.isNavigationLocked}
+                  flowProgress={gameState.flowProgress}
+                  sunsetImages={sunsetImages}
+                  taskStartTimes={gameState.taskStartTimes}
+                  navigationUnlocked={gameState.navigationUnlocked}
+                  onSlideChange={(activeIndex) => gameState.setCurrentViewingIndex(activeIndex)}
+                  onCommit={handleCommitToCurrentTask}
+                  onComplete={progressTracker.handleTaskComplete}
+                  onMoveOn={progressTracker.handlePauseTask}
+                  onCarryOn={progressTracker.handleCarryOn}
+                  onSkip={progressTracker.handleSkip}
+                  onBackToActive={navigationManager.handleBackToActiveCard}
+                  onAddToCollection={progressTracker.handleAddToCollectionDB}
+                  formatTime={formatTime}
+                />
+
+                {/* Navigation Dots */}
+                <NavigationDots
+                  tasks={tasks}
+                  currentViewingIndex={gameState.currentViewingIndex}
+                  activeCommittedIndex={gameState.activeCommittedIndex}
+                  hasCommittedToTask={gameState.hasCommittedToTask}
+                  completedTasks={gameState.completedTasks}
+                  pausedTasks={gameState.pausedTasks}
+                />
+
+                {/* Completion */}
+                {gameState.completedTasks.size === tasks.length && (
+                  <div className="text-center">
+                    <Button onClick={onComplete} size="lg" className="w-full max-w-xs">
+                      Finish Session
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Today's Collection */}
+          <TodaysCollection 
+            completedTasks={gameState.todaysCompletedTasks}
+            isVisible={gameState.todaysCompletedTasks.length > 0}
+          />
+
+          {/* Task List Overlay */}
+          <TaskListOverlay
+            showTaskList={gameState.showTaskList}
+            tasks={tasks}
+            getTaskStatus={gameState.getTaskStatus}
+            getTaskTimeSpent={gameState.getTaskTimeSpent}
+            formatTime={formatTime}
+            onSeeAheadPress={navigationManager.handleSeeAheadPress}
+            onSeeAheadRelease={navigationManager.handleSeeAheadRelease}
+          />
+
+        </div>
+      )}
+    </>
+  );
+};

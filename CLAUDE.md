@@ -1,92 +1,42 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Context
 
-## Development Commands
+I am a solo developer working on personal/small projects
+This is NOT an enterprise-level project
+I prefer simple, direct solutions over "best practices"
+I'm a vibe coder who values shipping over perfect architecture
+Default Approach
 
-```bash
-# Development server
-npm run dev
+Always assume this is a POC (Proof of Concept) unless explicitly told otherwise
+Keep it simple and direct - don't overthink it
+Start with the most obvious solution that works
+No frameworks unless absolutely necessary
+Prefer single files over multiple files when reasonable
+Hardcode reasonable defaults instead of building configuration systems
+What NOT to do
 
-# Build for production
-npm run build
+Don't add abstractions until we actually need them
+Don't build for imaginary future requirements
+Don't add complex error handling for edge cases that probably won't happen
+Don't suggest design patterns unless the problem actually requires them
+Don't optimize prematurely
+Don't add configuration for things that rarely change
+Transition Guidelines
 
-# Build for development (with dev mode)
-npm run build:dev
+If the POC works and needs to become more robust:
 
-# Lint code
-npm run lint
+Add basic error handling (try/catch, input validation)
+Improve user-facing messages
+Extract functions only for readability, not for "reusability"
+Keep the same simple approach - just make it more reliable
+Language to Use
 
-# Preview production build
-npm run preview
+"Quick POC to test if this works"
+"Throwaway prototype"
+"Just make it work"
+"The dumbest thing that works"
+"Keep it simple and direct"
+When in Doubt
 
-# Install dependencies
-npm i
-```
-
-## Project Architecture
-
-This is a React-based AI-powered task management application with a gamified card interface. The project uses:
-
-- **Frontend**: React 18 + TypeScript + Vite
-- **UI**: shadcn/ui components + Tailwind CSS
-- **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **AI**: OpenAI API via Supabase Edge Functions
-- **State**: React Query for server state, local React state
-- **Router**: React Router DOM
-
-### Key Directories
-
-- `src/pages/` - Main application routes (Index, Auth, Onboarding, Tasks, Settings)
-- `src/components/onboarding/` - Multi-step user setup flow
-- `src/components/tasks/` - Core game interface and task management
-- `src/components/settings/` - User preference management
-- `src/components/ui/` - Reusable shadcn/ui components
-- `src/integrations/supabase/` - Database client and type definitions
-- `src/utils/` - Shared utilities including task categorization
-- `supabase/functions/` - Edge functions for AI processing
-
-### Database Schema
-
-Core tables with Row Level Security (RLS):
-- `profiles` - User data and preferences (JSONB task preferences, energy times)
-- `tasks` - Task management with AI scoring fields
-- `subtasks` - Task breakdown and progress
-- `daily_stats` - User analytics and progress tracking
-
-### AI Integration
-
-Three Supabase Edge Functions provide AI capabilities:
-- `categorize-task` - Automatic task categorization into 7 categories
-- `prioritize-tasks` - AI-powered task ordering based on user preferences
-- `process-brain-dump` - Natural language task processing
-
-Task categories: Creative, Analytical, Social, Physical, Routine, Learning, Planning
-
-### Key Components
-
-- `GameTaskCards.tsx` (692 lines) - Main game controller, needs refactoring
-- `TaskSwiper.tsx` - Card swiping interface using Swiper.js
-- `MrIntentCharacter.tsx` - Lazy mascot with contextual messages
-- `OnboardingFlow.tsx` - Multi-step user setup with task preferences
-
-### Authentication & Security
-
-- Supabase Auth with email/password
-- RLS policies ensure users only access their own data
-- Environment variables: `SUPABASE_URL`, `SUPABASE_ANON_KEY`
-
-### Styling System
-
-- Tailwind CSS with semantic tokens in `src/index.css`
-- Dark/light theme support via `next-themes`
-- Path alias `@/` points to `src/`
-- Custom UI components from shadcn/ui
-
-### Development Notes
-
-- Large components should be broken down (especially GameTaskCards.tsx)
-- TypeScript strict mode enabled
-- No test framework currently configured
-- Toast notifications for user feedback via sonner
-- Canvas confetti for celebration animations
+Ask: "Would copy-pasting this code be simpler than making it generic?" If yes, copy-paste it. '''

@@ -11,7 +11,7 @@ const placeholderMessages = [
   "This is your brain's secret stash. Reveal away.",
   "Don't worry, I'm cool with your typos.",
   "Procrastination fuel? Let's get it on paper.",
-  "If you wander off, just blame Mr.Intent.",
+  "Stay focused on your current task.",
   "One step closer to 'done' — or at least closer than before."
 ];
 
