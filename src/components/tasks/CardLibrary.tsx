@@ -45,9 +45,10 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
 
   // Sunset images for card backs
   const sunsetImages = [
-    'https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=400&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?w=400&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=600&fit=crop',
+    '/reward-1.jpg',
+    '/reward-2.jpeg',
+    '/reward-3.jpeg',
+    '/reward-4.jpeg',
   ];
 
   useEffect(() => {

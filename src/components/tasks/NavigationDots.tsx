@@ -30,18 +30,17 @@ export const NavigationDots = ({
       {tasks.map((task, index) => (
         <div
           key={index}
-          className={`w-3 h-3 rounded-full transition-all duration-300 ${
-            index === currentViewingIndex
-              ? 'bg-primary scale-125'
-              : completedTasks.has(task.id)
-              ? 'bg-green-500'
-              : pausedTasks.has(task.id)
-              ? 'bg-amber-500'
-              : index === activeCommittedIndex && hasCommittedToTask
-              ? 'bg-primary/60 border-2 border-primary'
-              : 'bg-muted border-2 border-muted-foreground/30'
-          }`}
-        />
+          className="w-3 h-3 rounded-full transition-all duration-300 relative"
+        >
+          {index === currentViewingIndex ? (
+            <>
+              <div className="w-3 h-3 rounded-full bg-white/30" />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-gray-700/50" />
+            </>
+          ) : (
+            <div className="w-3 h-3 rounded-full bg-white/20" />
+          )}
+        </div>
       ))}
     </div>
   );

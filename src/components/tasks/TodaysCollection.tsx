@@ -100,24 +100,43 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                       }}
                     />
                     <div className="absolute inset-0 bg-black/40" />
+                    <div className="absolute inset-0 paper-texture" />
+                    <div className="absolute top-3 left-2 flex z-30">
+                      {Array.from({length: 8}, (_, i) => {
+                        const currentCard = parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
+                        return (
+                          <div 
+                            key={i} 
+                            className={`w-2 h-2 border border-white/20 ${
+                              i < currentCard ? 'bg-white/40' : 'bg-transparent'
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="absolute top-1 right-2 text-gray-300 text-2xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
+                      {task.sunsetImageUrl.match(/reward-(\d+)/)?.[1]?.padStart(2, '0') || '01'}
+                    </div>
                     
-                    <CardContent className="relative h-full flex flex-col justify-between p-4 text-white">
+                    <CardContent className="relative h-full flex flex-col justify-end p-4 text-white">
                       <div className="text-center">
                       </div>
                       
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-sm leading-tight line-clamp-2">
-                          {task.title}
+                      <div className="space-y-1 text-left">
+                        <h4 className="font-medium text-sm leading-tight">
+                          Fleeting Moments (1 of 8)
                         </h4>
-                        
-                        <div className="flex items-center justify-center gap-1 text-xs opacity-90">
-                          <Clock className="h-3 w-3" />
-                          {formatTime(task.timeSpent)}
-                        </div>
-                        
-                        <div className="text-xs text-center opacity-75">
-                          {task.completedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
+                        <a 
+                          href="https://www.instagram.com/p/C5oS4mbIA2F/?igsh=ZjdxbXFodzhoMTE5" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs opacity-70 hover:opacity-90 underline transition-opacity block text-left"
+                        >
+                          @hanontheroad
+                        </a>
+                        <p className="text-xs opacity-60 leading-relaxed italic">
+                          strolling down the street of Paris, listening to the symphony called life.
+                        </p>
                       </div>
                     </CardContent>
                   </Card>

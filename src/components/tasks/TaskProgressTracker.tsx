@@ -1,4 +1,3 @@
-import confetti from 'canvas-confetti';
 import { supabase } from "@/integrations/supabase/client";
 import { TaskCardData, CompletedTask } from './GameState';
 
@@ -63,13 +62,6 @@ export const useTaskProgressTracker = ({
     const startTime = taskStartTimes[taskId];
     const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
     
-    // Celebration confetti
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57']
-    });
 
     // Clear timer and reset flow state
     if (timerRef.current) {

@@ -6,7 +6,6 @@ import { useTaskTimer } from "../TaskTimer";
 import { ShuffleAnimation } from "../ShuffleAnimation";
 
 import { supabase } from "@/integrations/supabase/client";
-import confetti from "canvas-confetti";
 
 interface PiPCardProps {
   tasks: TaskCardData[];
@@ -42,9 +41,10 @@ export const PiPCard = ({
 
   // Sunset images for card backs
   const sunsetImages = [
-    'https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?w=400&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1482938289607-e9573fc25ebb?w=400&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=600&fit=crop',
+    '/reward-1.jpg',
+    '/reward-2.jpeg',
+    '/reward-3.jpeg',
+    '/reward-4.jpeg',
   ];
 
   // Show active committed task if there is one, otherwise show current viewing index
@@ -209,38 +209,6 @@ export const PiPCard = ({
     const startTime = gameState.taskStartTimes[taskId];
     const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
     
-    // Target confetti to the PiP window if available
-    const confettiConfig = {
-      particleCount: 50,
-      spread: 60,
-      origin: { y: 0.6 },
-      colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57']
-    };
-    
-    if (pipWindow && pipWindow.document) {
-      const canvas = pipWindow.document.createElement('canvas');
-      canvas.style.position = 'fixed';
-      canvas.style.top = '0';
-      canvas.style.left = '0';
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      canvas.style.pointerEvents = 'none';
-      canvas.style.zIndex = '9999';
-      pipWindow.document.body.appendChild(canvas);
-      
-      confetti({
-        ...confettiConfig,
-        canvas
-      });
-      
-      setTimeout(() => {
-        if (canvas && canvas.parentNode) {
-          canvas.parentNode.removeChild(canvas);
-        }
-      }, 3000);
-    } else {
-      confetti(confettiConfig);
-    }
 
     if (gameState.timerRef.current) {
       clearInterval(gameState.timerRef.current);

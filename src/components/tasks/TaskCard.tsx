@@ -1,14 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Heart, AlertTriangle, Zap, Check, Wand2 } from "lucide-react";
+import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
 import { TaskProgressBar } from "./TaskProgressBar";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
 
 interface TaskCardData {
   id: string;
@@ -282,10 +280,37 @@ export const TaskCard = ({
             }}
           />
           <div className="absolute inset-0 bg-black/40 rounded-2xl" />
-          <div className="relative h-full flex flex-col justify-center p-6 text-white z-10">
-            <div className="text-center">
-              <h3 className="text-lg font-bold mb-2">Task Complete!</h3>
-              <p className="text-sm opacity-90">{task.title}</p>
+          <div className="absolute inset-0 paper-texture rounded-2xl" />
+          <div className="absolute top-6 left-4 flex z-30">
+            {Array.from({length: 8}, (_, i) => {
+              const currentCard = parseInt(sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
+              return (
+                <div 
+                  key={i} 
+                  className={`w-3 h-3 border border-white/20 ${
+                    i < currentCard ? 'bg-white/40' : 'bg-transparent'
+                  }`}
+                />
+              );
+            })}
+          </div>
+          <div className="absolute top-2 right-4 text-gray-300 text-4xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
+            {sunsetImageUrl.match(/reward-(\d+)/)?.[1]?.padStart(2, '0') || '01'}
+          </div>
+          <div className="relative h-full flex flex-col justify-end p-6 text-white z-10">
+            <div className="text-left space-y-3">
+              <h3 className="text-lg font-bold mb-1">Fleeting Moments</h3>
+              <a 
+                href="https://www.instagram.com/p/C5oS4mbIA2F/?igsh=ZjdxbXFodzhoMTE5" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm opacity-80 hover:opacity-100 underline transition-opacity"
+              >
+                @hanontheroad on Instagram
+              </a>
+              <p className="text-xs opacity-70 leading-relaxed italic">
+                strolling down the street of Paris, listening to the symphony called life. (Paris 2024)
+              </p>
             </div>
           </div>
         </div>
