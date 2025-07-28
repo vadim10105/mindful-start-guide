@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, Images } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 import { TaskProgressBar } from "./TaskProgressBar";
+import { TaskTimeDisplay } from "./TaskTimeDisplay";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -104,7 +105,6 @@ export const TaskCard = ({
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
   const [isPauseHovered, setIsPauseHovered] = useState(false);
 
 
@@ -200,13 +200,29 @@ export const TaskCard = ({
         <div className="h-full flex flex-col">
           <CardHeader className="text-center pb-4 flex-shrink-0 relative overflow-visible px-8 py-6">
             
+            {/* Task Tags - Top Left */}
+            <div className="absolute top-3 left-2 flex gap-1">
+              {/* Show liked tag if tagged */}
+              {task.is_liked && (
+                <Heart className="w-4 h-4 fill-red-500 text-red-500 transition-colors" />
+              )}
+              {/* Show urgent tag if tagged */}
+              {task.is_urgent && (
+                <AlertTriangle className="w-4 h-4 fill-yellow-500 text-yellow-500 transition-colors" />
+              )}
+              {/* Show quick tag if tagged */}
+              {task.is_quick && (
+                <Zap className="w-4 h-4 fill-green-500 text-green-500 transition-colors" />
+              )}
+            </div>
+            
             {/* Magic Wand - Top Right */}
             <Button
               variant="ghost"
               size="sm"
               onClick={generateSubtasks}
               disabled={isGenerating}
-              className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-muted/20 disabled:opacity-50"
+              className="absolute top-1 right-2 h-6 w-6 p-0 hover:bg-muted/20 disabled:opacity-50"
             >
               {isGenerating ? (
                 <Loader2 className="w-3 h-3 animate-spin" style={{ color: 'hsl(220 10% 40%)' }} />
@@ -215,13 +231,24 @@ export const TaskCard = ({
               )}
             </Button>
             
-            <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px' }}>
-              <span className="text-sm" style={{ color: 'hsl(220 10% 50%)' }}>
-                {index + 1}
-              </span>
-              <span className="text-sm" style={{ color: 'hsl(220 10% 50%)' }}>
-                of {totalTasks}
-              </span>
+            <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px', color: 'hsl(220 10% 50%)' }}>
+              {taskStartTimes[task.id] ? (
+                <TaskTimeDisplay
+                  taskId={task.id}
+                  startTime={taskStartTimes[task.id]}
+                  estimatedTime={task.estimated_time}
+                  isActiveCommitted={isActiveCommitted}
+                />
+              ) : (
+                <>
+                  <span className="text-sm">
+                    {index + 1}
+                  </span>
+                  <span className="text-sm">
+                    of {totalTasks}
+                  </span>
+                </>
+              )}
             </div>
             <CardTitle className="text-2xl leading-tight tracking-wide whitespace-pre-line" style={{ color: 'hsl(220 10% 20%)' }}>
               {balanceText(task.title, 2)}
@@ -229,25 +256,6 @@ export const TaskCard = ({
           </CardHeader>
           
           <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
-            {/* Task Tags */}
-            <div 
-              className="flex flex-wrap gap-1 justify-center"
-              onMouseEnter={() => setIsHovering(true)}
-              onMouseLeave={() => setIsHovering(false)}
-            >
-              {/* Show liked tag if tagged, or show on hover */}
-              {(task.is_liked || isHovering) && (
-                <Heart className={`w-4 h-4 ${task.is_liked ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-500'} transition-colors`} />
-              )}
-              {/* Show urgent tag if tagged, or show on hover */}
-              {(task.is_urgent || isHovering) && (
-                <AlertTriangle className={`w-4 h-4 ${task.is_urgent ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400 hover:text-yellow-500'} transition-colors`} />
-              )}
-              {/* Show quick tag if tagged, or show on hover */}
-              {(task.is_quick || isHovering) && (
-                <Zap className={`w-4 h-4 ${task.is_quick ? 'fill-green-500 text-green-500' : 'text-gray-400 hover:text-green-500'} transition-colors`} />
-              )}
-            </div>
 
             {/* Progress Bar */}
             <TaskProgressBar
@@ -256,6 +264,7 @@ export const TaskCard = ({
               estimatedTime={task.estimated_time}
               isActiveCommitted={isActiveCommitted}
               isPauseHovered={isPauseHovered}
+              pausedTime={pausedTime}
             />
 
             {/* Notes Section */}

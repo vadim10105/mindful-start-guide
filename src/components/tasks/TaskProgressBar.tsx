@@ -7,6 +7,7 @@ interface TaskProgressBarProps {
   estimatedTime?: string;
   isActiveCommitted: boolean;
   isPauseHovered?: boolean;
+  pausedTime?: number;
 }
 
 export const TaskProgressBar = ({ 
@@ -14,7 +15,8 @@ export const TaskProgressBar = ({
   startTime, 
   estimatedTime, 
   isActiveCommitted,
-  isPauseHovered = false
+  isPauseHovered = false,
+  pausedTime = 0
 }: TaskProgressBarProps) => {
   // Don't render if no start time or estimated time - do this BEFORE any hooks
   if (!startTime || !estimatedTime) {
@@ -26,7 +28,7 @@ export const TaskProgressBar = ({
 
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Update current time every minute, but only for active committed card
+  // Update current time every second for both timer display and progress calculation
   useEffect(() => {
     if (!isActiveCommitted || !startTime) return;
 
@@ -40,7 +42,7 @@ export const TaskProgressBar = ({
     return () => clearInterval(interval);
   }, [isActiveCommitted, startTime]);
 
-  // Calculate elapsed time in minutes and seconds
+  // Calculate elapsed time in minutes and seconds for progress bar
   const elapsedMs = currentTime - startTime;
   const elapsedMinutes = Math.floor(elapsedMs / 60000);
   const elapsedSeconds = elapsedMs / 1000; // Total elapsed time in seconds
@@ -52,20 +54,16 @@ export const TaskProgressBar = ({
   // Check if we're overtime
   const isOvertime = elapsedMinutes > estimatedMinutes;
 
-  // Helper function to format timestamp to HH:MM format
-  const formatTime = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+  // Format elapsed time for timer display in MM:SS
+  const formatElapsedTime = (elapsedMs: number): string => {
+    const totalSeconds = Math.floor(elapsedMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Calculate estimated finish time
-  const estimatedFinishTime = startTime + (estimatedMinutes * 60000);
-  const startTimeFormatted = formatTime(startTime);
-  const estimatedFinishTimeFormatted = formatTime(estimatedFinishTime);
+  const elapsedTimeDisplay = formatElapsedTime(elapsedMs);
 
   // Segmentation logic for tasks 39+ minutes
   const shouldSegment = estimatedMinutes >= 39;
@@ -112,7 +110,7 @@ export const TaskProgressBar = ({
 
   return (
     <div className="mx-4 mb-4">
-      {/* Progress Bar with Text Inside */}
+      {/* Progress Bar with Timer Text Inside */}
       {shouldSegment ? (
         // Segmented progress bar for tasks 39+ minutes
         <div className="w-full h-8 relative flex rounded-full overflow-hidden">
@@ -158,12 +156,12 @@ export const TaskProgressBar = ({
             );
           })}
           
-          {/* Text inside the bar - positioned on the right */}
+          {/* Timer text inside the bar - positioned on the right */}
           <div className="absolute inset-0 flex items-center justify-end pr-3">
             <span className={`text-xs font-medium ${
               isOvertime ? 'text-white' : 'text-gray-700'
             }`}>
-              {startTimeFormatted} → {estimatedFinishTimeFormatted}
+              {elapsedTimeDisplay}
             </span>
           </div>
         </div>
@@ -190,12 +188,12 @@ export const TaskProgressBar = ({
               background: `linear-gradient(to right, #6b7280 ${progressPercentage}%, rgba(107, 114, 128, 0.3) ${progressPercentage}%)`
             }}
           />
-          {/* Text inside the bar - positioned on the right */}
+          {/* Timer text inside the bar - positioned on the right */}
           <div className="absolute inset-0 flex items-center justify-end pr-3">
             <span className={`text-xs font-medium ${
               isOvertime ? 'text-white' : 'text-gray-700'
             }`}>
-              {startTimeFormatted} → {estimatedFinishTimeFormatted}
+              {elapsedTimeDisplay}
             </span>
           </div>
         </div>
