@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar, Clock, Search, Filter, Trophy, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getRewardImageUrls } from '@/services/cardService';
 
 interface CollectedCard {
   id: string;
@@ -43,13 +44,16 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
   
   const { toast } = useToast();
 
-  // Sunset images for card backs
-  const sunsetImages = [
-    '/reward-1.jpg',
-    '/reward-2.jpeg',
-    '/reward-3.jpeg',
-    '/reward-4.jpeg',
-  ];
+  // Sunset images for card backs - loaded from Supabase
+  const [sunsetImages, setSunsetImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadRewardImages = async () => {
+      const imageUrls = await getRewardImageUrls();
+      setSunsetImages(imageUrls);
+    };
+    loadRewardImages();
+  }, []);
 
   useEffect(() => {
     if (isOpen) {

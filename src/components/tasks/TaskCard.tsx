@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, Images } from "lucide-react";
+import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 import { TaskProgressBar } from "./TaskProgressBar";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
@@ -69,6 +69,11 @@ interface TaskCardProps {
   activeCommittedIndex: number;
   flowProgress: number;
   sunsetImageUrl: string;
+  attribution?: string;
+  attributionUrl?: string;
+  description?: string;
+  caption?: string;
+  cardNumber?: number;
   taskStartTimes: Record<string, number>;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
@@ -93,6 +98,11 @@ export const TaskCard = ({
   activeCommittedIndex,
   flowProgress,
   sunsetImageUrl,
+  attribution,
+  attributionUrl,
+  description,
+  caption,
+  cardNumber,
   taskStartTimes,
   onCommit,
   onComplete,
@@ -322,26 +332,25 @@ export const TaskCard = ({
           {/* White border inside the card */}
           <div className="absolute inset-0 border-2 border-white rounded-2xl opacity-80" />
           <div className="absolute top-2 right-4 text-gray-300 text-4xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
-            {sunsetImageUrl.match(/reward-(\d+)/)?.[1]?.padStart(2, '0') || '01'}
+            {cardNumber ? cardNumber.toString().padStart(2, '0') : (sunsetImageUrl.match(/reward-(\d+)/)?.[1]?.padStart(2, '0') || '01')}
           </div>
           <div className="absolute top-4 left-4 z-20">
-            <span className="inline-flex items-center gap-2 bg-gray-600/10 backdrop-blur-md rounded-md px-2 py-1">
-              <Images className="h-4 w-4 text-white/90" />
-              <span className="text-lg font-bold text-white" style={{ fontFamily: 'Calendas Plus' }}>Fleeting Moments</span>
+            <span className="inline-flex items-center bg-gray-600/10 backdrop-blur-md rounded-md px-2 py-1">
+              <span className="text-lg font-bold text-white" style={{ fontFamily: 'Calendas Plus' }}>{caption || "Fleeting Moments"}</span>
             </span>
           </div>
           <div className="relative h-full flex flex-col justify-end p-6 text-white z-10">
             <div className="text-left flex flex-col gap-3">
               <a 
-                href="https://www.instagram.com/p/C5oS4mbIA2F/?igsh=ZjdxbXFodzhoMTE5" 
+                href={attributionUrl || "https://www.instagram.com/p/C5oS4mbIA2F/?igsh=ZjdxbXFodzhoMTE5"} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-sm opacity-80 hover:opacity-100 underline transition-opacity"
               >
-                @hanontheroad on Instagram
+                {attribution || "@hanontheroad on Instagram"}
               </a>
               <p className="text-xs opacity-70 leading-relaxed italic">
-                strolling down the street of Paris, listening to the symphony called life. (Paris 2024)
+                {description || "strolling down the street of Paris, listening to the symphony called life. (Paris 2024)"}
               </p>
             </div>
           </div>

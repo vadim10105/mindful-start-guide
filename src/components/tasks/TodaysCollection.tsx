@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Clock, Calendar, Trophy, X } from 'lucide-react';
 import { ImmersiveGallery } from './ImmersiveGallery';
+import { getRewardCardData, RewardCardData, getCollectionMetadata } from '@/services/cardService';
 
 interface CompletedTask {
   id: string;
@@ -22,6 +23,27 @@ interface TodaysCollectionProps {
 export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollectionProps) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showImmersiveGallery, setShowImmersiveGallery] = useState(false);
+  const [rewardCardData, setRewardCardData] = useState<RewardCardData[]>([]);
+  const [totalCards, setTotalCards] = useState(8); // Default fallback
+
+  useEffect(() => {
+    const loadRewardCardData = async () => {
+      const cardData = await getRewardCardData();
+      setRewardCardData(cardData);
+      
+      // Load collection metadata to get total cards count
+      const collection = await getCollectionMetadata();
+      if (collection?.total_cards) {
+        setTotalCards(collection.total_cards);
+      }
+    };
+    loadRewardCardData();
+  }, []);
+
+  const getCardAttribution = (imageUrl: string) => {
+    const cardIndex = rewardCardData.findIndex(card => card.imageUrl === imageUrl);
+    return cardIndex >= 0 ? rewardCardData[cardIndex] : null;
+  };
 
   if (!isVisible || completedTasks.length === 0) return null;
 
@@ -117,8 +139,9 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                     <div className="absolute inset-0 bg-black/40" />
                     <div className="absolute inset-0 paper-texture" />
                     <div className="absolute top-3 left-2 flex z-30">
-                      {Array.from({length: 8}, (_, i) => {
-                        const currentCard = parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
+                      {Array.from({length: totalCards}, (_, i) => {
+                        const attribution = getCardAttribution(task.sunsetImageUrl);
+                        const currentCard = attribution?.cardNumber || parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
                         return (
                           <div 
                             key={i} 
@@ -130,7 +153,10 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                       })}
                     </div>
                     <div className="absolute top-1 right-2 text-gray-300 text-2xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
-                      {task.sunsetImageUrl.match(/reward-(\d+)/)?.[1]?.padStart(2, '0') || '01'}
+                      {(() => {
+                        const attribution = getCardAttribution(task.sunsetImageUrl);
+                        return attribution?.cardNumber ? attribution.cardNumber.toString().padStart(2, '0') : (task.sunsetImageUrl.match(/reward-(\d+)/)?.[1]?.padStart(2, '0') || '01');
+                      })()}
                     </div>
                     
                     <CardContent className="relative h-full flex flex-col justify-end p-4 text-white">
@@ -139,18 +165,41 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                       
                       <div className="space-y-1 text-left">
                         <h4 className="font-medium text-sm leading-tight">
-                          Fleeting Moments (1 of 8)
+                          {(() => {
+                            const attribution = getCardAttribution(task.sunsetImageUrl);
+                            const cardNumber = attribution?.cardNumber || parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
+                            return attribution?.caption ? `${attribution.caption} (${cardNumber} of ${totalCards})` : `Fleeting Moments (${cardNumber} of ${totalCards})`;
+                          })()}
                         </h4>
-                        <a 
-                          href="https://www.instagram.com/p/C5oS4mbIA2F/?igsh=ZjdxbXFodzhoMTE5" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-xs opacity-70 hover:opacity-90 underline transition-opacity block text-left"
-                        >
-                          @hanontheroad
-                        </a>
+                        {(() => {
+                          const attribution = getCardAttribution(task.sunsetImageUrl);
+                          return attribution ? (
+                            <>
+                              <a 
+                                href={attribution.attributionUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs opacity-70 hover:opacity-90 underline transition-opacity block text-left"
+                              >
+                                {attribution.attribution}
+                              </a>
+                            </>
+                          ) : (
+                            <a 
+                              href="https://www.instagram.com/p/C5oS4mbIA2F/?igsh=ZjdxbXFodzhoMTE5" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs opacity-70 hover:opacity-90 underline transition-opacity block text-left"
+                            >
+                              @hanontheroad
+                            </a>
+                          );
+                        })()}
                         <p className="text-xs opacity-60 leading-relaxed italic">
-                          strolling down the street of Paris, listening to the symphony called life.
+                          {(() => {
+                            const attribution = getCardAttribution(task.sunsetImageUrl);
+                            return attribution?.description || "strolling down the street of Paris, listening to the symphony called life.";
+                          })()}
                         </p>
                       </div>
                     </CardContent>

@@ -4,6 +4,7 @@ import { TaskCard } from "../TaskCard";
 import { TaskCardData, CompletedTask, GameStateType } from "../GameState";
 import { useTaskTimer } from "../TaskTimer";
 import { ShuffleAnimation } from "../ShuffleAnimation";
+import { getRewardCardData, RewardCardData } from "@/services/cardService";
 
 
 interface PiPCardProps {
@@ -45,13 +46,18 @@ export const PiPCard = ({
   const startX = useRef(0);
   const dragThreshold = 50; // pixels
 
-  // Sunset images for card backs
-  const sunsetImages = [
-    '/reward-1.jpg',
-    '/reward-2.jpeg',
-    '/reward-3.jpeg',
-    '/reward-4.jpeg',
-  ];
+  // Reward card data from Supabase
+  const [rewardCards, setRewardCards] = useState<RewardCardData[]>([]);
+
+  useEffect(() => {
+    const loadRewardCards = async () => {
+      const cardData = await getRewardCardData();
+      setRewardCards(cardData);
+    };
+    loadRewardCards();
+  }, []);
+
+  const sunsetImages = rewardCards.map(card => card.imageUrl);
 
   // Show active committed task if there is one, otherwise show current viewing index
   const currentCardIndex = gameState.hasCommittedToTask && gameState.activeCommittedIndex >= 0 
@@ -306,6 +312,11 @@ export const PiPCard = ({
           activeCommittedIndex={gameState.activeCommittedIndex}
           flowProgress={gameState.flowProgress}
           sunsetImageUrl={sunsetImages[currentCardIndex % sunsetImages.length]}
+          attribution={rewardCards[currentCardIndex % rewardCards.length]?.attribution}
+          attributionUrl={rewardCards[currentCardIndex % rewardCards.length]?.attributionUrl}
+          description={rewardCards[currentCardIndex % rewardCards.length]?.description}
+          caption={rewardCards[currentCardIndex % rewardCards.length]?.caption}
+          cardNumber={rewardCards[currentCardIndex % rewardCards.length]?.cardNumber}
           taskStartTimes={gameState.taskStartTimes}
           onCommit={handleCommitToCurrentTask}
           onComplete={handleTaskComplete}

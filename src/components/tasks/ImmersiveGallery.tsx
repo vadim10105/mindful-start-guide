@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Images, ArrowLeft, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getCollectionMetadata } from '@/services/cardService';
 
 interface CompletedTask {
   id: string;
@@ -26,18 +27,36 @@ interface ImmersiveGalleryProps {
 
 export const ImmersiveGallery = ({ completedTasks, onClose }: ImmersiveGalleryProps) => {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [totalCards, setTotalCards] = useState(8); // Default fallback
+  const [collectionsLoaded, setCollectionsLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadCollectionMetadata = async () => {
+      const collection = await getCollectionMetadata();
+      if (collection?.total_cards) {
+        setTotalCards(collection.total_cards);
+      }
+      setCollectionsLoaded(true);
+    };
+    loadCollectionMetadata();
+  }, []);
 
   // Define collections - starting with Fleeting Moments
-  const collections: Collection[] = [
+  const collections: Collection[] = useMemo(() => [
     {
       id: 'fleeting-moments',
       name: 'Fleeting Moments',
-      totalCards: 8,
+      totalCards: totalCards,
       collectedCards: completedTasks, // All completed tasks go to Fleeting Moments for now
       color: 'from-purple-500 to-pink-500',
       position: { x: 20, y: 30 }
     }
-  ];
+  ], [totalCards, completedTasks]);
+
+  // Don't render until collections are loaded
+  if (!collectionsLoaded) {
+    return null;
+  }
 
   const CollectionFolder = ({ collection }: { collection: Collection }) => {
     const progress = collection.collectedCards.length;
@@ -98,7 +117,7 @@ export const ImmersiveGallery = ({ completedTasks, onClose }: ImmersiveGalleryPr
   };
 
   const DetailedCollectionView = ({ collection }: { collection: Collection }) => {
-    // Create array of 8 slots, filled with collected cards or empty
+    // Create array of slots based on collection total, filled with collected cards or empty
     const slots = Array.from({ length: collection.totalCards }, (_, index) => {
       return collection.collectedCards[index] || null;
     });

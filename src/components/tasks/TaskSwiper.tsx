@@ -4,6 +4,7 @@ import { EffectCards } from 'swiper/modules';
 import { TaskCard } from './TaskCard';
 import 'swiper/css';
 import 'swiper/css/effect-cards';
+import { RewardCardData } from '@/services/cardService';
 
 interface TaskCardData {
   id: string;
@@ -27,6 +28,7 @@ interface TaskSwiperProps {
   isNavigationLocked: boolean;
   flowProgress: number;
   sunsetImages: string[];
+  rewardCards: RewardCardData[];
   taskStartTimes: Record<string, number>;
   navigationUnlocked: boolean;
   onSlideChange: (activeIndex: number) => void;
@@ -51,6 +53,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   isNavigationLocked,
   flowProgress,
   sunsetImages,
+  rewardCards,
   taskStartTimes,
   navigationUnlocked,
   onSlideChange,
@@ -102,6 +105,11 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 activeCommittedIndex={activeCommittedIndex}
                 flowProgress={flowProgress}
                 sunsetImageUrl={sunsetImages[index % sunsetImages.length]}
+                attribution={rewardCards[index % rewardCards.length]?.attribution}
+                attributionUrl={rewardCards[index % rewardCards.length]?.attributionUrl}
+                description={rewardCards[index % rewardCards.length]?.description}
+                caption={rewardCards[index % rewardCards.length]?.caption}
+                cardNumber={rewardCards[index % rewardCards.length]?.cardNumber}
                 taskStartTimes={taskStartTimes}
                 onCommit={onCommit}
                 onComplete={onComplete}

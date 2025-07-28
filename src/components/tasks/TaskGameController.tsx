@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TodaysCollection } from "./TodaysCollection";
 import { TaskSwiper } from "./TaskSwiper";
@@ -12,6 +12,7 @@ import { useTaskTimerManager, useTaskTimerHelpers } from "./TaskTimerManager";
 import { useTaskNavigationManager } from "./TaskNavigationManager";
 import { useTaskProgressTracker } from "./TaskProgressTracker";
 import { usePictureInPictureManager, PictureInPictureManager } from "./PictureInPictureManager";
+import { getRewardCardData, RewardCardData } from "@/services/cardService";
 
 // External dependencies
 import { supabase } from "@/integrations/supabase/client";
@@ -38,13 +39,18 @@ export const TaskGameController = ({
   const { toast } = useToast();
   const { formatTime } = useTaskTimerHelpers();
 
-  // Sunset images for card backs
-  const sunsetImages = [
-    '/reward-1.jpg',
-    '/reward-2.jpeg',
-    '/reward-3.jpeg',
-    '/reward-4.jpeg',
-  ];
+  // Reward card data from Supabase
+  const [rewardCards, setRewardCards] = useState<RewardCardData[]>([]);
+
+  useEffect(() => {
+    const loadRewardCards = async () => {
+      const cardData = await getRewardCardData();
+      setRewardCards(cardData);
+    };
+    loadRewardCards();
+  }, []);
+
+  const sunsetImages = rewardCards.map(card => card.imageUrl);
 
   // PiP Manager
   const pipManager = usePictureInPictureManager({
@@ -218,6 +224,7 @@ export const TaskGameController = ({
                   isNavigationLocked={gameState.isNavigationLocked}
                   flowProgress={gameState.flowProgress}
                   sunsetImages={sunsetImages}
+                  rewardCards={rewardCards}
                   taskStartTimes={gameState.taskStartTimes}
                   navigationUnlocked={gameState.navigationUnlocked}
                   onSlideChange={(activeIndex) => gameState.setCurrentViewingIndex(activeIndex)}
