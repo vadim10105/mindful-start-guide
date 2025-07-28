@@ -64,6 +64,9 @@ export const TaskProgressBar = ({
   };
 
   const elapsedTimeDisplay = formatElapsedTime(elapsedMs);
+  
+  // Dim text after 1 minute (60 seconds)
+  const shouldDimText = elapsedMs > 60000;
 
   // Segmentation logic for tasks 39+ minutes
   const shouldSegment = estimatedMinutes >= 39;
@@ -150,17 +153,17 @@ export const TaskProgressBar = ({
                 
                 {/* Segment divider (except for last segment) */}
                 {index < segments.length - 1 && (
-                  <div className="absolute right-0 top-0 w-px h-full bg-gray-300 opacity-30" />
+                  <div className="absolute right-0 top-0 w-1 h-full" style={{ backgroundColor: 'hsl(48 20% 97%)' }} />
                 )}
               </div>
             );
           })}
           
           {/* Timer text inside the bar - positioned on the right */}
-          <div className="absolute inset-0 flex items-center justify-end pr-3">
-            <span className={`text-xs font-medium ${
+          <div className="absolute inset-0 flex items-center justify-end pr-3 group">
+            <span className={`text-xs font-medium transition-opacity duration-300 ${
               isOvertime ? 'text-white' : 'text-gray-700'
-            }`}>
+            } ${shouldDimText ? 'opacity-30 group-hover:opacity-100' : 'opacity-100'}`}>
               {elapsedTimeDisplay}
             </span>
           </div>
@@ -189,10 +192,10 @@ export const TaskProgressBar = ({
             }}
           />
           {/* Timer text inside the bar - positioned on the right */}
-          <div className="absolute inset-0 flex items-center justify-end pr-3">
-            <span className={`text-xs font-medium ${
+          <div className="absolute inset-0 flex items-center justify-end pr-3 group">
+            <span className={`text-xs font-medium transition-opacity duration-300 ${
               isOvertime ? 'text-white' : 'text-gray-700'
-            }`}>
+            } ${shouldDimText ? 'opacity-30 group-hover:opacity-100' : 'opacity-100'}`}>
               {elapsedTimeDisplay}
             </span>
           </div>
