@@ -188,7 +188,11 @@ export const TaskGameController = ({
       <PictureInPictureManager
         tasks={tasks}
         onComplete={onComplete}
-        onTaskComplete={onTaskComplete}
+        onTaskComplete={progressTracker.handleTaskComplete}
+        onPauseTask={progressTracker.handlePauseTask}
+        onCommitToCurrentTask={handleCommitToCurrentTask}
+        onCarryOn={progressTracker.handleCarryOn}
+        onSkip={progressTracker.handleSkip}
         isLoading={isLoading}
         isProcessing={isProcessing}
         onLoadingComplete={onLoadingComplete}

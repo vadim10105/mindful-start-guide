@@ -19,7 +19,11 @@ interface PictureInPictureManagerProps {
   isLoading: boolean;
   isProcessing: boolean;
   onComplete: () => void;
-  onTaskComplete?: (taskId: string) => void;
+  onTaskComplete?: (taskId: string) => Promise<void>;
+  onPauseTask?: (taskId: string) => Promise<void>;
+  onCommitToCurrentTask?: () => void;
+  onCarryOn?: (taskId: string) => void;
+  onSkip?: (taskId: string) => Promise<void>;
   onLoadingComplete?: () => void;
   gameState: ReturnType<typeof import('./GameState').useGameState>;
 }
@@ -105,6 +109,10 @@ export const PictureInPictureManager = ({
   tasks, 
   onComplete, 
   onTaskComplete, 
+  onPauseTask,
+  onCommitToCurrentTask,
+  onCarryOn,
+  onSkip,
   isLoading, 
   isProcessing, 
   onLoadingComplete, 
@@ -118,6 +126,10 @@ export const PictureInPictureManager = ({
         tasks={tasks}
         onComplete={onComplete}
         onTaskComplete={onTaskComplete}
+        onPauseTask={onPauseTask}
+        onCommitToCurrentTask={onCommitToCurrentTask}
+        onCarryOn={onCarryOn}
+        onSkip={onSkip}
         isLoading={isLoading}
         isProcessing={isProcessing}
         onLoadingComplete={onLoadingComplete}

@@ -119,7 +119,7 @@ export const useTaskProgressTracker = ({
     if (!task) return;
 
     const startTime = taskStartTimes[taskId];
-    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
+    const timeSpentMs = startTime ? (Date.now() - startTime) : 0;
     
     // Clear current timer and reset flow state
     if (timerRef.current) {
@@ -127,8 +127,8 @@ export const useTaskProgressTracker = ({
     }
     setFlowProgress(0);
     
-    // Mark current task as paused
-    setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
+    // Mark current task as paused (store elapsed milliseconds)
+    setPausedTasks(prev => new Map(prev.set(taskId, timeSpentMs)));
     
     // Release commitment - allow user to choose next task manually
     setHasCommittedToTask(false);
@@ -145,7 +145,7 @@ export const useTaskProgressTracker = ({
           .update({ 
             status: 'paused',
             paused_at: new Date().toISOString(),
-            time_spent_minutes: timeSpent
+            time_spent_minutes: Math.round(timeSpentMs / 60000)
           })
           .eq('id', taskId);
       }
@@ -158,7 +158,7 @@ export const useTaskProgressTracker = ({
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     
-    const pausedTime = pausedTasks.get(taskId) || 0;
+    const pausedTimeMs = pausedTasks.get(taskId) || 0;
     
     setHasCommittedToTask(true);
     setActiveCommittedIndex(currentViewingIndex);
@@ -168,7 +168,7 @@ export const useTaskProgressTracker = ({
     
     setTaskStartTimes(prev => ({
       ...prev,
-      [taskId]: Date.now() - (pausedTime * 60000)
+      [taskId]: Date.now() - pausedTimeMs
     }));
     
     setPausedTasks(prev => {

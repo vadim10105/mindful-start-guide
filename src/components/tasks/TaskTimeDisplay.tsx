@@ -60,7 +60,7 @@ export const TaskTimeDisplay = ({
   // If no estimated time, show simple start time
   if (!estimatedTime || !estimatedFinishTimeFormatted) {
     return (
-      <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
+      <span className="text-sm">
         {startTimeFormatted}
       </span>
     );
@@ -69,7 +69,7 @@ export const TaskTimeDisplay = ({
   // Normal state: show start → estimated finish
   if (!isOvertime) {
     return (
-      <span className="text-sm" style={{ color: 'hsl(48 100% 96% / 0.7)' }}>
+      <span className="text-sm">
         {startTimeFormatted} → {estimatedFinishTimeFormatted}
       </span>
     );
@@ -85,10 +85,10 @@ export const TaskTimeDisplay = ({
       <span style={{ color: '#fbbf24' }}>
         {currentTimeFormatted}
       </span>
-      <span style={{ color: 'hsl(48 100% 96% / 0.7)' }}>  </span>
+      <span style={{ color: 'hsl(220 10% 50%)' }}>  </span>
       <span 
         style={{ 
-          color: 'hsl(48 100% 96% / 0.5)', 
+          color: 'hsl(220 10% 60%)', 
           textDecoration: 'line-through' 
         }}
       >

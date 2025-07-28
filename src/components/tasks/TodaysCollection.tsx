@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Clock, Calendar, Trophy, X } from 'lucide-react';
+import { ImmersiveGallery } from './ImmersiveGallery';
 
 interface CompletedTask {
   id: string;
@@ -20,6 +21,7 @@ interface TodaysCollectionProps {
 
 export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollectionProps) => {
   const [showOverlay, setShowOverlay] = useState(false);
+  const [showImmersiveGallery, setShowImmersiveGallery] = useState(false);
 
   if (!isVisible || completedTasks.length === 0) return null;
 
@@ -37,16 +39,29 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
     <>
       {/* Floating Collection Icon */}
       <div className="fixed bottom-6 left-6 z-50">
-        <Button
-          onClick={() => setShowOverlay(true)}
-          className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center p-2"
+        <div
+          onClick={() => setShowImmersiveGallery(true)}
+          className="h-16 w-16 rounded-full cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center p-2 relative"
         >
-          <div className="text-2xl">🏆</div>
+          <div className="relative">
+            {/* Stack of cards effect - vertical */}
+            <div className="absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform rotate-12"></div>
+            <div className="absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform rotate-6"></div>
+            <div className="w-6 h-8 bg-white/40 rounded border border-white/50 transform rotate-0"></div>
+          </div>
           <Badge className="absolute -top-2 -right-2 bg-secondary text-secondary-foreground min-w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
             {completedTasks.length}
           </Badge>
-        </Button>
+        </div>
       </div>
+
+      {/* Immersive Gallery */}
+      {showImmersiveGallery && (
+        <ImmersiveGallery
+          completedTasks={completedTasks}
+          onClose={() => setShowImmersiveGallery(false)}
+        />
+      )}
 
       {/* Today's Collection Overlay */}
       <Dialog open={showOverlay} onOpenChange={setShowOverlay}>

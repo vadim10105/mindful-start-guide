@@ -5,12 +5,15 @@ import { TaskCardData, CompletedTask, GameStateType } from "../GameState";
 import { useTaskTimer } from "../TaskTimer";
 import { ShuffleAnimation } from "../ShuffleAnimation";
 
-import { supabase } from "@/integrations/supabase/client";
 
 interface PiPCardProps {
   tasks: TaskCardData[];
   onComplete: () => void;
-  onTaskComplete?: (taskId: string) => void;
+  onTaskComplete?: (taskId: string) => Promise<void>;
+  onPauseTask?: (taskId: string) => Promise<void>;
+  onCommitToCurrentTask?: () => void;
+  onCarryOn?: (taskId: string) => void;
+  onSkip?: (taskId: string) => Promise<void>;
   isLoading?: boolean;
   isProcessing?: boolean;
   onLoadingComplete?: () => void;
@@ -23,6 +26,10 @@ export const PiPCard = ({
   tasks, 
   onComplete, 
   onTaskComplete, 
+  onPauseTask,
+  onCommitToCurrentTask,
+  onCarryOn,
+  onSkip,
   isLoading = false, 
   isProcessing = false, 
   onLoadingComplete,
@@ -32,7 +39,6 @@ export const PiPCard = ({
 }: PiPCardProps) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<'left' | 'right' | null>(null);
-  const [isActionInProgress, setIsActionInProgress] = useState(false);
   
   // Drag state
   const isDragging = useRef(false);
@@ -56,9 +62,19 @@ export const PiPCard = ({
   useEffect(() => {
     if (pipWindow && !pipWindow.closed) {
       pipWindow.focus();
-      // Also focus the document body to ensure keyboard events work
-      pipWindow.document.body.focus();
-      pipWindow.document.body.tabIndex = 0;
+      // Set up the document to handle keyboard events but don't interfere with input focus
+      pipWindow.document.body.tabIndex = -1; // Allow focus but not tab navigation
+      
+      // Ensure input elements can be focused properly
+      const style = pipWindow.document.createElement('style');
+      style.textContent = `
+        input, textarea, [contenteditable] {
+          -webkit-user-select: text !important;
+          user-select: text !important;
+          pointer-events: auto !important;
+        }
+      `;
+      pipWindow.document.head.appendChild(style);
     }
   }, [pipWindow]);
 
@@ -107,21 +123,45 @@ export const PiPCard = ({
 
   // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Don't interfere with input elements
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+      return;
+    }
+    
     e.preventDefault();
     handleDragStart(e.clientX);
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
+    // Don't interfere with input elements
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+      return;
+    }
+    
     handleDragEnd(e.clientX);
   };
 
   // Touch events
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Don't interfere with input elements
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+      return;
+    }
+    
     const touch = e.touches[0];
     handleDragStart(touch.clientX);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    // Don't interfere with input elements
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+      return;
+    }
+    
     const touch = e.changedTouches[0];
     handleDragEnd(touch.clientX);
   };
@@ -129,6 +169,12 @@ export const PiPCard = ({
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't interfere with input elements
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+        return;
+      }
+
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         goToPreviousCard();
@@ -154,217 +200,25 @@ export const PiPCard = ({
   }, [currentCardIndex, gameState.activeCommittedIndex, gameState.hasCommittedToTask, gameState.completedTasks, pipWindow, goToPreviousCard, goToNextCard]);
 
 
-  // Use main window's commit logic - just add action protection
+  // Use main window handlers directly
   const handleCommitToCurrentTask = () => {
-    if (isActionInProgress) return;
-    setIsActionInProgress(true);
-    
-    const currentTask = tasks[currentCardIndex];
-    if (!currentTask) {
-      setIsActionInProgress(false);
-      return;
-    }
-    
-    // Check if this task was previously paused
-    const pausedTime = gameState.pausedTasks.get(currentTask.id) || 0;
-    const isResumingPausedTask = pausedTime > 0;
-    
-    gameState.setHasCommittedToTask(true);
-    gameState.setActiveCommittedIndex(currentCardIndex);
-    gameState.setFlowStartTime(Date.now());
-    gameState.setFlowProgress(0);
-    gameState.setNavigationUnlocked(false);
-    
-    if (isResumingPausedTask) {
-      const adjustedStartTime = Date.now() - (pausedTime * 60000);
-      gameState.setTaskStartTimes(prev => ({
-        ...prev,
-        [currentTask.id]: adjustedStartTime
-      }));
-      gameState.setPausedTasks(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(currentTask.id);
-        return newMap;
-      });
-    } else {
-      gameState.setTaskStartTimes(prev => ({
-        ...prev,
-        [currentTask.id]: Date.now()
-      }));
-    }
-    
-    setTimeout(() => setIsActionInProgress(false), 100);
+    onCommitToCurrentTask?.();
   };
 
   const handleTaskComplete = async (taskId: string) => {
-    if (isActionInProgress) return;
-    setIsActionInProgress(true);
-    
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) {
-      setIsActionInProgress(false);
-      return;
-    }
-
-    const startTime = gameState.taskStartTimes[taskId];
-    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
-    
-
-    if (gameState.timerRef.current) {
-      clearInterval(gameState.timerRef.current);
-    }
-    gameState.setFlowProgress(0);
-    gameState.setNavigationUnlocked(true);
-    gameState.setHasCommittedToTask(false);
-    gameState.setIsInitialLoad(false);
-    
-    gameState.setCompletedTasks(prev => new Set([...prev, taskId]));
-    gameState.setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
-    
-    const taskIndex = tasks.findIndex(t => t.id === taskId);
-    const newCompletedTask: CompletedTask = {
-      id: taskId,
-      title: task.title,
-      timeSpent: timeSpent,
-      completedAt: new Date(),
-      sunsetImageUrl: sunsetImages[taskIndex % sunsetImages.length]
-    };
-    gameState.setTodaysCompletedTasks(prev => [...prev, newCompletedTask]);
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('tasks')
-          .update({ 
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            time_spent_minutes: timeSpent
-          })
-          .eq('id', taskId);
-
-        await supabase.rpc('update_daily_stats', {
-          p_user_id: user.id,
-          p_date: new Date().toISOString().split('T')[0],
-          p_tasks_completed: 1,
-          p_time_minutes: timeSpent
-        });
-      }
-    } catch (error) {
-      console.error('Error updating task:', error);
-    }
-    
-    onTaskComplete?.(taskId);
-    setTimeout(() => setIsActionInProgress(false), 500);
+    await onTaskComplete?.(taskId);
   };
 
   const handlePauseTask = async (taskId: string) => {
-    if (isActionInProgress) return;
-    setIsActionInProgress(true);
-    
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) {
-      setIsActionInProgress(false);
-      return;
-    }
-
-    const startTime = gameState.taskStartTimes[taskId];
-    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
-    
-    if (gameState.timerRef.current) {
-      clearInterval(gameState.timerRef.current);
-    }
-    gameState.setFlowProgress(0);
-    gameState.setPausedTasks(prev => new Map(prev.set(taskId, timeSpent)));
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('tasks')
-          .update({ 
-            status: 'paused',
-            paused_at: new Date().toISOString(),
-            time_spent_minutes: timeSpent
-          })
-          .eq('id', taskId);
-      }
-    } catch (error) {
-      console.error('Error pausing task:', error);
-    }
-    
-    // Release commitment - allow user to choose next task manually
-    gameState.setHasCommittedToTask(false);
-    gameState.setActiveCommittedIndex(-1);
-    gameState.setNavigationUnlocked(true);
-    setTimeout(() => setIsActionInProgress(false), 500);
+    await onPauseTask?.(taskId);
   };
 
-  // Simplified carry on - navigate to task and use main commit logic
   const handleCarryOn = (taskId: string) => {
-    if (isActionInProgress) return;
-    setIsActionInProgress(true);
-    
-    const taskIndex = tasks.findIndex(t => t.id === taskId);
-    if (taskIndex === -1) {
-      setIsActionInProgress(false);
-      return;
-    }
-    
-    // Navigate to the task first
-    gameState.setCurrentViewingIndex(taskIndex);
-    
-    // Then commit to it (this will handle paused time correctly)
-    setTimeout(() => {
-      handleCommitToCurrentTask();
-      setIsActionInProgress(false);
-    }, 50);
+    onCarryOn?.(taskId);
   };
 
   const handleSkip = async (taskId: string) => {
-    if (isActionInProgress) return;
-    setIsActionInProgress(true);
-    
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) {
-      setIsActionInProgress(false);
-      return;
-    }
-
-    const startTime = gameState.taskStartTimes[taskId];
-    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
-    
-    if (gameState.timerRef.current) {
-      clearInterval(gameState.timerRef.current);
-    }
-    gameState.setFlowProgress(0);
-    gameState.setNavigationUnlocked(true);
-    gameState.setHasCommittedToTask(false);
-    gameState.setIsInitialLoad(false);
-    
-    gameState.setCompletedTasks(prev => new Set([...prev, taskId]));
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('tasks')
-          .update({ 
-            status: 'skipped',
-            skipped_at: new Date().toISOString(),
-            time_spent_minutes: timeSpent
-          })
-          .eq('id', taskId);
-      }
-    } catch (error) {
-      console.error('Error skipping task:', error);
-    }
-    
-    // Auto-move to next card if available
-    if (currentCardIndex < tasks.length - 1) {
-      gameState.setCurrentViewingIndex(currentCardIndex + 1);
-    }
-    setTimeout(() => setIsActionInProgress(false), 500);
+    await onSkip?.(taskId);
   };
 
   const handleBackToActiveCard = () => {

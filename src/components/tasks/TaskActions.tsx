@@ -28,6 +28,7 @@ interface TaskActionsProps {
   onBackToActive: () => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
+  onPauseHover?: (isHovering: boolean) => void;
 }
 
 export const TaskActions = ({
@@ -46,11 +47,12 @@ export const TaskActions = ({
   onSkip,
   onBackToActive,
   navigationUnlocked,
-  formatTime
+  formatTime,
+  onPauseHover
 }: TaskActionsProps) => {
   if (isCompleted) {
     return (
-      <div className="flex items-center justify-center gap-2 text-green-400">
+      <div className="flex items-center justify-center gap-2" style={{ color: 'hsl(142 70% 45%)' }}>
         <Check className="w-4 h-4" />
         <span className="font-medium text-sm">Completed!</span>
       </div>
@@ -62,7 +64,8 @@ export const TaskActions = ({
       <Button 
         onClick={() => onCarryOn(task.id)}
         size="sm"
-        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+        className="w-full bg-primary hover:bg-primary/90 transition-all duration-700"
+        style={{ color: '#434343' }}
       >
         <Play className="w-4 h-4 mr-2" />
         Play
@@ -73,14 +76,11 @@ export const TaskActions = ({
   if (!isActiveCommitted && hasCommittedToTask && activeCommittedIndex >= 0) {
     return (
       <div className="space-y-2">
-        <div className="text-xs text-card-foreground/70">
-          Currently active: Task {activeCommittedIndex + 1}
-        </div>
         <Button
           onClick={onBackToActive}
-          variant="outline"
           size="sm"
-          className="w-full flex items-center gap-2"
+          className="w-full flex items-center gap-2 bg-gray-300 hover:bg-primary hover:text-white transition-all duration-700"
+          style={{ color: 'hsl(220 10% 30%)' }}
         >
           <RotateCcw className="w-4 h-4" />
           Back to Active Card
@@ -91,7 +91,7 @@ export const TaskActions = ({
 
   if (!isCurrentTask) {
     return (
-      <div className="text-sm text-card-foreground/70">
+      <div className="text-sm" style={{ color: 'hsl(220 10% 50%)' }}>
         Swipe to view this task
       </div>
     );
@@ -104,7 +104,8 @@ export const TaskActions = ({
         <Button 
           onClick={onCommit}
           size="sm"
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          className="w-full bg-primary hover:bg-primary/90 transition-all duration-700"
+          style={{ color: '#434343' }}
         >
           <Play className="w-4 h-4 mr-2" />
           Play
@@ -113,7 +114,7 @@ export const TaskActions = ({
     }
     // During navigation lock, cards should auto-activate (no button shown)
     return (
-      <div className="text-sm text-card-foreground/70 text-center">
+      <div className="text-sm text-center" style={{ color: 'hsl(220 10% 50%)' }}>
         Starting task...
       </div>
     );
@@ -126,16 +127,18 @@ export const TaskActions = ({
         <Button 
           onClick={() => onComplete(task.id)}
           size="sm"
-          variant="outline"
-          className="hover:bg-green-600 hover:text-white hover:border-green-600 px-3"
+          className="bg-gray-300 hover:bg-green-600 hover:text-white px-3 transition-all duration-700"
+          style={{ color: 'hsl(220 10% 30%)' }}
         >
           <Check className="w-4 h-4" />
         </Button>
         <Button 
           onClick={() => onMoveOn(task.id)}
+          onMouseEnter={() => onPauseHover?.(true)}
+          onMouseLeave={() => onPauseHover?.(false)}
           size="sm"
-          variant="outline"
-          className="flex-1"
+          className="flex-1 bg-gray-300 hover:bg-primary hover:text-white transition-all duration-700"
+          style={{ color: 'hsl(220 10% 30%)' }}
         >
           <Pause className="w-4 h-4 mr-1" />
           Pause

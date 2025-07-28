@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -9,7 +9,11 @@ import { TaskCardData, GameStateType } from '../GameState';
 interface PiPControllerProps {
   tasks: TaskCardData[];
   onComplete: () => void;
-  onTaskComplete?: (taskId: string) => void;
+  onTaskComplete?: (taskId: string) => Promise<void>;
+  onPauseTask?: (taskId: string) => Promise<void>;
+  onCommitToCurrentTask?: () => void;
+  onCarryOn?: (taskId: string) => void;
+  onSkip?: (taskId: string) => Promise<void>;
   isLoading?: boolean;
   isProcessing?: boolean;
   onLoadingComplete?: () => void;
@@ -20,6 +24,10 @@ export const PiPController: React.FC<PiPControllerProps> = ({
   tasks,
   onComplete,
   onTaskComplete,
+  onPauseTask,
+  onCommitToCurrentTask,
+  onCarryOn,
+  onSkip,
   isLoading,
   isProcessing,
   onLoadingComplete,
@@ -28,9 +36,11 @@ export const PiPController: React.FC<PiPControllerProps> = ({
   const { isPiPActive, pipWindow } = usePiP();
   const reactRootRef = useRef<ReturnType<typeof createRoot> | null>(null);
   const queryClientRef = useRef<QueryClient | null>(null);
+  const renderedWindow = useRef<Window | null>(null);
 
+  // Create PiP window and setup
   useEffect(() => {
-    if (isPiPActive && pipWindow && !pipWindow.closed) {
+    if (isPiPActive && pipWindow && !pipWindow.closed && renderedWindow.current !== pipWindow) {
       // Create a container div that fills the entire PiP window
       const container = pipWindow.document.createElement('div');
       container.id = 'pip-react-root';
@@ -46,39 +56,21 @@ export const PiPController: React.FC<PiPControllerProps> = ({
       pipWindow.document.body.innerHTML = '';
       pipWindow.document.body.appendChild(container);
 
-      // Create React root and render our component with necessary providers
+      // Create React root
       reactRootRef.current = createRoot(container);
       
       // Create a new QueryClient for the PiP window
-      if (!queryClientRef.current) {
-        queryClientRef.current = new QueryClient({
-          defaultOptions: {
-            queries: {
-              staleTime: 1000 * 60 * 5, // 5 minutes
-              cacheTime: 1000 * 60 * 10, // 10 minutes
-            },
+      queryClientRef.current = new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            cacheTime: 1000 * 60 * 10, // 10 minutes
           },
-        });
-      }
-      
-      reactRootRef.current.render(
-        <QueryClientProvider client={queryClientRef.current}>
-          <TooltipProvider>
-            <PiPCard
-              tasks={tasks}
-              onComplete={onComplete}
-              onTaskComplete={onTaskComplete}
-              isLoading={isLoading}
-              isProcessing={isProcessing}
-              onLoadingComplete={onLoadingComplete}
-              pipWindow={pipWindow}
-              gameState={gameState}
-            />
-          </TooltipProvider>
-        </QueryClientProvider>
-      );
+        },
+      });
 
-      console.log('Rendered React content in PiP window');
+      renderedWindow.current = pipWindow;
+      console.log('Set up PiP window');
 
       // Cleanup when the component unmounts or PiP window closes
       return () => {
@@ -90,13 +82,15 @@ export const PiPController: React.FC<PiPControllerProps> = ({
             console.warn('Error unmounting React root in PiP window:', error);
           }
         }
+        queryClientRef.current = null;
+        renderedWindow.current = null;
       };
     }
-  }, [isPiPActive, pipWindow, tasks, onComplete, onTaskComplete, isLoading, isProcessing, onLoadingComplete]);
+  }, [isPiPActive, pipWindow]);
 
-  // Update the rendered content when props change
+  // Update PiP content when state changes
   useEffect(() => {
-    if (isPiPActive && pipWindow && !pipWindow.closed && reactRootRef.current) {
+    if (isPiPActive && pipWindow && !pipWindow.closed && reactRootRef.current && queryClientRef.current) {
       reactRootRef.current.render(
         <QueryClientProvider client={queryClientRef.current}>
           <TooltipProvider>
@@ -104,6 +98,10 @@ export const PiPController: React.FC<PiPControllerProps> = ({
               tasks={tasks}
               onComplete={onComplete}
               onTaskComplete={onTaskComplete}
+              onPauseTask={onPauseTask}
+              onCommitToCurrentTask={onCommitToCurrentTask}
+              onCarryOn={onCarryOn}
+              onSkip={onSkip}
               isLoading={isLoading}
               isProcessing={isProcessing}
               onLoadingComplete={onLoadingComplete}
@@ -114,7 +112,7 @@ export const PiPController: React.FC<PiPControllerProps> = ({
         </QueryClientProvider>
       );
     }
-  }, [tasks, onComplete, onTaskComplete, isLoading, isProcessing, onLoadingComplete, isPiPActive, pipWindow]);
+  }, [isPiPActive, pipWindow, tasks, gameState, isLoading, isProcessing]);
 
   // This component doesn't render anything in the main window
   return null;
