@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { MonitorSpeaker } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { PiPController, usePiP } from "./PictureInPicture";
 import { TaskCardData } from './GameState';
 
@@ -63,16 +63,15 @@ const usePictureInPictureManager = ({
     if (!isPiPAvailable) return null;
     
     return (
-      <div className="fixed top-4 left-4 z-40">
+      <div className="fixed top-4 right-4 z-40">
         <Button
           variant="outline"
           size="sm"
           onClick={enterPiP}
-          className="bg-background/80 backdrop-blur-sm border border-border hover:bg-muted/50 transition-all duration-200 shadow-lg"
-          title="Open in Chrome Picture-in-Picture (system-level floating window)"
+          className="bg-background/80 backdrop-blur-sm border border-border hover:bg-muted/50 transition-all duration-200 shadow-lg p-2 h-8 w-8"
+          title="Open in Picture-in-Picture window"
         >
-          <MonitorSpeaker className="mr-2 h-4 w-4" />
-          Open in PiP
+          <ExternalLink className="h-4 w-4" />
         </Button>
       </div>
     );
