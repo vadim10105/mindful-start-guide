@@ -1954,11 +1954,53 @@ const Tasks = () => {
             isLoading={isProcessing}
             isProcessing={isProcessing}
             onLoadingComplete={() => setIsProcessing(false)}
-            onComplete={() => {
-              toast({
-                title: "Session Complete!",
-                description: "Great work on focusing through your tasks!",
+            onComplete={async (completedTaskIds: Set<string>) => {
+              // Get the tasks that were passed to the game
+              const gameTaskTitles = reviewedTasks.map(task => task);
+              
+              // Find incomplete tasks (tasks that were in game but not completed)
+              const incompleteTasks = gameTaskTitles.filter(taskTitle => {
+                // Find the task object to get its ID for comparison
+                const taskData = gameTaskTitles.find(t => t === taskTitle);
+                return taskData && !completedTaskIds.has(taskTitle);
               });
+
+              // Save incomplete tasks as "later" in database
+              if (user && incompleteTasks.length > 0) {
+                console.log('Saving incomplete tasks to later list:', incompleteTasks);
+                
+                for (const taskTitle of incompleteTasks) {
+                  try {
+                    const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+                    
+                    await supabase
+                      .from('tasks')
+                      .insert({
+                        title: taskTitle,
+                        user_id: user.id,
+                        source: 'brain_dump' as const,
+                        status: 'later' as const,
+                        is_liked: tags.isLiked,
+                        is_urgent: tags.isUrgent,
+                        is_quick: tags.isQuick,
+                        later_at: new Date().toISOString(),
+                      });
+                  } catch (error) {
+                    console.error('Error saving incomplete task as later:', error);
+                  }
+                }
+
+                toast({
+                  title: "Session Complete!",
+                  description: `Great work! ${incompleteTasks.length} incomplete tasks saved for later.`,
+                });
+              } else {
+                toast({
+                  title: "Session Complete!",
+                  description: "Great work on focusing through your tasks!",
+                });
+              }
+              
               resetFlow();
             }}
             onTaskComplete={(taskId) => {

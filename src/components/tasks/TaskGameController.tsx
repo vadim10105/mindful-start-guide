@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { TodaysCollection } from "./TodaysCollection";
 import { TaskSwiper } from "./TaskSwiper";
 import { NavigationDots } from "./NavigationDots";
-import { TaskListOverlay } from "./TaskListOverlay";
 import { useGameState, TaskCardData } from "./GameState";
 import { ShuffleAnimation } from "./ShuffleAnimation";
 
@@ -20,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface TaskGameControllerProps {
   tasks: TaskCardData[];
-  onComplete: () => void;
+  onComplete: (completedTaskIds: Set<string>) => void;
   onTaskComplete?: (taskId: string) => void;
   isLoading?: boolean;
   isProcessing?: boolean;
@@ -148,7 +147,6 @@ export const TaskGameController = ({
     isNavigationLocked: gameState.isNavigationLocked,
     swiperRef: gameState.swiperRef,
     setCurrentViewingIndex: gameState.setCurrentViewingIndex,
-    setShowTaskList: gameState.setShowTaskList,
     onCommitToCurrentTask: handleCommitToCurrentTask,
     onTaskComplete: progressTracker.handleTaskComplete
   });
@@ -249,13 +247,11 @@ export const TaskGameController = ({
                 />
 
                 {/* Completion */}
-                {gameState.completedTasks.size === tasks.length && (
-                  <div className="text-center">
-                    <Button onClick={onComplete} size="lg" className="w-full max-w-xs">
-                      Finish Session
-                    </Button>
-                  </div>
-                )}
+                <div className="text-center">
+                  <Button onClick={() => onComplete(gameState.completedTasks)} size="lg" className="w-full max-w-xs">
+                    Finish Session
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -266,16 +262,6 @@ export const TaskGameController = ({
             isVisible={gameState.todaysCompletedTasks.length > 0}
           />
 
-          {/* Task List Overlay */}
-          <TaskListOverlay
-            showTaskList={gameState.showTaskList}
-            tasks={tasks}
-            getTaskStatus={gameState.getTaskStatus}
-            getTaskTimeSpent={gameState.getTaskTimeSpent}
-            formatTime={formatTime}
-            onSeeAheadPress={navigationManager.handleSeeAheadPress}
-            onSeeAheadRelease={navigationManager.handleSeeAheadRelease}
-          />
 
         </div>
       )}
