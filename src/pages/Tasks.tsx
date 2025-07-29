@@ -651,6 +651,13 @@ const Tasks = () => {
     }
   }, [currentStep, inputMode, isProcessing, isTransitioning, isSettingsOpen]);
 
+  // Load later tasks when user changes or component mounts
+  useEffect(() => {
+    if (user && inputMode === 'list') {
+      loadLaterTasks();
+    }
+  }, [user, inputMode]);
+
   const handleBrainDumpSubmit = async () => {
     console.log('handleBrainDumpSubmit called with text:', brainDumpText);
     
@@ -1150,6 +1157,125 @@ const Tasks = () => {
     }
   };
 
+  // Function to save a task as 'later' status in the database
+  const saveTaskAsLater = async (taskTitle: string) => {
+    if (!user) return;
+
+    try {
+      const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+      
+      const { error } = await supabase
+        .from('tasks')
+        .insert({
+          title: taskTitle,
+          user_id: user.id,
+          source: 'manual' as const,
+          status: 'later' as const,
+          is_liked: tags.isLiked,
+          is_urgent: tags.isUrgent,
+          is_quick: tags.isQuick,
+          later_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.error('Error saving later task:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Failed to save later task:', error);
+    }
+  };
+
+  // Function to update task status from 'later' to 'active'
+  const moveTaskFromLaterToActive = async (taskTitle: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          status: 'active' as const,
+          later_at: null 
+        })
+        .eq('user_id', user.id)
+        .eq('title', taskTitle)
+        .eq('status', 'later');
+
+      if (error) {
+        console.error('Error moving task from later to active:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Failed to move task from later to active:', error);
+    }
+  };
+
+  // Function to load later tasks from database
+  const loadLaterTasks = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('title')
+        .eq('user_id', user.id)
+        .eq('status', 'later')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading later tasks:', error);
+        return;
+      }
+
+      if (data) {
+        const laterTaskTitles = data.map(task => task.title);
+        setLaterTasks(laterTaskTitles);
+        
+        // Also load their tags and time estimates
+        laterTaskTitles.forEach(title => {
+          if (!taskTags[title]) {
+            // Load tags for this task if not already loaded
+            loadTaskTags(title);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load later tasks:', error);
+    }
+  };
+
+  // Helper function to load task tags from database
+  const loadTaskTags = async (taskTitle: string) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('is_liked, is_urgent, is_quick')
+        .eq('user_id', user.id)
+        .eq('title', taskTitle)
+        .single();
+
+      if (error) {
+        console.error('Error loading task tags:', error);
+        return;
+      }
+
+      if (data) {
+        setTaskTags(prev => ({
+          ...prev,
+          [taskTitle]: {
+            isLiked: data.is_liked || false,
+            isUrgent: data.is_urgent || false,
+            isQuick: data.is_quick || false,
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load task tags:', error);
+    }
+  };
+
   return (
     <PiPProvider>
       <div className="h-screen bg-background p-2 sm:p-4 overflow-hidden">
@@ -1348,6 +1474,8 @@ const Tasks = () => {
                             if (listTasks.includes(activeId)) {
                               setListTasks(prev => prev.filter(task => task !== activeId));
                               setLaterTasks(prev => [...prev, activeId]);
+                              // Save to database as later task
+                              saveTaskAsLater(activeId);
                               // Keep collapsed by default - user can click to expand
                             }
                             return;
@@ -1358,6 +1486,8 @@ const Tasks = () => {
                             if (laterTasks.includes(activeId)) {
                               setLaterTasks(prev => prev.filter(task => task !== activeId));
                               setListTasks(prev => [...prev, activeId]);
+                              // Update database status from later to active
+                              moveTaskFromLaterToActive(activeId);
                             }
                             return;
                           }
@@ -1371,6 +1501,8 @@ const Tasks = () => {
                               newList.splice(targetIndex, 0, activeId);
                               return newList;
                             });
+                            // Update database status from later to active
+                            moveTaskFromLaterToActive(activeId);
                             return;
                           }
                           
@@ -1562,8 +1694,8 @@ const Tasks = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-12">
                       <Button
                         onClick={() => {
-                          // Pass all tasks (active + later) to shuffle
-                          handleShuffle([...listTasks, ...laterTasks]);
+                          // Pass only active tasks to shuffle (later tasks stay in later list)
+                          handleShuffle(listTasks);
                         }}
                         disabled={(listTasks.length === 0 && laterTasks.length === 0) || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
@@ -1574,8 +1706,8 @@ const Tasks = () => {
 
                       <Button
                         onClick={() => {
-                          // Pass all tasks (active + later) to manual order
-                          handleManualOrder([...listTasks, ...laterTasks]);
+                          // Pass only active tasks to manual order (later tasks stay in later list)
+                          handleManualOrder(listTasks);
                         }}
                         variant="outline"
                         disabled={(listTasks.length === 0 && laterTasks.length === 0) || isProcessing || isTransitioning}
