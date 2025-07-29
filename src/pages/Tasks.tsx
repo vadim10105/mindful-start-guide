@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock } from "lucide-react";
+import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
@@ -25,6 +25,11 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  useDroppable,
+  DragOverlay,
+  DragStartEvent,
+  CollisionDetection,
+  rectIntersection,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -80,6 +85,7 @@ interface TaskListItemProps {
   isQuick: boolean;
   estimatedTime?: string;
   isLoadingTime?: boolean;
+  isLastInSection?: boolean;
   onTagUpdate: (tag: 'liked' | 'urgent' | 'quick', value: boolean) => void;
   onTimeUpdate?: (newTime: string) => void;
   onReorder: (dragIndex: number, hoverIndex: number) => void;
@@ -101,7 +107,7 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   );
 };
 
-const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, isLoadingTime, onTagUpdate, onTimeUpdate, onReorder, onHover }: TaskListItemProps) => {
+const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, isLoadingTime, isLastInSection, onTagUpdate, onTimeUpdate, onReorder, onHover }: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
     attributes,
@@ -121,7 +127,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
     <div 
       ref={setNodeRef}
       style={style}
-      className={`border-b border-border/30 hover:bg-muted/20 transition-colors ${
+      className={`${!isLastInSection ? 'border-b border-border/30' : ''} hover:bg-muted/20 transition-colors ${
         isDragging ? 'bg-card border border-border rounded-lg shadow-sm opacity-80' : ''
       }`}
       onMouseEnter={() => {
@@ -350,6 +356,50 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
   );
 };
 
+const DroppableZone = ({ id, children }: { id: string; children: React.ReactNode }) => {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`transition-all duration-200 ${
+        isOver ? 'bg-muted/20 rounded-lg min-h-[60px] pb-4' : ''
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
+
+const customCollisionDetection: CollisionDetection = (args) => {
+  const { active, droppableContainers } = args;
+  
+  // Use default collision detection first
+  const collisions = rectIntersection(args);
+  
+  // If we're dragging from later to active, prioritize active zone and active tasks
+  if (active.id && typeof active.id === 'string') {
+    const activeId = active.id;
+    
+    // Filter collisions to prevent unwanted cross-zone movements during active dragging
+    const filteredCollisions = collisions.filter(collision => {
+      const overId = collision.id;
+      
+      // Always allow dropping on zones
+      if (overId === 'active-zone' || overId === 'later-zone') {
+        return true;
+      }
+      
+      // If dragging from later to active area, only allow collision with active tasks
+      // This prevents active tasks from being displaced into later zone
+      return true; // Let the drag logic handle the specifics
+    });
+    
+    return filteredCollisions;
+  }
+  
+  return collisions;
+};
 
 const Tasks = () => {
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
@@ -388,6 +438,9 @@ const Tasks = () => {
   const [inputMode, setInputMode] = useState<'brain-dump' | 'list'>('brain-dump');
   const [cameFromBrainDump, setCameFromBrainDump] = useState(false);
   const [listTasks, setListTasks] = useState<string[]>([]);
+  const [laterTasks, setLaterTasks] = useState<string[]>([]);
+  const [laterTasksExpanded, setLaterTasksExpanded] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [newTaskInput, setNewTaskInput] = useState('');
   const [loadingTimeEstimates, setLoadingTimeEstimates] = useState<Set<string>>(new Set());
   const [cardDimensions, setCardDimensions] = useState({ top: 0, height: 0 });
@@ -698,6 +751,8 @@ const Tasks = () => {
     setReviewedTasks([]);
     setTaggedTasks([]);
     setListTasks([]);
+    setLaterTasks([]);
+    setLaterTasksExpanded(false);
     setNewTaskInput('');
     setTaskTags({});
     setTaskTimeEstimates({});
@@ -1097,7 +1152,7 @@ const Tasks = () => {
 
   return (
     <PiPProvider>
-      <div className="min-h-screen bg-background p-2 sm:p-4">
+      <div className="h-screen bg-background p-2 sm:p-4 overflow-hidden">
       {/* Settings - Fixed Top Right */}
       {currentStep === 'input' && (
         <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
@@ -1131,11 +1186,11 @@ const Tasks = () => {
       )}
       
       
-      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input') ? 'sm:max-w-6xl sm:mx-auto sm:flex sm:items-center sm:justify-center sm:min-h-screen fixed inset-0 flex items-center justify-center pt-16 pb-6 px-2 sm:relative sm:pt-0 sm:pb-0 sm:px-4' : currentStep === 'review' ? 'max-w-6xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-6xl mx-auto'} space-y-6`}>
+      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input') ? 'sm:max-w-6xl sm:mx-auto sm:flex sm:items-center sm:justify-center h-full flex items-center justify-center px-2 sm:px-4' : currentStep === 'review' ? 'max-w-6xl mx-auto flex items-center justify-center h-full' : 'max-w-6xl mx-auto'} space-y-6`}>
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <div className="relative w-full h-full flex items-center justify-center">
+          <div className="relative w-full h-full max-h-[700px] flex items-center justify-center">
             <Card 
               ref={cardRef}
               id="main-task-container"
@@ -1181,8 +1236,8 @@ const Tasks = () => {
               
               {inputMode === 'brain-dump' ? (
                 // Brain Dump Mode
-                <>
-                  <div className={`relative transition-all duration-600 ease-out ${
+                <div className="min-h-[400px] flex flex-col">
+                  <div className={`relative transition-all duration-600 ease-out flex-1 ${
                     isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
                   }`} style={{ marginTop: '12px' }}>
                     <div className="bg-card focus-within:bg-muted/50 transition-all duration-300 rounded-md relative">
@@ -1193,7 +1248,7 @@ const Tasks = () => {
                         onFocus={() => setIsTextareaFocused(true)}
                         onBlur={() => setIsTextareaFocused(false)}
                         disabled={isTransitioning}
-                        className={`h-full sm:h-auto sm:min-h-[250px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 ${
+                        className={`h-full min-h-[320px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 ${
                           isTransitioning ? 'text-muted-foreground' : ''
                         }`}
                         rows={8}
@@ -1220,12 +1275,32 @@ const Tasks = () => {
                       </>
                     )}
                   </Button>
-                </>
+                </div>
               ) : (
                 // List Mode with Full Tagging Interface
-                <div ref={taskListContentRef}>
-                  <div className="space-y-3 min-h-[250px] transition-all duration-500 ease-out" style={{ marginTop: '12px' }}>
-                    {/* Add Task Input - Fixed at top */}
+                <div ref={taskListContentRef} className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
+                  {/* Loading overlay for brain dump transition */}
+                  {isTransitioning && listTasks.length === 0 && (
+                    <div className="absolute inset-0 bg-card rounded-lg z-50 flex items-center justify-center">
+                      <div className="text-center space-y-4">
+                        <div className="flex justify-center space-x-3">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="w-3 h-3 bg-primary rounded-full animate-bounce"
+                              style={{ animationDelay: `${i * 0.15}s` }}
+                            />
+                          ))}
+                        </div>
+                        <div className="text-base font-medium text-foreground">
+                          {loadingMessages[currentMessageIndex]}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Fixed input at top */}
+                  <div className="flex-shrink-0 pb-3" style={{ marginTop: '12px' }}>
                     <div className="flex rounded-md bg-card focus-within:bg-muted/50 transition-all duration-300">
                       <Input
                         ref={taskInputRef}
@@ -1246,121 +1321,251 @@ const Tasks = () => {
                         <Plus className="w-4 h-4" />
                       </Button>
                     </div>
-                    
-                    {/* Task List with Tagging */}
+                  </div>
+                  
+                  {/* Scrollable task list area */}
+                  <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                     <div className="relative">
-                      {/* Loading overlay with clean background */}
-                      {isTransitioning && listTasks.length === 0 && (
-                        <div className="absolute inset-0 bg-card rounded-lg z-10 flex items-center justify-center min-h-[200px]">
-                          <div className="text-center space-y-4">
-                            <div className="flex justify-center space-x-3">
-                              {[...Array(5)].map((_, i) => (
-                                <div
-                                  key={i}
-                                  className="w-3 h-3 bg-primary rounded-full animate-bounce"
-                                  style={{ animationDelay: `${i * 0.15}s` }}
-                                />
-                              ))}
-                            </div>
-                            <div className="text-base font-medium text-foreground">
-                              {loadingMessages[currentMessageIndex]}
-                            </div>
-                          </div>
-                        </div>
-                      )}
                       
                       <DndContext 
                         sensors={sensors}
-                        collisionDetection={closestCenter}
+                        collisionDetection={customCollisionDetection}
+                        onDragStart={(event: DragStartEvent) => {
+                          setActiveId(event.active.id as string);
+                        }}
                         onDragEnd={(event) => {
+                          setActiveId(null);
                           const { active, over } = event;
                           
                           if (!over) return;
                           
+                          const activeId = active.id as string;
+                          const overId = over.id as string;
+                          
+                          // Handle moving between active and later lists
+                          if (overId === 'later-zone') {
+                            // Move from active to later (only if explicitly dropping on the zone)
+                            if (listTasks.includes(activeId)) {
+                              setListTasks(prev => prev.filter(task => task !== activeId));
+                              setLaterTasks(prev => [...prev, activeId]);
+                              // Keep collapsed by default - user can click to expand
+                            }
+                            return;
+                          }
+                          
+                          if (overId === 'active-zone') {
+                            // Move from later to active (only when dropping on the zone itself)
+                            if (laterTasks.includes(activeId)) {
+                              setLaterTasks(prev => prev.filter(task => task !== activeId));
+                              setListTasks(prev => [...prev, activeId]);
+                            }
+                            return;
+                          }
+                          
+                          // Handle moving from later to active when dropping on an active task
+                          if (laterTasks.includes(activeId) && listTasks.includes(overId)) {
+                            const targetIndex = listTasks.findIndex((task) => task === overId);
+                            setLaterTasks(prev => prev.filter(task => task !== activeId));
+                            setListTasks(prev => {
+                              const newList = [...prev];
+                              newList.splice(targetIndex, 0, activeId);
+                              return newList;
+                            });
+                            return;
+                          }
+                          
                           // Handle reordering within active tasks
-                          if (listTasks.includes(active.id as string) && listTasks.includes(over.id as string)) {
-                            const oldIndex = listTasks.findIndex((task) => task === active.id);
-                            const newIndex = listTasks.findIndex((task) => task === over.id);
+                          if (listTasks.includes(activeId) && listTasks.includes(overId)) {
+                            const oldIndex = listTasks.findIndex((task) => task === activeId);
+                            const newIndex = listTasks.findIndex((task) => task === overId);
                             if (oldIndex !== -1 && newIndex !== -1) {
                               setListTasks((items) => arrayMove(items, oldIndex, newIndex));
                             }
                           }
+                          
+                          // Handle reordering within later tasks
+                          if (laterTasks.includes(activeId) && laterTasks.includes(overId)) {
+                            const oldIndex = laterTasks.findIndex((task) => task === activeId);
+                            const newIndex = laterTasks.findIndex((task) => task === overId);
+                            if (oldIndex !== -1 && newIndex !== -1) {
+                              setLaterTasks((items) => arrayMove(items, oldIndex, newIndex));
+                            }
+                          }
                         }}
                       >
-                        <SortableContext 
-                          items={listTasks}
-                          strategy={verticalListSortingStrategy}
-                        >
+                        <div>
                           {/* Active Tasks */}
-                          <div className="space-y-2 transition-all duration-300 ease-out">
-                            {listTasks.map((task, index) => {
-                              const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
-                              return (
-                                <div
-                                  key={task}
-                                  className="animate-in fade-in slide-in-from-top-2 fill-mode-both"
-                                  style={{ 
-                                    animationDelay: `${index * 100}ms`,
-                                    animationDuration: '400ms',
-                                    animationTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                                  }}
-                                >
-                                  <TaskListItem
-                                    task={task}
-                                    index={index}
-                                    isLiked={tags.isLiked}
-                                    isUrgent={tags.isUrgent}
-                                    isQuick={tags.isQuick}
-                                    estimatedTime={taskTimeEstimates[task]}
-                                    isLoadingTime={loadingTimeEstimates.has(task)}
-                                    onTimeUpdate={(newTime) => {
-                                      setTaskTimeEstimates(prev => ({
-                                        ...prev,
-                                        [task]: newTime
-                                      }));
+                          <DroppableZone id="active-zone">
+                            <SortableContext 
+                              items={listTasks}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="space-y-2 transition-all duration-300 ease-out min-h-[40px]">
+                                {listTasks.map((task, index) => {
+                                const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                                return (
+                                  <div
+                                    key={task}
+                                    className="animate-in fade-in slide-in-from-top-2 fill-mode-both"
+                                    style={{ 
+                                      animationDelay: `${index * 100}ms`,
+                                      animationDuration: '400ms',
+                                      animationTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                                     }}
-                                    onReorder={() => {}}
-                                    onHover={setHoveredTaskIndex}
-                                    onTagUpdate={(tag, value) => {
-                                      setTaskTags(prev => ({
-                                        ...prev,
-                                        [task]: {
-                                          ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
-                                          [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
-                                        }
-                                      }));
-                                    }}
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
+                                  >
+                                    <TaskListItem
+                                      task={task}
+                                      index={index}
+                                      isLiked={tags.isLiked}
+                                      isUrgent={tags.isUrgent}
+                                      isQuick={tags.isQuick}
+                                      estimatedTime={taskTimeEstimates[task]}
+                                      isLoadingTime={loadingTimeEstimates.has(task)}
+                                      isLastInSection={index === listTasks.length - 1}
+                                      onTimeUpdate={(newTime) => {
+                                        setTaskTimeEstimates(prev => ({
+                                          ...prev,
+                                          [task]: newTime
+                                        }));
+                                      }}
+                                      onReorder={() => {}}
+                                      onHover={setHoveredTaskIndex}
+                                      onTagUpdate={(tag, value) => {
+                                        setTaskTags(prev => ({
+                                          ...prev,
+                                          [task]: {
+                                            ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                            [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
+                                          }
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                );
+                              })}
+                              </div>
+                            </SortableContext>
+                          </DroppableZone>
 
-                        </SortableContext>
+                          {/* Later Divider - Droppable and Clickable */}
+                          {(listTasks.length + laterTasks.length) >= 1 && (
+                            <DroppableZone id="later-zone">
+                              <div 
+                                className="flex items-center gap-4 py-6 cursor-pointer hover:bg-muted/10 rounded-lg transition-colors group"
+                                onClick={() => setLaterTasksExpanded(!laterTasksExpanded)}
+                              >
+                                <div className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors"></div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-foreground/30 font-medium group-hover:text-foreground transition-colors">
+                                    Later ({laterTasks.length})
+                                  </span>
+                                  {laterTasks.length > 0 && (
+                                    <ChevronDown 
+                                      className={`h-4 w-4 text-foreground/30 group-hover:text-foreground transition-all duration-200 ${
+                                        laterTasksExpanded ? 'rotate-180' : ''
+                                      }`} 
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors"></div>
+                              </div>
+                            </DroppableZone>
+                          )}
+
+                          {/* Later Tasks - Only show when expanded */}
+                          {(listTasks.length + laterTasks.length) >= 1 && laterTasksExpanded && laterTasks.length > 0 && (
+                            <SortableContext 
+                              items={laterTasks}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="space-y-2 transition-all duration-300 ease-out overflow-hidden">
+                                {laterTasks.map((task, index) => {
+                                const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                                return (
+                                  <div
+                                    key={task}
+                                    className="animate-in fade-in slide-in-from-top-2 fill-mode-both"
+                                    style={{ 
+                                      animationDelay: `${index * 100}ms`,
+                                      animationDuration: '400ms',
+                                      animationTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                    }}
+                                  >
+                                    <TaskListItem
+                                      task={task}
+                                      index={index}
+                                      isLiked={tags.isLiked}
+                                      isUrgent={tags.isUrgent}
+                                      isQuick={tags.isQuick}
+                                      estimatedTime={taskTimeEstimates[task]}
+                                      isLoadingTime={loadingTimeEstimates.has(task)}
+                                      isLastInSection={index === laterTasks.length - 1}
+                                      onTimeUpdate={(newTime) => {
+                                        setTaskTimeEstimates(prev => ({
+                                          ...prev,
+                                          [task]: newTime
+                                        }));
+                                      }}
+                                      onReorder={() => {}}
+                                      onHover={setHoveredTaskIndex}
+                                      onTagUpdate={(tag, value) => {
+                                        setTaskTags(prev => ({
+                                          ...prev,
+                                          [task]: {
+                                            ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                            [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
+                                          }
+                                        }));
+                                      }}
+                                    />
+                                  </div>
+                                );
+                              })}
+                              </div>
+                            </SortableContext>
+                          )}
+
+                        </div>
+                        
+                        <DragOverlay>
+                          {activeId ? (
+                            <div className="bg-card border border-border rounded-lg shadow-lg p-3 opacity-95">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                                  •
+                                </div>
+                                <span className="text-sm font-medium">
+                                  {activeId}
+                                </span>
+                              </div>
+                            </div>
+                          ) : null}
+                        </DragOverlay>
                       </DndContext>
                     </div>
-                    
                   </div>
                   
-                  {/* Action Buttons - Show appropriate buttons based on state */}
-                  {cameFromBrainDump && listTasks.length === 0 && !isTransitioning ? (
+                  {/* Fixed buttons at bottom */}
+                  <div className="flex-shrink-0 pt-4">
+                    {/* Action Buttons - Show appropriate buttons based on state */}
+                  {cameFromBrainDump && listTasks.length === 0 && laterTasks.length === 0 && !isTransitioning ? (
                     <Button 
                       onClick={handleListSubmit}
-                      disabled={listTasks.length === 0 && !cameFromBrainDump}
+                      disabled={listTasks.length === 0 && laterTasks.length === 0 && !cameFromBrainDump}
                       className="w-full h-12 sm:h-11"
                       size="lg"
                     >
                       <ArrowRight className="w-4 h-4 mr-2" />
                       Share for AI Processing
                     </Button>
-                  ) : (listTasks.length > 0 || !isTransitioning) ? (
+                  ) : (listTasks.length > 0 || laterTasks.length > 0 || !isTransitioning) ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-12">
                       <Button
                         onClick={() => {
-                          // Pass list tasks directly to shuffle, avoiding async state issue
-                          handleShuffle(listTasks);
+                          // Pass all tasks (active + later) to shuffle
+                          handleShuffle([...listTasks, ...laterTasks]);
                         }}
-                        disabled={listTasks.length === 0 || isProcessing || isTransitioning}
+                        disabled={(listTasks.length === 0 && laterTasks.length === 0) || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
@@ -1369,11 +1574,11 @@ const Tasks = () => {
 
                       <Button
                         onClick={() => {
-                          // Pass list tasks directly to manual order, avoiding async state issue
-                          handleManualOrder(listTasks);
+                          // Pass all tasks (active + later) to manual order
+                          handleManualOrder([...listTasks, ...laterTasks]);
                         }}
                         variant="outline"
-                        disabled={listTasks.length === 0 || isProcessing || isTransitioning}
+                        disabled={(listTasks.length === 0 && laterTasks.length === 0) || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
@@ -1381,30 +1586,32 @@ const Tasks = () => {
                       </Button>
                     </div>
                   ) : null}
+                  </div>
                 </div>
               )}
             </CardContent>
             
             </Card>
             
-            {/* Timeline - Now sibling of Card, positioned relative to wrapper */}
+            {/* Timeline - Positioned relative to wrapper, height matches Card */}
             {inputMode === 'list' && listTasks.length > 0 && (
               <div 
-                className="hidden lg:block absolute w-80 h-full transition-all duration-500 ease-in-out cursor-pointer group"
+                className="hidden lg:block absolute w-80 overflow-y-auto transition-all duration-500 ease-in-out cursor-pointer group"
                 style={{
-                  top: 0,
-                  right: timelineExpanded ? '-7rem' : '13rem', // Reversed - visible when collapsed, hidden when expanded
-                  zIndex: timelineExpanded ? 0 : 0, // Swapped z-index - above when collapsed, behind when expanded
-                  transform: !timelineExpanded ? 'translateX(0)' : 'translateX(0)', // Base transform
+                  top: '50%',
+                  height: cardRef.current?.offsetHeight || '700px',
+                  transform: `translateY(-50%) ${!timelineExpanded ? 'translateX(0)' : 'translateX(0)'}`,
+                  right: timelineExpanded ? '-7rem' : '13rem',
+                  zIndex: timelineExpanded ? 0 : 0,
                 }}
                 onMouseEnter={(e) => {
                   if (!timelineExpanded) {
-                    e.currentTarget.style.transform = 'translateX(2rem)'; // Pull out slightly when collapsed and hovered
+                    e.currentTarget.style.transform = `translateY(-50%) translateX(2rem)`;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!timelineExpanded) {
-                    e.currentTarget.style.transform = 'translateX(0)'; // Return to normal position
+                    e.currentTarget.style.transform = `translateY(-50%) translateX(0)`;
                   }
                 }}
                 onClick={() => setTimelineExpanded(!timelineExpanded)}
@@ -1452,6 +1659,7 @@ const Tasks = () => {
                            isQuick={tags.isQuick}
                            estimatedTime={taskTimeEstimates[task]}
                            isLoadingTime={loadingTimeEstimates.has(task)}
+                           isLastInSection={index === reviewedTasks.length - 1}
                            onTimeUpdate={(newTime) => {
                              setTaskTimeEstimates(prev => ({
                                ...prev,
