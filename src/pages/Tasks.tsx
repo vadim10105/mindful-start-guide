@@ -1955,28 +1955,46 @@ const Tasks = () => {
             isProcessing={isProcessing}
             onLoadingComplete={() => setIsProcessing(false)}
             onComplete={async (completedTaskIds: Set<string>) => {
-              // Get the tasks that were passed to the game
-              const gameTaskTitles = reviewedTasks.map(task => task);
+              console.log('Finishing session with completed IDs:', completedTaskIds);
+              
+              // Get the actual task objects that were passed to the game
+              const gameTasks = prioritizedTasks.length > 0 ? prioritizedTasks.map((task) => ({
+                ...task,
+                estimated_time: taskTimeEstimates[task.title]
+              })) : taggedTasks.map((task) => ({
+                id: task.id,
+                title: task.title,
+                priority_score: task.card_position,
+                explanation: `Task ${task.card_position} in your manual order`,
+                is_liked: task.is_liked,
+                is_urgent: task.is_urgent,
+                is_quick: task.is_quick,
+                estimated_time: taskTimeEstimates[task.title]
+              }));
+              
+              console.log('Game tasks:', gameTasks);
               
               // Find incomplete tasks (tasks that were in game but not completed)
-              const incompleteTasks = gameTaskTitles.filter(taskTitle => {
-                // Find the task object to get its ID for comparison
-                const taskData = gameTaskTitles.find(t => t === taskTitle);
-                return taskData && !completedTaskIds.has(taskTitle);
+              const incompleteTasks = gameTasks.filter(task => {
+                const isCompleted = completedTaskIds.has(task.id);
+                console.log(`Task "${task.title}" (ID: ${task.id}) completed:`, isCompleted);
+                return !isCompleted;
               });
+
+              console.log('Incomplete tasks:', incompleteTasks);
 
               // Save incomplete tasks as "later" in database
               if (user && incompleteTasks.length > 0) {
-                console.log('Saving incomplete tasks to later list:', incompleteTasks);
+                console.log('Saving incomplete tasks to later list:', incompleteTasks.map(t => t.title));
                 
-                for (const taskTitle of incompleteTasks) {
+                for (const task of incompleteTasks) {
                   try {
-                    const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+                    const tags = taskTags[task.title] || { isLiked: false, isUrgent: false, isQuick: false };
                     
                     await supabase
                       .from('tasks')
                       .insert({
-                        title: taskTitle,
+                        title: task.title,
                         user_id: user.id,
                         source: 'brain_dump' as const,
                         status: 'later' as const,
