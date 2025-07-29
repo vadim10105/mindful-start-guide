@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { parseTimeToMinutes, formatMinutesToDisplay } from '@/utils/timeUtils';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1163,6 +1164,8 @@ const Tasks = () => {
 
     try {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+      const estimatedTime = taskTimeEstimates[taskTitle];
+      const estimatedMinutes = estimatedTime ? parseTimeToMinutes(estimatedTime) : null;
       
       const { error } = await supabase
         .from('tasks')
@@ -1174,6 +1177,7 @@ const Tasks = () => {
           is_liked: tags.isLiked,
           is_urgent: tags.isUrgent,
           is_quick: tags.isQuick,
+          estimated_minutes: estimatedMinutes,
           later_at: new Date().toISOString(),
         });
 
@@ -1217,7 +1221,7 @@ const Tasks = () => {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select('title')
+        .select('title, is_liked, is_urgent, is_quick, estimated_minutes')
         .eq('user_id', user.id)
         .eq('status', 'later')
         .order('created_at', { ascending: true });
@@ -1231,48 +1235,30 @@ const Tasks = () => {
         const laterTaskTitles = data.map(task => task.title);
         setLaterTasks(laterTaskTitles);
         
-        // Also load their tags and time estimates
-        laterTaskTitles.forEach(title => {
-          if (!taskTags[title]) {
-            // Load tags for this task if not already loaded
-            loadTaskTags(title);
+        // Load their tags and time estimates from the database result
+        data.forEach(task => {
+          // Set tags
+          setTaskTags(prev => ({
+            ...prev,
+            [task.title]: {
+              isLiked: task.is_liked || false,
+              isUrgent: task.is_urgent || false,
+              isQuick: task.is_quick || false,
+            }
+          }));
+          
+          // Set time estimates (convert from minutes back to display format)
+          if (task.estimated_minutes) {
+            const displayTime = formatMinutesToDisplay(task.estimated_minutes);
+            setTaskTimeEstimates(prev => ({
+              ...prev,
+              [task.title]: displayTime
+            }));
           }
         });
       }
     } catch (error) {
       console.error('Failed to load later tasks:', error);
-    }
-  };
-
-  // Helper function to load task tags from database
-  const loadTaskTags = async (taskTitle: string) => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('is_liked, is_urgent, is_quick')
-        .eq('user_id', user.id)
-        .eq('title', taskTitle)
-        .single();
-
-      if (error) {
-        console.error('Error loading task tags:', error);
-        return;
-      }
-
-      if (data) {
-        setTaskTags(prev => ({
-          ...prev,
-          [taskTitle]: {
-            isLiked: data.is_liked || false,
-            isUrgent: data.is_urgent || false,
-            isQuick: data.is_quick || false,
-          }
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to load task tags:', error);
     }
   };
 
@@ -1990,6 +1976,7 @@ const Tasks = () => {
                 for (const task of incompleteTasks) {
                   try {
                     const tags = taskTags[task.title] || { isLiked: false, isUrgent: false, isQuick: false };
+                    const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
                     
                     await supabase
                       .from('tasks')
@@ -2001,6 +1988,7 @@ const Tasks = () => {
                         is_liked: tags.isLiked,
                         is_urgent: tags.isUrgent,
                         is_quick: tags.isQuick,
+                        estimated_minutes: estimatedMinutes,
                         later_at: new Date().toISOString(),
                       });
                   } catch (error) {
