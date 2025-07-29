@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus } from "lucide-react";
+import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
@@ -350,6 +350,7 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
   );
 };
 
+
 const Tasks = () => {
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
   const [brainDumpText, setBrainDumpText] = useState("");
@@ -445,6 +446,7 @@ const Tasks = () => {
         return;
       }
       setUser(user);
+      
       
       // Fetch user profile for prioritization
       const { data: profile, error } = await supabase
@@ -687,6 +689,7 @@ const Tasks = () => {
       console.log('Processing finished, set isProcessing to false');
     }
   };
+
 
   const resetFlow = () => {
     setCurrentStep('input');
@@ -1127,6 +1130,7 @@ const Tasks = () => {
         </Button>
       )}
       
+      
       <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input') ? 'sm:max-w-6xl sm:mx-auto sm:flex sm:items-center sm:justify-center sm:min-h-screen fixed inset-0 flex items-center justify-center pt-16 pb-6 px-2 sm:relative sm:pt-0 sm:pb-0 sm:px-4' : currentStep === 'review' ? 'max-w-6xl mx-auto flex items-center justify-center min-h-screen' : 'max-w-6xl mx-auto'} space-y-6`}>
 
         {/* Input Step */}
@@ -1265,15 +1269,18 @@ const Tasks = () => {
                         </div>
                       )}
                       
-                      {listTasks.length > 0 && (
                       <DndContext 
                         sensors={sensors}
                         collisionDetection={closestCenter}
                         onDragEnd={(event) => {
                           const { active, over } = event;
-                          if (active.id !== over?.id) {
+                          
+                          if (!over) return;
+                          
+                          // Handle reordering within active tasks
+                          if (listTasks.includes(active.id as string) && listTasks.includes(over.id as string)) {
                             const oldIndex = listTasks.findIndex((task) => task === active.id);
-                            const newIndex = listTasks.findIndex((task) => task === over?.id);
+                            const newIndex = listTasks.findIndex((task) => task === over.id);
                             if (oldIndex !== -1 && newIndex !== -1) {
                               setListTasks((items) => arrayMove(items, oldIndex, newIndex));
                             }
@@ -1284,6 +1291,7 @@ const Tasks = () => {
                           items={listTasks}
                           strategy={verticalListSortingStrategy}
                         >
+                          {/* Active Tasks */}
                           <div className="space-y-2 transition-all duration-300 ease-out">
                             {listTasks.map((task, index) => {
                               const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
@@ -1311,7 +1319,7 @@ const Tasks = () => {
                                         [task]: newTime
                                       }));
                                     }}
-                                    onReorder={() => {}} // Handled by DndContext
+                                    onReorder={() => {}}
                                     onHover={setHoveredTaskIndex}
                                     onTagUpdate={(tag, value) => {
                                       setTaskTags(prev => ({
@@ -1327,9 +1335,9 @@ const Tasks = () => {
                               );
                             })}
                           </div>
+
                         </SortableContext>
                       </DndContext>
-                      )}
                     </div>
                     
                   </div>
