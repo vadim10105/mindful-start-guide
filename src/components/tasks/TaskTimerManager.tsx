@@ -4,24 +4,20 @@ import { TaskCardData } from './GameState';
 interface TaskTimerManagerProps {
   flowStartTime: number | null;
   hasCommittedToTask: boolean;
-  navigationUnlocked: boolean;
   activeCommittedIndex: number;
   tasks: TaskCardData[];
   timerRef: React.MutableRefObject<NodeJS.Timeout | undefined>;
   setFlowProgress: (progress: number) => void;
-  setNavigationUnlocked: (unlocked: boolean) => void;
   setIsInitialLoad: (isInitial: boolean) => void;
 }
 
 export const useTaskTimerManager = ({
   flowStartTime,
   hasCommittedToTask,
-  navigationUnlocked,
   activeCommittedIndex,
   tasks,
   timerRef,
   setFlowProgress,
-  setNavigationUnlocked,
   setIsInitialLoad
 }: TaskTimerManagerProps) => {
   useEffect(() => {
@@ -31,13 +27,6 @@ export const useTaskTimerManager = ({
       const elapsed = Date.now() - flowStartTime;
       const progress = Math.min((elapsed / (20 * 60 * 1000)) * 100, 100);
       setFlowProgress(progress);
-      
-      // Unlock navigation after 5 minutes
-      if (elapsed >= 5 * 60 * 1000 && !navigationUnlocked) {
-        console.log('Timer unlocking navigation after 5 minutes');
-        setNavigationUnlocked(true);
-        setIsInitialLoad(false);
-      }
     };
 
     if (hasCommittedToTask && flowStartTime) {
@@ -48,7 +37,7 @@ export const useTaskTimerManager = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [flowStartTime, navigationUnlocked, hasCommittedToTask, activeCommittedIndex, tasks, timerRef, setFlowProgress, setNavigationUnlocked, setIsInitialLoad]);
+  }, [flowStartTime, hasCommittedToTask, activeCommittedIndex, tasks, timerRef, setFlowProgress, setIsInitialLoad]);
 
   const clearTimer = () => {
     if (timerRef.current) {

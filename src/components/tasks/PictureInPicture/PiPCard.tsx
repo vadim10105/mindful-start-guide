@@ -11,6 +11,7 @@ interface PiPCardProps {
   tasks: TaskCardData[];
   onComplete: () => void;
   onTaskComplete?: (taskId: string) => Promise<void>;
+  onMadeProgress?: (taskId: string) => Promise<void>;
   onPauseTask?: (taskId: string) => Promise<void>;
   onCommitToCurrentTask?: () => void;
   onCarryOn?: (taskId: string) => void;
@@ -27,6 +28,7 @@ export const PiPCard = ({
   tasks, 
   onComplete, 
   onTaskComplete, 
+  onMadeProgress,
   onPauseTask,
   onCommitToCurrentTask,
   onCarryOn,
@@ -44,7 +46,7 @@ export const PiPCard = ({
   // Drag state
   const isDragging = useRef(false);
   const startX = useRef(0);
-  const dragThreshold = 50; // pixels
+  const dragThreshold = 30; // pixels - reduced for easier swiping
 
   // Reward card data from Supabase
   const [rewardCards, setRewardCards] = useState<RewardCardData[]>([]);
@@ -59,10 +61,8 @@ export const PiPCard = ({
 
   const sunsetImages = rewardCards.map(card => card.imageUrl);
 
-  // Show active committed task if there is one, otherwise show current viewing index
-  const currentCardIndex = gameState.hasCommittedToTask && gameState.activeCommittedIndex >= 0 
-    ? gameState.activeCommittedIndex 
-    : gameState.currentViewingIndex;
+  // PiP always uses currentViewingIndex for free navigation
+  const currentCardIndex = gameState.currentViewingIndex;
 
   // Focus the PiP window to receive keyboard events
   useEffect(() => {
@@ -113,13 +113,16 @@ export const PiPCard = ({
     if (!isDragging.current || isTransitioning) return;
     
     const deltaX = clientX - startX.current;
+    console.log('PiP drag ended:', { deltaX, threshold: dragThreshold });
     
     if (Math.abs(deltaX) > dragThreshold) {
       if (deltaX > 0) {
         // Dragged right - go to previous card
+        console.log('PiP swiping to previous card');
         goToPreviousCard();
       } else {
         // Dragged left - go to next card
+        console.log('PiP swiping to next card');
         goToNextCard();
       }
     }
@@ -129,9 +132,9 @@ export const PiPCard = ({
 
   // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Don't interfere with input elements
+    // Don't interfere with input elements or buttons
     const target = e.target as HTMLElement;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true' || target.tagName === 'BUTTON' || target.closest('button'))) {
       return;
     }
     
@@ -140,9 +143,9 @@ export const PiPCard = ({
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    // Don't interfere with input elements
+    // Don't interfere with input elements or buttons
     const target = e.target as HTMLElement;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true' || target.tagName === 'BUTTON' || target.closest('button'))) {
       return;
     }
     
@@ -151,9 +154,9 @@ export const PiPCard = ({
 
   // Touch events
   const handleTouchStart = (e: React.TouchEvent) => {
-    // Don't interfere with input elements
+    // Don't interfere with input elements or buttons
     const target = e.target as HTMLElement;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true' || target.tagName === 'BUTTON' || target.closest('button'))) {
       return;
     }
     
@@ -162,9 +165,9 @@ export const PiPCard = ({
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    // Don't interfere with input elements
+    // Don't interfere with input elements or buttons
     const target = e.target as HTMLElement;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true' || target.tagName === 'BUTTON' || target.closest('button'))) {
       return;
     }
     
@@ -320,6 +323,7 @@ export const PiPCard = ({
           taskStartTimes={gameState.taskStartTimes}
           onCommit={handleCommitToCurrentTask}
           onComplete={handleTaskComplete}
+          onMadeProgress={onMadeProgress}
           onMoveOn={handlePauseTask}
           onCarryOn={handleCarryOn}
           onSkip={handleSkip}

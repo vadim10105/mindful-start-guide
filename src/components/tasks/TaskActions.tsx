@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Check, Play, Pause, SkipForward, RotateCcw } from "lucide-react";
+import { Check, Play, Pause, SkipForward, RotateCcw, ArrowLeft } from "lucide-react";
+import { useState } from "react";
 
 interface TaskCardData {
   id: string;
@@ -22,6 +23,7 @@ interface TaskActionsProps {
   activeCommittedIndex: number;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
+  onMadeProgress: (taskId: string) => void;
   onMoveOn: (taskId: string) => void;
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
@@ -42,6 +44,7 @@ export const TaskActions = ({
   activeCommittedIndex,
   onCommit,
   onComplete,
+  onMadeProgress,
   onMoveOn,
   onCarryOn,
   onSkip,
@@ -50,6 +53,7 @@ export const TaskActions = ({
   formatTime,
   onPauseHover
 }: TaskActionsProps) => {
+  const [showCompletionOptions, setShowCompletionOptions] = useState(false);
   if (isCompleted) {
     return (
       <div className="flex items-center justify-center gap-2" style={{ color: 'hsl(142 70% 45%)' }}>
@@ -120,12 +124,45 @@ export const TaskActions = ({
     );
   }
 
-  // Committed task - show both buttons 
+  // Committed task - show either completion flow or normal buttons
+  if (showCompletionOptions) {
+    return (
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setShowCompletionOptions(false)}
+            size="sm"
+            className="bg-gray-300 hover:bg-gray-400 px-3 transition-all duration-700"
+            style={{ color: 'hsl(220 10% 30%)' }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <Button 
+            onClick={() => onMadeProgress(task.id)}
+            size="sm"
+            className="flex-1 bg-gray-300 hover:bg-blue-600 hover:text-white transition-all duration-700"
+            style={{ color: 'hsl(220 10% 30%)' }}
+          >
+            Made Progress
+          </Button>
+          <Button 
+            onClick={() => onComplete(task.id)}
+            size="sm"
+            className="flex-1 bg-gray-300 hover:bg-green-600 hover:text-white transition-all duration-700"
+            style={{ color: 'hsl(220 10% 30%)' }}
+          >
+            Complete
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
         <Button 
-          onClick={() => onComplete(task.id)}
+          onClick={() => setShowCompletionOptions(true)}
           size="sm"
           className="bg-gray-300 hover:bg-green-600 hover:text-white px-3 transition-all duration-700"
           style={{ color: 'hsl(220 10% 30%)' }}

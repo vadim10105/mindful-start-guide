@@ -20,53 +20,36 @@ interface TaskCardData {
 
 interface TaskSwiperProps {
   tasks: TaskCardData[];
-  currentViewingIndex: number;
-  activeCommittedIndex: number;
-  hasCommittedToTask: boolean;
-  completedTasks: Set<string>;
-  pausedTasks: Map<string, number>;
-  isNavigationLocked: boolean;
-  flowProgress: number;
-  sunsetImages: string[];
+  gameState: any; // All game state in one object
   rewardCards: RewardCardData[];
-  taskStartTimes: Record<string, number>;
-  navigationUnlocked: boolean;
   onSlideChange: (activeIndex: number) => void;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
+  onMadeProgress: (taskId: string) => void;
   onMoveOn: (taskId: string) => void;
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
-  
   onAddToCollection: () => void;
   formatTime: (minutes: number) => string;
 }
 
 export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   tasks,
-  currentViewingIndex,
-  activeCommittedIndex,
-  hasCommittedToTask,
-  completedTasks,
-  pausedTasks,
-  isNavigationLocked,
-  flowProgress,
-  sunsetImages,
+  gameState,
   rewardCards,
-  taskStartTimes,
-  navigationUnlocked,
   onSlideChange,
   onCommit,
   onComplete,
+  onMadeProgress,
   onMoveOn,
   onCarryOn,
   onSkip,
   onBackToActive,
-  
   onAddToCollection,
   formatTime
 }, ref) => {
+  const sunsetImages = rewardCards.map(card => card.imageUrl);
   return (
     <div className="mb-6 flex justify-center">
       <div className="w-[368px]" style={{ aspectRatio: '63/88' }}>
@@ -86,8 +69,8 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
           }}
           allowSlideNext={true}
           allowSlidePrev={true}
-          key={currentViewingIndex} // Force re-render when index changes
-          initialSlide={currentViewingIndex} // Start at the current viewing index
+          key={gameState.currentViewingIndex} // Force re-render when index changes
+          initialSlide={gameState.currentViewingIndex} // Start at the current viewing index
           className="w-full h-full"
         >
           {tasks.map((task, index) => (
@@ -96,30 +79,30 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 task={task}
                 index={index}
                 totalTasks={tasks.length}
-                isCompleted={completedTasks.has(task.id)}
-                isPaused={pausedTasks.has(task.id)}
-                pausedTime={pausedTasks.get(task.id) || 0}
-                isActiveCommitted={index === activeCommittedIndex}
-                hasCommittedToTask={hasCommittedToTask}
-                isCurrentTask={index === currentViewingIndex}
-                activeCommittedIndex={activeCommittedIndex}
-                flowProgress={flowProgress}
+                isCompleted={gameState.completedTasks.has(task.id)}
+                isPaused={gameState.pausedTasks.has(task.id)}
+                pausedTime={gameState.pausedTasks.get(task.id) || 0}
+                isActiveCommitted={index === gameState.activeCommittedIndex}
+                hasCommittedToTask={gameState.hasCommittedToTask}
+                isCurrentTask={index === gameState.currentViewingIndex}
+                activeCommittedIndex={gameState.activeCommittedIndex}
+                flowProgress={gameState.flowProgress}
                 sunsetImageUrl={sunsetImages[index % sunsetImages.length]}
                 attribution={rewardCards[index % rewardCards.length]?.attribution}
                 attributionUrl={rewardCards[index % rewardCards.length]?.attributionUrl}
                 description={rewardCards[index % rewardCards.length]?.description}
                 caption={rewardCards[index % rewardCards.length]?.caption}
                 cardNumber={rewardCards[index % rewardCards.length]?.cardNumber}
-                taskStartTimes={taskStartTimes}
+                taskStartTimes={gameState.taskStartTimes}
                 onCommit={onCommit}
                 onComplete={onComplete}
+                onMadeProgress={onMadeProgress}
                 onMoveOn={onMoveOn}
                 onCarryOn={onCarryOn}
                 onSkip={onSkip}
                 onBackToActive={onBackToActive}
-                
                 onAddToCollection={onAddToCollection}
-                navigationUnlocked={navigationUnlocked}
+                navigationUnlocked={gameState.navigationUnlocked}
                 formatTime={formatTime}
               />
             </SwiperSlide>

@@ -31,7 +31,7 @@ export const useGameState = (tasks: TaskCardData[]) => {
   const [taskStartTimes, setTaskStartTimes] = useState<Record<string, number>>({});
   const [lastCompletedTask, setLastCompletedTask] = useState<{id: string, title: string, timeSpent: number} | null>(null);
   const [todaysCompletedTasks, setTodaysCompletedTasks] = useState<CompletedTask[]>([]);
-  const [navigationUnlocked, setNavigationUnlocked] = useState(false);
+  const [navigationUnlocked, setNavigationUnlocked] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showTaskList, setShowTaskList] = useState(false);
   const [flowProgress, setFlowProgress] = useState(0);
@@ -40,7 +40,6 @@ export const useGameState = (tasks: TaskCardData[]) => {
   const swiperRef = useRef<any>(null);
 
   // Calculate navigation state
-  const isNavigationLocked = false; // Navigation is now always unlocked
   const isTaskCommitted = hasCommittedToTask && currentViewingIndex === activeCommittedIndex;
 
   const getTaskStatus = (task: TaskCardData, index: number) => {
@@ -114,7 +113,6 @@ export const useGameState = (tasks: TaskCardData[]) => {
     swiperRef,
     
     // Computed
-    isNavigationLocked,
     isTaskCommitted,
     
     // Helpers

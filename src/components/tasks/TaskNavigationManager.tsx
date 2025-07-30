@@ -14,7 +14,6 @@ interface TaskNavigationManagerProps {
   activeCommittedIndex: number;
   hasCommittedToTask: boolean;
   completedTasks: Set<string>;
-  isNavigationLocked: boolean;
   swiperRef: React.MutableRefObject<{ swiper?: { slidePrev: () => void; slideNext: () => void } } | null>;
   setCurrentViewingIndex: (index: number) => void;
   setShowTaskList: (show: boolean) => void;
@@ -28,7 +27,6 @@ export const useTaskNavigationManager = ({
   activeCommittedIndex,
   hasCommittedToTask,
   completedTasks,
-  isNavigationLocked,
   swiperRef,
   setCurrentViewingIndex,
   setShowTaskList,
@@ -70,7 +68,6 @@ export const useTaskNavigationManager = ({
     activeCommittedIndex, 
     hasCommittedToTask, 
     completedTasks, 
-    isNavigationLocked,
     tasks,
     swiperRef,
     onCommitToCurrentTask,

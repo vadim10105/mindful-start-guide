@@ -10,6 +10,7 @@ interface PiPControllerProps {
   tasks: TaskCardData[];
   onComplete: () => void;
   onTaskComplete?: (taskId: string) => Promise<void>;
+  onMadeProgress?: (taskId: string) => Promise<void>;
   onPauseTask?: (taskId: string) => Promise<void>;
   onCommitToCurrentTask?: () => void;
   onCarryOn?: (taskId: string) => void;
@@ -24,6 +25,7 @@ export const PiPController: React.FC<PiPControllerProps> = ({
   tasks,
   onComplete,
   onTaskComplete,
+  onMadeProgress,
   onPauseTask,
   onCommitToCurrentTask,
   onCarryOn,
@@ -98,6 +100,7 @@ export const PiPController: React.FC<PiPControllerProps> = ({
               tasks={tasks}
               onComplete={onComplete}
               onTaskComplete={onTaskComplete}
+              onMadeProgress={onMadeProgress}
               onPauseTask={onPauseTask}
               onCommitToCurrentTask={onCommitToCurrentTask}
               onCarryOn={onCarryOn}

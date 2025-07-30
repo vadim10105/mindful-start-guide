@@ -74,7 +74,6 @@ export const TaskGameController = ({
     gameState.setActiveCommittedIndex(gameState.currentViewingIndex);
     gameState.setFlowStartTime(Date.now());
     gameState.setFlowProgress(0);
-    gameState.setNavigationUnlocked(false);
     
     if (isResumingPausedTask) {
       // Resume from paused time - adjust start time to account for time already spent
@@ -108,7 +107,6 @@ export const TaskGameController = ({
     gameState.setActiveCommittedIndex,
     gameState.setFlowStartTime,
     gameState.setFlowProgress,
-    gameState.setNavigationUnlocked,
     gameState.setTaskStartTimes,
     gameState.setPausedTasks
   ]);
@@ -124,7 +122,6 @@ export const TaskGameController = ({
     activeCommittedIndex: gameState.activeCommittedIndex,
     sunsetImages,
     setFlowProgress: gameState.setFlowProgress,
-    setNavigationUnlocked: gameState.setNavigationUnlocked,
     setHasCommittedToTask: gameState.setHasCommittedToTask,
     setIsInitialLoad: gameState.setIsInitialLoad,
     setCompletedTasks: gameState.setCompletedTasks,
@@ -144,9 +141,9 @@ export const TaskGameController = ({
     activeCommittedIndex: gameState.activeCommittedIndex,
     hasCommittedToTask: gameState.hasCommittedToTask,
     completedTasks: gameState.completedTasks,
-    isNavigationLocked: gameState.isNavigationLocked,
     swiperRef: gameState.swiperRef,
     setCurrentViewingIndex: gameState.setCurrentViewingIndex,
+    setShowTaskList: gameState.setShowTaskList,
     onCommitToCurrentTask: handleCommitToCurrentTask,
     onTaskComplete: progressTracker.handleTaskComplete
   });
@@ -155,22 +152,20 @@ export const TaskGameController = ({
   useTaskTimerManager({
     flowStartTime: gameState.flowStartTime,
     hasCommittedToTask: gameState.hasCommittedToTask,
-    navigationUnlocked: gameState.navigationUnlocked,
     activeCommittedIndex: gameState.activeCommittedIndex,
     tasks,
     timerRef: gameState.timerRef,
     setFlowProgress: gameState.setFlowProgress,
-    setNavigationUnlocked: gameState.setNavigationUnlocked,
     setIsInitialLoad: gameState.setIsInitialLoad
   });
 
   // Auto-activate first card on initial load (skip "Play Card" step)
   useEffect(() => {
-    if (tasks.length > 0 && gameState.isInitialLoad && !gameState.hasCommittedToTask && !gameState.navigationUnlocked) {
+    if (tasks.length > 0 && gameState.isInitialLoad && !gameState.hasCommittedToTask) {
       console.log('Auto-activating first card on initial load');
       handleCommitToCurrentTask();
     }
-  }, [tasks, gameState.isInitialLoad, gameState.hasCommittedToTask, gameState.navigationUnlocked, handleCommitToCurrentTask]);
+  }, [tasks, gameState.isInitialLoad, gameState.hasCommittedToTask, handleCommitToCurrentTask]);
 
   // Show loading state if tasks are being processed
   if (isLoading) {
@@ -193,6 +188,7 @@ export const TaskGameController = ({
         tasks={tasks}
         onComplete={onComplete}
         onTaskComplete={progressTracker.handleTaskComplete}
+        onMadeProgress={progressTracker.handleMadeProgress}
         onPauseTask={progressTracker.handlePauseTask}
         onCommitToCurrentTask={handleCommitToCurrentTask}
         onCarryOn={progressTracker.handleCarryOn}
@@ -214,20 +210,12 @@ export const TaskGameController = ({
                 <TaskSwiper
                   ref={gameState.swiperRef}
                   tasks={tasks}
-                  currentViewingIndex={gameState.currentViewingIndex}
-                  activeCommittedIndex={gameState.activeCommittedIndex}
-                  hasCommittedToTask={gameState.hasCommittedToTask}
-                  completedTasks={gameState.completedTasks}
-                  pausedTasks={gameState.pausedTasks}
-                  isNavigationLocked={gameState.isNavigationLocked}
-                  flowProgress={gameState.flowProgress}
-                  sunsetImages={sunsetImages}
+                  gameState={gameState}
                   rewardCards={rewardCards}
-                  taskStartTimes={gameState.taskStartTimes}
-                  navigationUnlocked={gameState.navigationUnlocked}
                   onSlideChange={(activeIndex) => gameState.setCurrentViewingIndex(activeIndex)}
                   onCommit={handleCommitToCurrentTask}
                   onComplete={progressTracker.handleTaskComplete}
+                  onMadeProgress={progressTracker.handleMadeProgress}
                   onMoveOn={progressTracker.handlePauseTask}
                   onCarryOn={progressTracker.handleCarryOn}
                   onSkip={progressTracker.handleSkip}

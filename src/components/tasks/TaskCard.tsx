@@ -77,6 +77,7 @@ interface TaskCardProps {
   taskStartTimes: Record<string, number>;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
+  onMadeProgress: (taskId: string) => void;
   onMoveOn: (taskId: string) => void;
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
@@ -106,6 +107,7 @@ export const TaskCard = ({
   taskStartTimes,
   onCommit,
   onComplete,
+  onMadeProgress,
   onMoveOn,
   onCarryOn,
   onSkip,
@@ -303,6 +305,7 @@ export const TaskCard = ({
               activeCommittedIndex={activeCommittedIndex}
               onCommit={onCommit}
               onComplete={onComplete}
+              onMadeProgress={onMadeProgress}
               onMoveOn={onMoveOn}
               onCarryOn={onCarryOn}
               onSkip={onSkip}

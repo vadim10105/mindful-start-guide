@@ -20,6 +20,7 @@ interface PictureInPictureManagerProps {
   isProcessing: boolean;
   onComplete: () => void;
   onTaskComplete?: (taskId: string) => Promise<void>;
+  onMadeProgress?: (taskId: string) => Promise<void>;
   onPauseTask?: (taskId: string) => Promise<void>;
   onCommitToCurrentTask?: () => void;
   onCarryOn?: (taskId: string) => void;
@@ -108,6 +109,7 @@ export const PictureInPictureManager = ({
   tasks, 
   onComplete, 
   onTaskComplete, 
+  onMadeProgress,
   onPauseTask,
   onCommitToCurrentTask,
   onCarryOn,
@@ -125,6 +127,7 @@ export const PictureInPictureManager = ({
         tasks={tasks}
         onComplete={onComplete}
         onTaskComplete={onTaskComplete}
+        onMadeProgress={onMadeProgress}
         onPauseTask={onPauseTask}
         onCommitToCurrentTask={onCommitToCurrentTask}
         onCarryOn={onCarryOn}

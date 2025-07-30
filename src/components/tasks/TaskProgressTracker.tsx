@@ -3,6 +3,7 @@ import { TaskCardData, CompletedTask } from './GameState';
 
 export interface TaskProgressTrackerHook {
   handleTaskComplete: (taskId: string) => Promise<void>;
+  handleMadeProgress: (taskId: string) => Promise<void>;
   handlePauseTask: (taskId: string) => Promise<void>;
   handleCarryOn: (taskId: string) => void;
   handleSkip: (taskId: string) => Promise<void>;
@@ -19,7 +20,6 @@ interface TaskProgressTrackerProps {
   activeCommittedIndex: number;
   sunsetImages: string[];
   setFlowProgress: (progress: number) => void;
-  setNavigationUnlocked: (unlocked: boolean) => void;
   setHasCommittedToTask: (committed: boolean) => void;
   setIsInitialLoad: (isInitial: boolean) => void;
   setCompletedTasks: (tasks: React.SetStateAction<Set<string>>) => void;
@@ -42,7 +42,6 @@ export const useTaskProgressTracker = ({
   activeCommittedIndex,
   sunsetImages,
   setFlowProgress,
-  setNavigationUnlocked,
   setHasCommittedToTask,
   setIsInitialLoad,
   setCompletedTasks,
@@ -68,7 +67,6 @@ export const useTaskProgressTracker = ({
       clearInterval(timerRef.current);
     }
     setFlowProgress(0);
-    setNavigationUnlocked(true);
     setHasCommittedToTask(false);
     setIsInitialLoad(false);
     
@@ -114,6 +112,66 @@ export const useTaskProgressTracker = ({
     onTaskComplete?.(taskId);
   };
 
+  const handleMadeProgress = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const startTime = taskStartTimes[taskId];
+    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
+    
+    // Clear timer and reset flow state
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    setFlowProgress(0);
+    setHasCommittedToTask(false);
+    setIsInitialLoad(false);
+    
+    // Mark as completed in UI to flip the card
+    setCompletedTasks(prev => new Set([...prev, taskId]));
+    setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
+    
+    // Save task to database with status 'later' to appear in saved for later list
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Parse estimated time to minutes if available
+        const parseTimeToMinutes = (timeStr: string): number => {
+          const match = timeStr.match(/(\d+)\s*(min|minute|minutes|m|hr|hour|hours|h)/i);
+          if (!match) return 0;
+          
+          const value = parseInt(match[1]);
+          const unit = match[2].toLowerCase();
+          
+          if (unit.startsWith('h')) {
+            return value * 60;
+          }
+          return value;
+        };
+
+        const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
+        
+        await supabase
+          .from('tasks')
+          .insert({
+            title: task.title,
+            user_id: user.id,
+            source: 'brain_dump' as const,
+            status: 'later' as const,
+            is_liked: task.is_liked || false,
+            is_urgent: task.is_urgent || false,
+            is_quick: task.is_quick || false,
+            estimated_minutes: estimatedMinutes,
+            later_at: new Date().toISOString(),
+          });
+      }
+    } catch (error) {
+      console.error('Error saving task as made progress:', error);
+    }
+    
+    onTaskComplete?.(taskId);
+  };
+
   const handlePauseTask = async (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
@@ -133,7 +191,6 @@ export const useTaskProgressTracker = ({
     // Release commitment - allow user to choose next task manually
     setHasCommittedToTask(false);
     setActiveCommittedIndex(-1);
-    setNavigationUnlocked(true);
     setIsInitialLoad(false);
     
     // Save pause state to database
@@ -164,7 +221,6 @@ export const useTaskProgressTracker = ({
     setActiveCommittedIndex(currentViewingIndex);
     setFlowStartTime(Date.now());
     setFlowProgress(0);
-    setNavigationUnlocked(false);
     
     setTaskStartTimes(prev => ({
       ...prev,
@@ -225,6 +281,7 @@ export const useTaskProgressTracker = ({
 
   return {
     handleTaskComplete,
+    handleMadeProgress,
     handlePauseTask,
     handleCarryOn,
     handleSkip,
