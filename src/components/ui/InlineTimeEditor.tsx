@@ -108,7 +108,7 @@ export function InlineTimeEditor({
         onChange={handleInputChange}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
-        className={`px-2 py-1 bg-background border border-border rounded text-xs text-foreground w-16 text-center focus:outline-none focus:ring-1 focus:ring-ring ${className}`}
+        className={`px-2 py-1 bg-muted/50 border-none rounded text-xs text-foreground w-16 text-center focus:outline-none focus:ring-0 ${className}`}
         placeholder={placeholder}
       />
     );

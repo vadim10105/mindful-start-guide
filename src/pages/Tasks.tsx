@@ -98,6 +98,7 @@ interface TaskListItemProps {
   onTaskSave?: (oldTitle: string, newTitle: string) => void;
   onTaskCancel?: () => void;
   onEditingTextChange?: (text: string) => void;
+  showNumber?: boolean;
 }
 
 const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
@@ -134,7 +135,8 @@ const TaskListItem = ({
   onTaskEdit,
   onTaskSave,
   onTaskCancel,
-  onEditingTextChange
+  onEditingTextChange,
+  showNumber = true
 }: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
@@ -197,10 +199,10 @@ const TaskListItem = ({
           <div 
             {...attributes}
             {...listeners}
-            className="flex-shrink-0 w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
+            className="flex-shrink-0 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
             aria-label="Drag to reorder"
           >
-            {index + 1}
+            {showNumber ? index + 1 : ''}
           </div>
           
           {/* Task Title - Full width, no truncation */}
@@ -212,7 +214,7 @@ const TaskListItem = ({
                 onChange={(e) => onEditingTextChange?.(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
-                className="text-sm font-medium leading-5 bg-muted/50 border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 py-1 rounded h-auto"
+                className="text-sm font-medium leading-5 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
                 autoFocus
               />
             ) : (
@@ -330,10 +332,10 @@ const TaskListItem = ({
         <div 
           {...attributes}
           {...listeners}
-          className="flex-shrink-0 w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
+          className="flex-shrink-0 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
           aria-label="Drag to reorder"
         >
-          {index + 1}
+          {showNumber ? index + 1 : ''}
         </div>
         
         {/* Task Title */}
@@ -345,7 +347,7 @@ const TaskListItem = ({
               onChange={(e) => onEditingTextChange?.(e.target.value)}
               onKeyDown={handleEditKeyDown}
               onBlur={handleEditBlur}
-              className="text-sm font-medium leading-6 bg-muted/50 border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 py-1 rounded h-auto"
+              className="text-sm font-medium leading-6 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
               autoFocus
             />
           ) : (
@@ -1827,6 +1829,7 @@ const Tasks = () => {
                                       onTaskSave={handleTaskSave}
                                       onTaskCancel={cancelTaskEdit}
                                       onEditingTextChange={setEditingTaskText}
+                                      showNumber={false}
                                     />
                                   </div>
                                 );
@@ -1841,7 +1844,7 @@ const Tasks = () => {
                           {activeId ? (
                             <div className="bg-card border border-border rounded-lg shadow-lg p-3 opacity-95">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                                <div className="w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium">
                                 </div>
                                 <span className="text-sm font-medium">
                                   {activeId}
