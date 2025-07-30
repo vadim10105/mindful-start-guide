@@ -28,9 +28,7 @@ jobs:
       
     - name: Commit and push dist files
       if: github.ref == 'refs/heads/main'
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add dist/
-        git diff --staged --quiet || git commit -m "🤖 Auto-build: Update dist files for CDN"
-        git push
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "🤖 Auto-build: Update dist files for CDN"
+        file_pattern: dist/
