@@ -17,7 +17,7 @@ import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categori
 import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
 import { TaskTimeline } from "@/components/tasks/TaskTimeline";
-import { PiPProvider } from "@/components/tasks/PictureInPicture";
+import { PiPProvider, usePiP } from "@/components/tasks/PictureInPicture";
 import {
   DndContext,
   closestCenter,
@@ -484,7 +484,8 @@ const customCollisionDetection: CollisionDetection = (args) => {
   return collisions;
 };
 
-const Tasks = () => {
+const TasksContent = () => {
+  const { enterPiP } = usePiP();
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
   const [brainDumpText, setBrainDumpText] = useState("");
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
@@ -1059,6 +1060,11 @@ const Tasks = () => {
     setCurrentStep('game-cards');
     setIsProcessing(true);
     
+    // Auto-open PIP window with slight delay
+    setTimeout(() => {
+      enterPiP();
+    }, 800);
+    
     try {
       // Run AI prioritization in background while loading card shows
       const prioritized = await prioritizeTasks(tasksToProcess);
@@ -1443,7 +1449,6 @@ const Tasks = () => {
   };
 
   return (
-    <PiPProvider>
       <div className="h-screen bg-background p-2 sm:p-4 overflow-hidden">
       {/* Settings - Fixed Top Right */}
       {currentStep === 'input' && (
@@ -2223,6 +2228,13 @@ const Tasks = () => {
         onOpenChange={setIsSettingsOpen}
       />
       </div>
+  );
+};
+
+const Tasks = () => {
+  return (
+    <PiPProvider>
+      <TasksContent />
     </PiPProvider>
   );
 };
