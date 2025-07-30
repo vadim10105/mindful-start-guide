@@ -91,6 +91,13 @@ interface TaskListItemProps {
   onTimeUpdate?: (newTime: string) => void;
   onReorder: (dragIndex: number, hoverIndex: number) => void;
   onHover?: (index: number | undefined) => void;
+  isEditing?: boolean;
+  editingText?: string;
+  editInputRef?: React.RefObject<HTMLInputElement>;
+  onTaskEdit?: (taskTitle: string) => void;
+  onTaskSave?: (oldTitle: string, newTitle: string) => void;
+  onTaskCancel?: () => void;
+  onEditingTextChange?: (text: string) => void;
 }
 
 const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
@@ -108,7 +115,27 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   );
 };
 
-const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, isLoadingTime, isLastInSection, onTagUpdate, onTimeUpdate, onReorder, onHover }: TaskListItemProps) => {
+const TaskListItem = ({ 
+  task, 
+  index, 
+  isLiked, 
+  isUrgent, 
+  isQuick, 
+  estimatedTime, 
+  isLoadingTime, 
+  isLastInSection, 
+  onTagUpdate, 
+  onTimeUpdate, 
+  onReorder, 
+  onHover,
+  isEditing,
+  editingText,
+  editInputRef,
+  onTaskEdit,
+  onTaskSave,
+  onTaskCancel,
+  onEditingTextChange
+}: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
     attributes,
@@ -122,6 +149,29 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  // Handle editing key events
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onTaskSave?.(task, editingText || '');
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onTaskCancel?.();
+    } else if (e.key === 'Backspace' && editingText === '') {
+      // Delete task when backspace is pressed on empty field
+      e.preventDefault();
+      onTaskSave?.(task, ''); // This will trigger deletion in handleTaskSave
+    }
+  };
+
+  const handleEditBlur = () => {
+    onTaskSave?.(task, editingText || '');
+  };
+
+  const handleDoubleClick = () => {
+    onTaskEdit?.(task);
   };
 
   return (
@@ -155,9 +205,24 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
           
           {/* Task Title - Full width, no truncation */}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium leading-5 text-foreground break-words">
-              {task}
-            </p>
+            {isEditing ? (
+              <Input
+                ref={editInputRef}
+                value={editingText || ''}
+                onChange={(e) => onEditingTextChange?.(e.target.value)}
+                onKeyDown={handleEditKeyDown}
+                onBlur={handleEditBlur}
+                className="text-sm font-medium leading-5 bg-muted/50 border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 py-1 rounded h-auto"
+                autoFocus
+              />
+            ) : (
+              <p 
+                className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
+                onDoubleClick={handleDoubleClick}
+              >
+                {task}
+              </p>
+            )}
           </div>
         </div>
         
@@ -273,9 +338,24 @@ const TaskListItem = ({ task, index, isLiked, isUrgent, isQuick, estimatedTime, 
         
         {/* Task Title */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium leading-6 text-foreground truncate">
-            {task}
-          </p>
+          {isEditing ? (
+            <Input
+              ref={editInputRef}
+              value={editingText || ''}
+              onChange={(e) => onEditingTextChange?.(e.target.value)}
+              onKeyDown={handleEditKeyDown}
+              onBlur={handleEditBlur}
+              className="text-sm font-medium leading-6 bg-muted/50 border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-2 py-1 rounded h-auto"
+              autoFocus
+            />
+          ) : (
+            <p 
+              className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
+              onDoubleClick={handleDoubleClick}
+            >
+              {task}
+            </p>
+          )}
         </div>
         
         {/* Tag Controls */}
@@ -447,11 +527,14 @@ const Tasks = () => {
   const [cardDimensions, setCardDimensions] = useState({ top: 0, height: 0 });
   const [hoveredTaskIndex, setHoveredTaskIndex] = useState<number | undefined>(undefined);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskText, setEditingTaskText] = useState('');
   const { toast } = useToast();
 
   // Refs for global auto-focus functionality
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const taskInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const cardContentRef = useRef<HTMLDivElement>(null);
   const taskListContentRef = useRef<HTMLDivElement>(null);
@@ -1264,6 +1347,99 @@ const Tasks = () => {
     }
   };
 
+  // Task editing functions
+  const handleTaskEdit = (taskTitle: string) => {
+    setEditingTaskId(taskTitle);
+    setEditingTaskText(taskTitle);
+    // Focus the input after state update
+    setTimeout(() => {
+      if (editInputRef.current) {
+        editInputRef.current.focus();
+        editInputRef.current.select();
+      }
+    }, 0);
+  };
+
+  const handleTaskSave = (oldTitle: string, newTitle: string) => {
+    if (!newTitle.trim()) {
+      // If empty, delete the task
+      handleTaskDelete(oldTitle);
+      return;
+    }
+
+    if (oldTitle === newTitle.trim()) {
+      // No changes, just exit edit mode
+      cancelTaskEdit();
+      return;
+    }
+
+    const trimmedTitle = newTitle.trim();
+
+    // Update task in all relevant arrays
+    setListTasks(prev => prev.map(task => task === oldTitle ? trimmedTitle : task));
+    setLaterTasks(prev => prev.map(task => task === oldTitle ? trimmedTitle : task));
+    setReviewedTasks(prev => prev.map(task => task === oldTitle ? trimmedTitle : task));
+
+    // Update associated data
+    const oldTags = taskTags[oldTitle];
+    const oldTimeEstimate = taskTimeEstimates[oldTitle];
+
+    if (oldTags) {
+      setTaskTags(prev => {
+        const newTags = { ...prev };
+        delete newTags[oldTitle];
+        newTags[trimmedTitle] = oldTags;
+        return newTags;
+      });
+    }
+
+    if (oldTimeEstimate) {
+      setTaskTimeEstimates(prev => {
+        const newEstimates = { ...prev };
+        delete newEstimates[oldTitle];
+        newEstimates[trimmedTitle] = oldTimeEstimate;
+        return newEstimates;
+      });
+    }
+
+    setEditingTaskId(null);
+    setEditingTaskText('');
+  };
+
+  const handleTaskDelete = (taskTitle: string) => {
+    // Remove from all task arrays
+    setListTasks(prev => prev.filter(task => task !== taskTitle));
+    setLaterTasks(prev => prev.filter(task => task !== taskTitle));
+    setReviewedTasks(prev => prev.filter(task => task !== taskTitle));
+
+    // Clean up associated data
+    setTaskTags(prev => {
+      const newTags = { ...prev };
+      delete newTags[taskTitle];
+      return newTags;
+    });
+
+    setTaskTimeEstimates(prev => {
+      const newEstimates = { ...prev };
+      delete newEstimates[taskTitle];
+      return newEstimates;
+    });
+
+    // Exit edit mode
+    setEditingTaskId(null);
+    setEditingTaskText('');
+
+    toast({
+      title: "Task deleted",
+      description: `"${taskTitle}" has been removed.`,
+    });
+  };
+
+  const cancelTaskEdit = () => {
+    setEditingTaskId(null);
+    setEditingTaskText('');
+  };
+
   return (
     <PiPProvider>
       <div className="h-screen bg-background p-2 sm:p-4 overflow-hidden">
@@ -1559,6 +1735,13 @@ const Tasks = () => {
                                           }
                                         }));
                                       }}
+                                      isEditing={editingTaskId === task}
+                                      editingText={editingTaskText}
+                                      editInputRef={editInputRef}
+                                      onTaskEdit={handleTaskEdit}
+                                      onTaskSave={handleTaskSave}
+                                      onTaskCancel={cancelTaskEdit}
+                                      onEditingTextChange={setEditingTaskText}
                                     />
                                   </div>
                                 );
@@ -1637,6 +1820,13 @@ const Tasks = () => {
                                           }
                                         }));
                                       }}
+                                      isEditing={editingTaskId === task}
+                                      editingText={editingTaskText}
+                                      editInputRef={editInputRef}
+                                      onTaskEdit={handleTaskEdit}
+                                      onTaskSave={handleTaskSave}
+                                      onTaskCancel={cancelTaskEdit}
+                                      onEditingTextChange={setEditingTaskText}
                                     />
                                   </div>
                                 );
@@ -1652,7 +1842,6 @@ const Tasks = () => {
                             <div className="bg-card border border-border rounded-lg shadow-lg p-3 opacity-95">
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                                  •
                                 </div>
                                 <span className="text-sm font-medium">
                                   {activeId}
@@ -1796,6 +1985,13 @@ const Tasks = () => {
                                }
                              }));
                            }}
+                           isEditing={editingTaskId === task}
+                           editingText={editingTaskText}
+                           editInputRef={editInputRef}
+                           onTaskEdit={handleTaskEdit}
+                           onTaskSave={handleTaskSave}
+                           onTaskCancel={cancelTaskEdit}
+                           onEditingTextChange={setEditingTaskText}
                          />
                       );
                     })}
