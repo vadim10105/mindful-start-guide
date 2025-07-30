@@ -1044,6 +1044,8 @@ const Tasks = () => {
         });
       } catch (error) {
         console.log('AI categorization failed (non-critical):', error);
+      } finally {
+        setIsProcessing(false);
       }
     }, 100);
   };
