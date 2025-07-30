@@ -20,6 +20,7 @@ interface TaskInput {
     importance?: 'low' | 'medium' | 'high';
     category: 'Creative' | 'Analytical' | 'Social' | 'Physical' | 'Routine' | 'Learning' | 'Planning';
   };
+  estimated_time?: string;
 }
 
 interface UserProfile {
@@ -39,6 +40,48 @@ interface ScoredTask extends TaskInput {
   position: number;
 }
 
+function parseTimeToMinutes(timeStr: string): number | null {
+  if (!timeStr) return null;
+  
+  const timeStr_lower = timeStr.toLowerCase().trim();
+  
+  // Match patterns like "15m", "1h", "1h 30m", "90m", etc.
+  const hourMatch = timeStr_lower.match(/(\d+)\s*h/);
+  const minuteMatch = timeStr_lower.match(/(\d+)\s*m/);
+  
+  let totalMinutes = 0;
+  
+  if (hourMatch) {
+    totalMinutes += parseInt(hourMatch[1]) * 60;
+  }
+  
+  if (minuteMatch) {
+    totalMinutes += parseInt(minuteMatch[1]);
+  }
+  
+  // If no matches but it's a pure number, assume minutes
+  if (totalMinutes === 0 && /^\d+$/.test(timeStr_lower)) {
+    totalMinutes = parseInt(timeStr_lower);
+  }
+  
+  return totalMinutes > 0 ? totalMinutes : null;
+}
+
+function isTaskQuick(task: TaskInput, quickThresholdMinutes: number = 20): boolean {
+  // First check user's manual quick tag
+  if (task.tags.quick) return true;
+  
+  // Then check estimated time
+  if (task.estimated_time) {
+    const minutes = parseTimeToMinutes(task.estimated_time);
+    if (minutes !== null && minutes <= quickThresholdMinutes) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: number; breakdown: any } {
   console.log(`\n🎯 Calculating score for task: "${task.text}"`);
   console.log(`📂 Category: ${task.inferred.category}`);
@@ -53,17 +96,20 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
 
   // b. LiveTagScore - based on live tags and start preference
   let liveTagScore = 0;
+  const isQuickTask = isTaskQuick(task);
   console.log(`🏷️ Task tags:`, task.tags);
+  console.log(`⏱️ Estimated time: ${task.estimated_time || 'none'}`);
+  console.log(`⚡ Is quick task: ${isQuickTask} (manual tag: ${task.tags.quick}, time-based: ${task.estimated_time ? parseTimeToMinutes(task.estimated_time) + 'min' : 'none'})`);
   console.log(`🎯 Start preference: ${profile.startPreference}`);
   
   if (profile.startPreference === 'quickWin') {
     if (task.tags.liked) liveTagScore += 3;
-    if (task.tags.quick) liveTagScore += 2;
+    if (isQuickTask) liveTagScore += 2; // Use combined quick detection
     if (task.tags.urgent) liveTagScore += 1;
     if (task.tags.disliked) liveTagScore -= 3;
   } else { // eatTheFrog
     if (task.tags.liked) liveTagScore += 2;
-    if (task.tags.quick) liveTagScore += 1;
+    if (isQuickTask) liveTagScore += 1; // Use combined quick detection
     if (task.tags.urgent) liveTagScore += 3;
     if (task.tags.disliked) liveTagScore -= 2;
   }
@@ -75,7 +121,7 @@ function calculateTaskScore(task: TaskInput, profile: UserProfile): { score: num
   
   if (profile.energyState === 'low') {
     // Low energy: boost quick tasks and liked tasks
-    if (task.tags.quick) energyAdjust += 1;
+    if (isQuickTask) energyAdjust += 1; // Use combined quick detection
     if (task.tags.liked) energyAdjust += 1;
     // Also boost categories that require less mental energy
     if (task.inferred.category === 'Physical' || task.inferred.category === 'Routine') {
@@ -124,137 +170,69 @@ function applyQuickWinRules(tasks: TaskInput[], profile: UserProfile): ScoredTas
     };
   });
 
-  const orderedTasks: ScoredTask[] = [];
-  const remainingTasks = [...scoredTasks];
+  // Create a simple array to hold final ordered tasks
+  const finalOrder: ScoredTask[] = [];
+  const available = [...scoredTasks];
 
-  // MomentumBuffer (Tasks 1-2): Quick tasks (removed complexity requirement)
-  const quickTasks = remainingTasks
-    .filter(t => t.tags.quick)
+  // MomentumBuffer (Tasks 1-2): Quick tasks with highest scores
+  const quickTasks = available
+    .filter(t => isTaskQuick(t))
     .sort((a, b) => b.totalScore - a.totalScore);
   
   for (let i = 0; i < Math.min(2, quickTasks.length); i++) {
-    const task = quickTasks[i];
-    task.rulePlacement = `MomentumBuffer (${i + 1})`;
-    task.position = orderedTasks.length + 1;
-    orderedTasks.push(task);
-    remainingTasks.splice(remainingTasks.indexOf(task), 1);
+    const task = { ...quickTasks[i] };
+    task.rulePlacement = `MomentumBuffer (${finalOrder.length + 1})`;
+    task.position = finalOrder.length + 1;
+    finalOrder.push(task);
+    // Remove from available
+    const index = available.findIndex(t => t.id === task.id);
+    if (index !== -1) available.splice(index, 1);
   }
 
   // Fill remaining momentum slots with highest Liked tasks
-  if (orderedTasks.length < 2) {
-    const likedTasks = remainingTasks
+  if (finalOrder.length < 2) {
+    const likedTasks = available
       .filter(t => t.tags.liked)
       .sort((a, b) => b.totalScore - a.totalScore);
     
-    for (let i = 0; i < Math.min(2 - orderedTasks.length, likedTasks.length); i++) {
-      const task = likedTasks[i];
-      task.rulePlacement = `MomentumBuffer Fill (${orderedTasks.length + 1})`;
-      task.position = orderedTasks.length + 1;
-      orderedTasks.push(task);
-      remainingTasks.splice(remainingTasks.indexOf(task), 1);
+    for (let i = 0; i < Math.min(2 - finalOrder.length, likedTasks.length); i++) {
+      const task = { ...likedTasks[i] };
+      task.rulePlacement = `MomentumBuffer Fill (${finalOrder.length + 1})`;
+      task.position = finalOrder.length + 1;
+      finalOrder.push(task);
+      // Remove from available
+      const index = available.findIndex(t => t.id === task.id);
+      if (index !== -1) available.splice(index, 1);
     }
   }
 
-  // Booster (Task 3): Highest-scoring Liked task, or next highest Quick/Neutral if no Liked tasks
-  let boosterTask = remainingTasks
-    .filter(t => t.tags.liked)
-    .sort((a, b) => b.totalScore - a.totalScore)[0];
-  
-  // If no liked tasks available, use next highest Quick or Neutral task
-  if (!boosterTask && orderedTasks.length < 3) {
-    boosterTask = remainingTasks
-      .filter(t => t.tags.quick || profile.categoryRatings[t.inferred.category] === 'Neutral')
-      .sort((a, b) => b.totalScore - a.totalScore)[0];
-  }
-  
-  if (boosterTask && orderedTasks.length < 3) {
-    boosterTask.rulePlacement = 'Booster';
-    boosterTask.position = orderedTasks.length + 1;
-    orderedTasks.push(boosterTask);
-    remainingTasks.splice(remainingTasks.indexOf(boosterTask), 1);
+  // Add remaining tasks in score order
+  while (available.length > 0 && finalOrder.length < tasks.length) {
+    const nextTask = available.sort((a, b) => b.totalScore - a.totalScore)[0];
+    const task = { ...nextTask };
+    
+    if (finalOrder.length === 2) {
+      task.rulePlacement = 'Booster';
+    } else if (finalOrder.length < 5) {
+      task.rulePlacement = `EarlyPhase (${finalOrder.length + 1})`;
+    } else {
+      task.rulePlacement = `AlternationPhase (${finalOrder.length + 1})`;
+    }
+    
+    task.position = finalOrder.length + 1;
+    finalOrder.push(task);
+    
+    // Remove from available
+    const index = available.findIndex(t => t.id === task.id);
+    if (index !== -1) available.splice(index, 1);
   }
 
-  // EarlyPhase (Tasks 4-5): Prefer Quick or Liked tasks (removed complexity penalties)
-  const earlyPhaseEligible = remainingTasks.sort((a, b) => {
-    // Prefer Quick or Liked tasks first
-    const aPreference = (a.tags.quick || a.tags.liked) ? 1 : 0;
-    const bPreference = (b.tags.quick || b.tags.liked) ? 1 : 0;
-    if (aPreference !== bPreference) return bPreference - aPreference;
-    // Then by score
-    return b.totalScore - a.totalScore;
+  console.log('🔄 Final order before return:');
+  finalOrder.forEach((task, index) => {
+    console.log(`  ${index + 1}. "${task.text}" - Score: ${task.totalScore} - Rule: ${task.rulePlacement}`);
   });
-  
-  for (let i = 0; i < Math.min(2, earlyPhaseEligible.length) && orderedTasks.length < 5; i++) {
-    const task = earlyPhaseEligible[i];
-    task.rulePlacement = `EarlyPhase (${orderedTasks.length + 1})`;
-    task.position = orderedTasks.length + 1;
-    orderedTasks.push(task);
-    remainingTasks.splice(remainingTasks.indexOf(task), 1);
-  }
 
-  // AlternationPhase (Tasks 6+): Alternate Liked/Loved ↔ Other
-  let consecutiveNonLiked = 0;
-  let lastCategory = '';
-  
-  while (remainingTasks.length > 0) {
-    let nextTask;
-    
-    // If we've had 2 non-liked in a row, must pick a liked task
-    if (consecutiveNonLiked >= 2) {
-      nextTask = remainingTasks
-        .filter(t => t.tags.liked)
-        .sort((a, b) => b.totalScore - a.totalScore)[0];
-    }
-    
-    // If no liked task available or not forced to pick liked, use normal alternation
-    if (!nextTask) {
-      // Try to bundle same category if beneficial
-      const sameCategoryTasks = remainingTasks.filter(t => t.inferred.category === lastCategory);
-      if (sameCategoryTasks.length > 0 && Math.random() > 0.7) { // 30% chance to bundle
-        nextTask = sameCategoryTasks.sort((a, b) => b.totalScore - a.totalScore)[0];
-      } else {
-        nextTask = remainingTasks.sort((a, b) => b.totalScore - a.totalScore)[0];
-      }
-    }
-    
-    if (nextTask) {
-      nextTask.rulePlacement = `AlternationPhase (${orderedTasks.length + 1})`;
-      nextTask.position = orderedTasks.length + 1;
-      orderedTasks.push(nextTask);
-      remainingTasks.splice(remainingTasks.indexOf(nextTask), 1);
-      
-      // Update tracking
-      if (nextTask.tags.liked) {
-        consecutiveNonLiked = 0;
-      } else {
-        consecutiveNonLiked++;
-      }
-      lastCategory = nextTask.inferred.category;
-    }
-  }
-
-  // Ensure ending on easy/neutral task (based on category rating only)
-  const lastTask = orderedTasks[orderedTasks.length - 1];
-  if (lastTask && profile.categoryRatings[lastTask.inferred.category] === 'Disliked') {
-    // Find a neutral or loved task to swap with
-    const easyTaskIndex = orderedTasks.findIndex(t => 
-      profile.categoryRatings[t.inferred.category] === 'Neutral' || 
-      profile.categoryRatings[t.inferred.category] === 'Loved'
-    );
-    
-    if (easyTaskIndex !== -1 && easyTaskIndex < orderedTasks.length - 1) {
-      // Swap positions
-      [orderedTasks[easyTaskIndex], orderedTasks[orderedTasks.length - 1]] = 
-      [orderedTasks[orderedTasks.length - 1], orderedTasks[easyTaskIndex]];
-      
-      // Update positions
-      orderedTasks.forEach((task, index) => {
-        task.position = index + 1;
-      });
-    }
-  }
-
-  return orderedTasks;
+  return finalOrder;
 }
 
 function applyEatTheFrogRules(tasks: TaskInput[], profile: UserProfile): ScoredTask[] {
@@ -344,6 +322,9 @@ function applyEatTheFrogRules(tasks: TaskInput[], profile: UserProfile): ScoredT
     }
   }
 
+  // Sort by position to ensure correct order
+  orderedTasks.sort((a, b) => a.position - b.position);
+
   return orderedTasks;
 }
 
@@ -388,7 +369,7 @@ serve(async (req) => {
     console.log('\n✅ Prioritization completed:');
     console.log('📊 Score summary:');
     orderedTasks.forEach((task, index) => {
-      console.log(`${index + 1}. "${task.text}" - Score: ${task.totalScore} (${task.rulePlacement})`);
+      console.log(`${index + 1}. "${task.text}" - Score: ${task.totalScore} (${task.rulePlacement}) - Position: ${task.position}`);
     });
 
     return new Response(JSON.stringify({

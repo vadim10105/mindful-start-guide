@@ -958,7 +958,8 @@ const TasksContent = () => {
       console.log(`🔍 Task "${taskTitle}":`, {
         category: category,
         tags: tags,
-        position: index + 1
+        position: index + 1,
+        estimated_time: taskTimeEstimates[taskTitle]
       });
       
       return {
@@ -972,7 +973,8 @@ const TasksContent = () => {
         },
         inferred: {
           category: category
-        }
+        },
+        estimated_time: taskTimeEstimates[taskTitle]
       };
     });
 
