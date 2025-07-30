@@ -1414,7 +1414,7 @@ const TasksContent = () => {
     setEditingTaskText('');
   };
 
-  const handleTaskDelete = (taskTitle: string) => {
+  const handleTaskDelete = async (taskTitle: string) => {
     // Remove from all task arrays
     setListTasks(prev => prev.filter(task => task !== taskTitle));
     setLaterTasks(prev => prev.filter(task => task !== taskTitle));
@@ -1436,6 +1436,23 @@ const TasksContent = () => {
     // Exit edit mode
     setEditingTaskId(null);
     setEditingTaskText('');
+
+    // Delete from database if it exists
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('title', taskTitle);
+
+        if (error) {
+          console.error('Error deleting task from database:', error);
+        }
+      } catch (error) {
+        console.error('Failed to delete task from database:', error);
+      }
+    }
 
     toast({
       title: "Task deleted",
