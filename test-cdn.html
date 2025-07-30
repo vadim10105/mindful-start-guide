@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDN Test</title>
+</head>
+<body>
+    <h1>CDN Integration Test</h1>
+    <p>This file tests loading assets from jsDelivr CDN.</p>
+    <div id="test-results"></div>
+
+    <script>
+        // Test function to verify CDN loading
+        function testCDNLoad() {
+            const results = document.getElementById('test-results');
+            
+            // Test CSS loading
+            const cssLink = document.createElement('link');
+            cssLink.rel = 'stylesheet';
+            cssLink.href = 'https://cdn.jsdelivr.net/gh/vadim10105/mindful-start-guide@main/dist/assets/index.css';
+            cssLink.onload = () => {
+                results.innerHTML += '<p>✅ CSS loaded successfully from CDN</p>';
+            };
+            cssLink.onerror = () => {
+                results.innerHTML += '<p>❌ CSS failed to load from CDN</p>';
+            };
+            document.head.appendChild(cssLink);
+
+            // Test JS loading
+            const jsScript = document.createElement('script');
+            jsScript.src = 'https://cdn.jsdelivr.net/gh/vadim10105/mindful-start-guide@main/dist/assets/index.js';
+            jsScript.onload = () => {
+                results.innerHTML += '<p>✅ JavaScript loaded successfully from CDN</p>';
+            };
+            jsScript.onerror = () => {
+                results.innerHTML += '<p>❌ JavaScript failed to load from CDN</p>';
+            };
+            document.head.appendChild(jsScript);
+        }
+
+        // Run test (uncomment after pushing to GitHub)
+        // testCDNLoad();
+        
+        results.innerHTML = '<p>📝 Uncomment testCDNLoad() below to test CDN loading after pushing to GitHub</p>';
+    </script>
+</body>
+</html>
