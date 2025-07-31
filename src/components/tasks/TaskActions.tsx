@@ -140,7 +140,7 @@ export const TaskActions = ({
           <Button 
             onClick={() => onMadeProgress(task.id)}
             size="sm"
-            className="flex-1 bg-gray-300 hover:bg-blue-600 hover:text-white transition-all duration-700"
+            className="flex-1 bg-gray-300 hover:bg-orange-500 hover:text-white transition-all duration-700"
             style={{ color: 'hsl(220 10% 30%)' }}
           >
             Made Progress

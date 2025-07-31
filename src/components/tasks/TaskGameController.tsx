@@ -27,16 +27,28 @@ interface TaskGameControllerProps {
 }
 
 export const TaskGameController = ({ 
-  tasks, 
+  tasks: initialTasks, 
   onComplete, 
   onTaskComplete, 
   isLoading = false, 
   isProcessing = false, 
   onLoadingComplete 
 }: TaskGameControllerProps) => {
+  const [tasks, setTasks] = useState(initialTasks);
   const gameState = useGameState(tasks);
   const { toast } = useToast();
   const { formatTime } = useTaskTimerHelpers();
+
+  // Function to update task notes
+  const updateTaskNotes = useCallback((taskId: string, notes: string) => {
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === taskId 
+          ? { ...task, notes }
+          : task
+      )
+    );
+  }, []);
 
   // Reward card data from Supabase
   const [rewardCards, setRewardCards] = useState<RewardCardData[]>([]);
@@ -193,6 +205,7 @@ export const TaskGameController = ({
         onCommitToCurrentTask={handleCommitToCurrentTask}
         onCarryOn={progressTracker.handleCarryOn}
         onSkip={progressTracker.handleSkip}
+        onNotesChange={updateTaskNotes}
         isLoading={isLoading}
         isProcessing={isProcessing}
         onLoadingComplete={onLoadingComplete}
@@ -221,6 +234,7 @@ export const TaskGameController = ({
                   onSkip={progressTracker.handleSkip}
                   onBackToActive={navigationManager.handleBackToActiveCard}
                   onAddToCollection={progressTracker.handleAddToCollectionDB}
+                  onNotesChange={updateTaskNotes}
                   formatTime={formatTime}
                 />
 

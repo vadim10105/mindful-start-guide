@@ -16,6 +16,7 @@ interface PiPCardProps {
   onCommitToCurrentTask?: () => void;
   onCarryOn?: (taskId: string) => void;
   onSkip?: (taskId: string) => Promise<void>;
+  onNotesChange?: (taskId: string, notes: string) => void;
   isLoading?: boolean;
   isProcessing?: boolean;
   onLoadingComplete?: () => void;
@@ -33,6 +34,7 @@ export const PiPCard = ({
   onCommitToCurrentTask,
   onCarryOn,
   onSkip,
+  onNotesChange,
   isLoading = false, 
   isProcessing = false, 
   onLoadingComplete,
@@ -328,6 +330,7 @@ export const PiPCard = ({
           onCarryOn={handleCarryOn}
           onSkip={handleSkip}
           onBackToActive={handleBackToActiveCard}
+          onNotesChange={onNotesChange}
           navigationUnlocked={gameState.navigationUnlocked}
           formatTime={formatTime}
         />

@@ -83,6 +83,7 @@ interface TaskCardProps {
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
+  onNotesChange?: (taskId: string, notes: string) => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
 }
@@ -113,6 +114,7 @@ export const TaskCard = ({
   onCarryOn,
   onSkip,
   onBackToActive,
+  onNotesChange,
   navigationUnlocked,
   formatTime
 }: TaskCardProps) => {
@@ -152,11 +154,15 @@ export const TaskCard = ({
         // Allow a small tolerance of 1 character before/after for easier clicking
         if (uncheckedPos !== -1 && relativePos >= uncheckedPos && relativePos <= uncheckedPos + 1) {
           lines[i] = line.replace('☐', '☑');
-          setNotes(lines.join('\n'));
+          const newNotes = lines.join('\n');
+          setNotes(newNotes);
+          onNotesChange?.(task.id, newNotes);
           break;
         } else if (checkedPos !== -1 && relativePos >= checkedPos && relativePos <= checkedPos + 1) {
           lines[i] = line.replace('☑', '☐');
-          setNotes(lines.join('\n'));
+          const newNotes = lines.join('\n');
+          setNotes(newNotes);
+          onNotesChange?.(task.id, newNotes);
           break;
         }
       }
@@ -181,7 +187,15 @@ export const TaskCard = ({
 
       // Format the AI response into checkbox list
       const subtasks = data.subtasks.map((subtask: any) => `☐ ${subtask.subtask}`);
-      setNotes(subtasks.join('\n'));
+      const generatedBreakdown = subtasks.join('\n');
+      
+      // Preserve existing notes and append breakdown underneath
+      const newNotes = notes.trim() 
+        ? `${notes}\n\n${generatedBreakdown}`
+        : generatedBreakdown;
+      
+      setNotes(newNotes);
+      onNotesChange?.(task.id, newNotes);
       
     } catch (error) {
       console.error('Error generating subtasks:', error);
@@ -192,7 +206,15 @@ export const TaskCard = ({
         "☐ Review progress",
         "☐ Finish and wrap up"
       ];
-      setNotes(fallbackSubtasks.join('\n'));
+      const generatedBreakdown = fallbackSubtasks.join('\n');
+      
+      // Preserve existing notes and append breakdown underneath
+      const newNotes = notes.trim() 
+        ? `${notes}\n\n${generatedBreakdown}`
+        : generatedBreakdown;
+      
+      setNotes(newNotes);
+      onNotesChange?.(task.id, newNotes);
     } finally {
       setIsGenerating(false);
     }
@@ -290,7 +312,10 @@ export const TaskCard = ({
               <div className="relative flex-1">
                 <Textarea
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(e) => {
+                    setNotes(e.target.value);
+                    onNotesChange?.(task.id, e.target.value);
+                  }}
                   onClick={handleNotesClick}
                   placeholder="Add notes..."
                   className="resize-none !text-sm leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[hsl(220_10%_30%)] placeholder:text-[hsl(220_10%_60%)] h-full min-h-[80px] cursor-text hover:cursor-pointer"

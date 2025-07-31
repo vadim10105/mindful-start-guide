@@ -1488,7 +1488,7 @@ const TasksContent = () => {
       )}
       
       {/* Back Button - Fixed Top Left */}
-      {currentStep !== 'input' && (
+      {currentStep !== 'input' && currentStep !== 'game-cards' && (
         <Button
           onClick={() => {
             if (currentStep === 'prioritized') {

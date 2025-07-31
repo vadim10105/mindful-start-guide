@@ -31,6 +31,7 @@ interface TaskSwiperProps {
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
   onAddToCollection: () => void;
+  onNotesChange?: (taskId: string, notes: string) => void;
   formatTime: (minutes: number) => string;
 }
 
@@ -47,6 +48,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   onSkip,
   onBackToActive,
   onAddToCollection,
+  onNotesChange,
   formatTime
 }, ref) => {
   const sunsetImages = rewardCards.map(card => card.imageUrl);
@@ -102,6 +104,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 onSkip={onSkip}
                 onBackToActive={onBackToActive}
                 onAddToCollection={onAddToCollection}
+                onNotesChange={onNotesChange}
                 navigationUnlocked={gameState.navigationUnlocked}
                 formatTime={formatTime}
               />
