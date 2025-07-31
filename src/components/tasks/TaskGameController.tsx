@@ -36,6 +36,11 @@ export const TaskGameController = ({
 }: TaskGameControllerProps) => {
   const [tasks, setTasks] = useState(initialTasks);
   const gameState = useGameState(tasks);
+
+  // Update tasks when initialTasks changes
+  useEffect(() => {
+    setTasks(initialTasks);
+  }, [initialTasks]);
   const { toast } = useToast();
   const { formatTime } = useTaskTimerHelpers();
 
