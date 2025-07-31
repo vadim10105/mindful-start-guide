@@ -1311,16 +1311,23 @@ const TasksContent = () => {
     }
   };
 
-  const handleManualOrder = async (tasksToProcess?: string[]) => {
-    const tasks = tasksToProcess || reviewedTasks;
+  const handleManualOrder = async (taskIdsToProcess?: string[]) => {
+    const taskIds = taskIdsToProcess || activeTaskIds;
     console.log('📋 Play in Order button clicked - Using manual task order...');
     
     // Update tagged tasks with the current order for game cards
-    const orderedTaggedTasks = tasks.map((taskTitle, index) => {
-      const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+    const orderedTaggedTasks = taskIds.map((taskId, index) => {
+      const task = tasksById[taskId];
+      const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
+      
+      if (!task) {
+        console.warn(`Task not found for ID: ${taskId}`);
+        return null;
+      }
+      
       return {
-        id: `temp-${index}`,
-        title: taskTitle,
+        id: taskId, // Use actual task ID instead of temp ID
+        title: task.title,
         list_location: 'active' as const,
         task_status: 'incomplete' as const,
         is_liked: tags.isLiked,
@@ -1328,7 +1335,7 @@ const TasksContent = () => {
         is_quick: tags.isQuick,
         card_position: index + 1
       };
-    });
+    }).filter(Boolean); // Remove any null entries
     
     console.log('📋 Setting tasks in manual order for game cards...');
     setTaggedTasks(orderedTaggedTasks);
@@ -1346,15 +1353,17 @@ const TasksContent = () => {
     setTimeout(async () => {
       try {
         console.log('🤖 Getting AI categorization for manual order logging...');
-        const taskCategories = await categorizeTasks(tasks);
+        const taskTitles = taskIds.map(taskId => tasksById[taskId]?.title).filter(Boolean);
+        const taskCategories = await categorizeTasks(taskTitles);
         
         // Log the manual order with AI categorization details
         console.log('🎯 Manual Task Organization:');
-        tasks.forEach((taskTitle, index) => {
-          const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-          const category = taskCategories[taskTitle] || 'Routine';
+        taskIds.forEach((taskId, index) => {
+          const task = tasksById[taskId];
+          const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
+          const category = taskCategories[task?.title] || 'Routine';
           
-          console.log(`📝 Task #${index + 1}: "${taskTitle}"`, {
+          console.log(`📝 Task #${index + 1}: "${task?.title}"`, {
             position: index + 1,
             category: category,
             tags: {
@@ -2305,7 +2314,7 @@ const TasksContent = () => {
                   {cameFromBrainDump && listTasks.length === 0 && laterTasks.length === 0 && !isTransitioning ? (
                     <Button 
                       onClick={handleListSubmit}
-                      disabled={listTasks.length === 0 && laterTasks.length === 0 && !cameFromBrainDump}
+                      disabled={activeTaskIds.length === 0 && laterTaskIds.length === 0 && !cameFromBrainDump}
                       className="w-full h-12 sm:h-11"
                       size="lg"
                     >
@@ -2319,7 +2328,7 @@ const TasksContent = () => {
                           // Pass only active tasks to shuffle (later tasks stay in later list)
                           handleShuffle(listTasks);
                         }}
-                        disabled={(listTasks.length === 0 && laterTasks.length === 0) || isProcessing || isTransitioning}
+                        disabled={(activeTaskIds.length === 0 && laterTaskIds.length === 0) || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
@@ -2329,10 +2338,10 @@ const TasksContent = () => {
                       <Button
                         onClick={() => {
                           // Pass only active tasks to manual order (later tasks stay in later list)
-                          handleManualOrder(listTasks);
+                          handleManualOrder(activeTaskIds);
                         }}
                         variant="outline"
-                        disabled={(listTasks.length === 0 && laterTasks.length === 0) || isProcessing || isTransitioning}
+                        disabled={(activeTaskIds.length === 0 && laterTaskIds.length === 0) || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
