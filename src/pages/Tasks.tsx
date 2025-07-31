@@ -1112,6 +1112,11 @@ const TasksContent = () => {
     setCurrentStep('game-cards');
     setIsProcessing(true);
     
+    // Auto-open PIP window with slight delay
+    setTimeout(() => {
+      enterPiP();
+    }, 800);
+    
     // Run AI categorization in background for logging (optional)
     setTimeout(async () => {
       try {

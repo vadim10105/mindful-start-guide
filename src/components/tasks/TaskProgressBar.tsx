@@ -3,23 +3,21 @@ import { parseTimeToMinutes } from '@/utils/timeUtils';
 
 interface TaskProgressBarProps {
   taskId: string;
-  startTime?: number;
+  totalElapsedMs: number; // Simple: just pass the total elapsed time
   estimatedTime?: string;
   isActiveCommitted: boolean;
   isPauseHovered?: boolean;
-  pausedTime?: number;
 }
 
 export const TaskProgressBar = ({ 
   taskId, 
-  startTime, 
+  totalElapsedMs,
   estimatedTime, 
   isActiveCommitted,
-  isPauseHovered = false,
-  pausedTime = 0
+  isPauseHovered = false
 }: TaskProgressBarProps) => {
-  // Don't render if no start time or estimated time - do this BEFORE any hooks
-  if (!startTime || !estimatedTime) {
+  // Don't render if no estimated time
+  if (!estimatedTime) {
     return null;
   }
 
@@ -28,24 +26,21 @@ export const TaskProgressBar = ({
 
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Update current time every second for both timer display and progress calculation
+  // Update display every second when active
   useEffect(() => {
-    if (!isActiveCommitted || !startTime) return;
-
-    // Set initial current time when becoming active
-    setCurrentTime(Date.now());
+    if (!isActiveCommitted) return;
 
     const interval = setInterval(() => {
       setCurrentTime(Date.now());
-    }, 1000); // Update every second
+    }, 1000);
 
     return () => clearInterval(interval);
-  }, [isActiveCommitted, startTime]);
+  }, [isActiveCommitted]);
 
-  // Calculate elapsed time in minutes and seconds for progress bar
-  const elapsedMs = currentTime - startTime;
+  // Simple: just use the total elapsed time passed in
+  const elapsedMs = totalElapsedMs;
   const elapsedMinutes = Math.floor(elapsedMs / 60000);
-  const elapsedSeconds = elapsedMs / 1000; // Total elapsed time in seconds
+  const elapsedSeconds = elapsedMs / 1000;
   const estimatedSeconds = estimatedMinutes * 60; // Convert estimated minutes to seconds
   
   // Calculate progress percentage (capped at 100% for visual)

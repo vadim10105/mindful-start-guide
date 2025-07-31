@@ -311,7 +311,7 @@ export const PiPCard = ({
           pausedTime={gameState.pausedTasks.get(currentTask.id) || 0}
           isActiveCommitted={currentCardIndex === gameState.activeCommittedIndex}
           hasCommittedToTask={gameState.hasCommittedToTask}
-          isCurrentTask={true}
+          isCurrentTask={currentCardIndex === gameState.currentViewingIndex}
           activeCommittedIndex={gameState.activeCommittedIndex}
           flowProgress={gameState.flowProgress}
           sunsetImageUrl={sunsetImages[currentCardIndex % sunsetImages.length]}
@@ -337,7 +337,11 @@ export const PiPCard = ({
       {/* Completion button */}
       {gameState.completedTasks.size === tasks.length && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-          <Button onClick={onComplete} size="sm">
+          <Button 
+            onClick={onComplete} 
+            size="sm" 
+            className="bg-transparent hover:bg-yellow-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300"
+          >
             Finish Session
           </Button>
         </div>

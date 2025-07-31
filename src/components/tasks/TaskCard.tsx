@@ -5,6 +5,7 @@ import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 import { TaskProgressBar } from "./TaskProgressBar";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
+import { useSimpleTimer } from "./useSimpleTimer";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -118,6 +119,12 @@ export const TaskCard = ({
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPauseHovered, setIsPauseHovered] = useState(false);
+
+  // Simple timer that handles all timing logic
+  const { totalElapsedMs } = useSimpleTimer({
+    taskId: task.id,
+    isActive: isActiveCommitted && !isPaused
+  });
 
 
   const handleNotesClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
@@ -272,11 +279,10 @@ export const TaskCard = ({
             {/* Progress Bar */}
             <TaskProgressBar
               taskId={task.id}
-              startTime={taskStartTimes[task.id]}
+              totalElapsedMs={totalElapsedMs}
               estimatedTime={task.estimated_time}
               isActiveCommitted={isActiveCommitted}
               isPauseHovered={isPauseHovered}
-              pausedTime={pausedTime}
             />
 
             {/* Notes Section */}

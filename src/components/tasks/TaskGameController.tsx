@@ -91,10 +91,10 @@ export const TaskGameController = ({
         return newMap;
       });
     } else {
-      // Fresh start for new task
+      // Fresh start for new task (only if it doesn't already have a start time)
       gameState.setTaskStartTimes(prev => ({
         ...prev,
-        [currentTask.id]: Date.now()
+        [currentTask.id]: prev[currentTask.id] || Date.now()
       }));
     }
   }, [
@@ -235,8 +235,12 @@ export const TaskGameController = ({
                 />
 
                 {/* Completion */}
-                <div className="text-center">
-                  <Button onClick={() => onComplete(gameState.completedTasks)} size="lg" className="w-full max-w-xs">
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+                  <Button 
+                    onClick={() => onComplete(gameState.completedTasks)} 
+                    size="lg" 
+                    className="w-full max-w-xs bg-transparent hover:bg-yellow-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300"
+                  >
                     Finish Session
                   </Button>
                 </div>
