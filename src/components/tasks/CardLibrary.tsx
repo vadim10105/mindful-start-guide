@@ -75,7 +75,7 @@ export const CardLibrary = ({ isOpen, onClose }: CardLibraryProps) => {
         .select('*')
         .eq('user_id', user.id)
         .not('collection_added_at', 'is', null)
-        .eq('status', 'completed')
+        .eq('task_status', 'complete')
         .order('collection_added_at', { ascending: false });
 
       if (error) throw error;

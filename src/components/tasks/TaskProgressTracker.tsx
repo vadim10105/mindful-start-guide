@@ -92,7 +92,8 @@ export const useTaskProgressTracker = ({
         await supabase
           .from('tasks')
           .update({ 
-            status: 'completed',
+            list_location: 'collection',
+            task_status: 'complete',
             completed_at: new Date().toISOString(),
             time_spent_minutes: timeSpent
           })
@@ -157,12 +158,12 @@ export const useTaskProgressTracker = ({
             title: task.title,
             user_id: user.id,
             source: 'brain_dump' as const,
-            status: 'later' as const,
+            list_location: 'later' as const, // Tasks with progress go to later list
+            task_status: 'made_progress' as const, // Task had some work done on it
             is_liked: task.is_liked || false,
             is_urgent: task.is_urgent || false,
             is_quick: task.is_quick || false,
             estimated_minutes: estimatedMinutes,
-            later_at: new Date().toISOString(),
           });
       }
     } catch (error) {

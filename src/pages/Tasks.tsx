@@ -53,12 +53,13 @@ interface ExtractedTask {
 interface Task {
   id: string;
   title: string;
-  status: 'active' | 'completed' | 'skipped';
+  list_location: 'active' | 'later' | 'collection';
+  task_status: 'incomplete' | 'made_progress' | 'complete';
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
   is_disliked?: boolean;
-  card_position: number;
+  card_position?: number;
 }
 
 interface PrioritizedTask {
@@ -79,7 +80,7 @@ interface UserProfile {
 }
 
 interface TaskListItemProps {
-  task: string;
+  task: string; // Now expects task ID for ID-based system, or task title for legacy system
   index: number;
   isLiked: boolean;
   isUrgent: boolean;
@@ -94,11 +95,12 @@ interface TaskListItemProps {
   isEditing?: boolean;
   editingText?: string;
   editInputRef?: React.RefObject<HTMLInputElement>;
-  onTaskEdit?: (taskTitle: string) => void;
-  onTaskSave?: (oldTitle: string, newTitle: string) => void;
+  onTaskEdit?: (taskId: string, taskTitle: string) => void;
+  onTaskSave?: (taskId: string, newTitle: string) => void;
   onTaskCancel?: () => void;
   onEditingTextChange?: (text: string) => void;
   showNumber?: boolean;
+  taskTitle?: string; // Optional task title for display when task prop is an ID
 }
 
 const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
@@ -136,7 +138,8 @@ const TaskListItem = ({
   onTaskSave,
   onTaskCancel,
   onEditingTextChange,
-  showNumber = true
+  showNumber = true,
+  taskTitle
 }: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
@@ -173,7 +176,7 @@ const TaskListItem = ({
   };
 
   const handleDoubleClick = () => {
-    onTaskEdit?.(task);
+    onTaskEdit?.(task, taskTitle || 'Untitled');
   };
 
   return (
@@ -222,7 +225,7 @@ const TaskListItem = ({
                 className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
                 onDoubleClick={handleDoubleClick}
               >
-                {task}
+{taskTitle || 'Untitled Task'}
               </p>
             )}
           </div>
@@ -355,7 +358,7 @@ const TaskListItem = ({
               className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
               onDoubleClick={handleDoubleClick}
             >
-              {task}
+              {taskTitle || 'Untitled Task'}
             </p>
           )}
         </div>
@@ -489,10 +492,16 @@ const TasksContent = () => {
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
   const [brainDumpText, setBrainDumpText] = useState("");
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
-  const [reviewedTasks, setReviewedTasks] = useState<string[]>([]);
+  const [reviewedTasks, setReviewedTasks] = useState<string[]>([]); // Now stores task IDs
   const [taggedTasks, setTaggedTasks] = useState<Task[]>([]);
   const [taskTags, setTaskTags] = useState<Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }>>({});
   const [taskTimeEstimates, setTaskTimeEstimates] = useState<Record<string, string>>({});
+  // Add task lookup maps for ID-based system
+  const [tasksById, setTasksById] = useState<Record<string, Task>>({});
+  const [activeTaskIds, setActiveTaskIds] = useState<string[]>([]);
+  const [laterTaskIds, setLaterTaskIds] = useState<string[]>([]);
+  const [taskTagsById, setTaskTagsById] = useState<Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }>>({});
+  const [taskTimeEstimatesById, setTaskTimeEstimatesById] = useState<Record<string, string>>({});
   const [prioritizedTasks, setPrioritizedTasks] = useState<PrioritizedTask[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -521,6 +530,7 @@ const TasksContent = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inputMode, setInputMode] = useState<'brain-dump' | 'list'>('brain-dump');
   const [cameFromBrainDump, setCameFromBrainDump] = useState(false);
+  // Legacy state - will be replaced by activeTaskIds and laterTaskIds
   const [listTasks, setListTasks] = useState<string[]>([]);
   const [laterTasks, setLaterTasks] = useState<string[]>([]);
   const [laterTasksExpanded, setLaterTasksExpanded] = useState(false);
@@ -738,12 +748,12 @@ const TasksContent = () => {
     }
   }, [currentStep, inputMode, isProcessing, isTransitioning, isSettingsOpen]);
 
-  // Load later tasks when user changes or component mounts
+  // Load tasks when user changes or component mounts  
   useEffect(() => {
-    if (user && inputMode === 'list') {
-      loadLaterTasks();
+    if (user) {
+      loadTasksById();
     }
-  }, [user, inputMode]);
+  }, [user]);
 
   const handleBrainDumpSubmit = async () => {
     console.log('handleBrainDumpSubmit called with text:', brainDumpText);
@@ -794,14 +804,96 @@ const TasksContent = () => {
       // Prepare for smooth transition
       const extractedTaskTitles = data.tasks.map((task: ExtractedTask) => task.title);
       
-      // Small delay to show the transition animation
+      // Get AI categorization for all tasks
+      console.log('🤖 Getting AI categorization for extracted tasks...');
+      const taskCategories = await categorizeTasks(extractedTaskTitles);
+      console.log('📋 AI categorization results:', taskCategories);
+      
+      // Save tasks to database immediately after extraction and categorization
+      if (user) {
+        const tasksToSave = data.tasks.map((task: ExtractedTask, index: number) => {
+          const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
+          const category = taskCategories[task.title] || 'Routine';
+          
+          return {
+            title: task.title,
+            user_id: user.id,
+            source: 'brain_dump' as const,
+            list_location: 'active' as const, // Brain dump tasks go to active list
+            task_status: 'incomplete' as const, // New tasks start as incomplete  
+            category: category, // Save AI categorization
+            estimated_minutes: estimatedMinutes // Convert time estimate to minutes
+          };
+        });
+
+        const { data: insertedTasks, error: saveError } = await supabase
+          .from('tasks')
+          .insert(tasksToSave)
+          .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes');
+
+        if (saveError) {
+          console.error('Error saving extracted tasks:', saveError);
+          // Don't throw here - we still want to show the UI even if save fails
+        } else if (insertedTasks) {
+          console.log('✅ Successfully saved extracted tasks to database');
+          
+          // Update ID-based state with the newly created tasks
+          const newTasksById: Record<string, Task> = {};
+          const newTaskIds: string[] = [];
+          const newTaskTags: Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }> = {};
+          const newTimeEstimates: Record<string, string> = {};
+
+          insertedTasks.forEach(task => {
+            newTasksById[task.id] = {
+              id: task.id,
+              title: task.title,
+              list_location: task.list_location,
+              task_status: task.task_status,
+              is_liked: task.is_liked || false,
+              is_urgent: task.is_urgent || false,
+              is_quick: task.is_quick || false,
+              is_disliked: false
+            };
+            
+            newTaskIds.push(task.id);
+            
+            newTaskTags[task.id] = {
+              isLiked: task.is_liked || false,
+              isUrgent: task.is_urgent || false,
+              isQuick: task.is_quick || false
+            };
+
+            if (task.estimated_minutes) {
+              const hours = Math.floor(task.estimated_minutes / 60);
+              const minutes = task.estimated_minutes % 60;
+              if (hours > 0) {
+                newTimeEstimates[task.id] = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+              } else {
+                newTimeEstimates[task.id] = `${minutes}m`;
+              }
+            }
+          });
+
+          // Update state with ID-based data
+          setTasksById(prev => ({ ...prev, ...newTasksById }));
+          setActiveTaskIds(newTaskIds); // Brain dump tasks go to active
+          setTaskTagsById(prev => ({ ...prev, ...newTaskTags }));
+          setTaskTimeEstimatesById(prev => ({ ...prev, ...newTimeEstimates }));
+          // Keep legacy state for compatibility
+          setTaskTags(prev => ({ ...prev, ...newTaskTags }));
+          setTaskTimeEstimates(prev => ({ ...prev, ...newTimeEstimates }));
+          setReviewedTasks(newTaskIds); // Store IDs instead of titles
+        }
+      }
+      
+      // Small delay to show the transition animation  
       setTimeout(() => {
-        // Switch to list mode and populate with extracted tasks
-        setListTasks(extractedTaskTitles);
+        // Switch to list mode - the ID-based state is already set above
         setInputMode('list');
         
-        // Also set reviewedTasks for compatibility with existing flow
-        setReviewedTasks(extractedTaskTitles);
+        // Legacy compatibility - keep old state in sync for components that still use it
+        const extractedTaskTitles = data.tasks.map((task: ExtractedTask) => task.title);
+        setListTasks(extractedTaskTitles);
         
         // End transition earlier so box can expand first, then tasks drop in
         setTimeout(() => {
@@ -856,6 +948,70 @@ const TasksContent = () => {
   };
 
   // Extract time estimate for a single task
+  const extractTimeEstimateAndCategory = async (taskId: string, taskTitle: string) => {
+    try {
+      setLoadingTimeEstimates(prev => new Set(prev).add(taskId));
+      
+      // Get time estimate from brain dump function
+      const { data, error } = await supabase.functions.invoke('process-brain-dump', {
+        body: { brainDumpText: taskTitle }
+      });
+
+      let estimatedTime = '30m'; // Fallback time
+      
+      if (!error && data?.tasks?.[0]?.estimated_time) {
+        const formattedTime = validateAndFormatTimeInput(data.tasks[0].estimated_time) || data.tasks[0].estimated_time;
+        estimatedTime = formattedTime;
+      }
+
+      // Get AI categorization using the same method as brain dump
+      const category = await categorizeTask(taskTitle);
+
+      // Convert time to minutes for database storage
+      const minutes = parseTimeToMinutes(estimatedTime);
+
+      // Update Supabase with time and category
+      const { error: updateError } = await supabase
+        .from('tasks')
+        .update({ 
+          estimated_minutes: minutes,
+          category: category
+        })
+        .eq('id', taskId)
+        .eq('user_id', user?.id);
+
+      if (updateError) {
+        console.error('Error updating task with time/category:', updateError);
+        return;
+      }
+
+      // Update local state
+      setTaskTimeEstimatesById(prev => ({
+        ...prev,
+        [taskId]: estimatedTime
+      }));
+
+      // Update task in tasksById with category
+      setTasksById(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          category: category,
+          estimated_minutes: minutes
+        }
+      }));
+
+    } catch (error) {
+      console.error('Failed to extract time estimate and category:', error);
+    } finally {
+      setLoadingTimeEstimates(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(taskId);
+        return newSet;
+      });
+    }
+  };
+
   const extractTimeEstimate = async (taskTitle: string) => {
     try {
       setLoadingTimeEstimates(prev => new Set(prev).add(taskTitle));
@@ -889,14 +1045,82 @@ const TasksContent = () => {
   };
 
   // List mode handlers
-  const handleAddTask = () => {
-    if (newTaskInput.trim()) {
-      const taskTitle = newTaskInput.trim();
-      setListTasks(prev => [...prev, taskTitle]);
-      setNewTaskInput('');
-      
-      // Extract time estimate for the new task
-      extractTimeEstimate(taskTitle);
+  const handleAddTask = async () => {
+    if (!newTaskInput.trim()) {
+      return;
+    }
+
+    if (!user) {
+      // Try to get user again if not available
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        return;
+      }
+      setUser(currentUser);
+    }
+
+    const taskTitle = newTaskInput.trim();
+    
+    try {
+      // Get current user for the insert
+      const currentUser = user || (await supabase.auth.getUser()).data.user;
+      if (!currentUser) {
+        return;
+      }
+
+      // Save to Supabase first
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          title: taskTitle,
+          user_id: currentUser.id,
+          list_location: 'active',
+          task_status: 'incomplete',
+          is_liked: false,
+          is_urgent: false,
+          is_quick: false,
+          is_disliked: false
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating task:', error);
+        return;
+      }
+
+      if (data) {
+        // Update local state with new task
+        const newTask = {
+          id: data.id,
+          title: data.title,
+          list_location: data.list_location,
+          task_status: data.task_status,
+          is_liked: data.is_liked || false,
+          is_urgent: data.is_urgent || false,
+          is_quick: data.is_quick || false,
+          is_disliked: data.is_disliked || false
+        };
+
+        // Add to local state
+        setTasksById(prev => ({ ...prev, [data.id]: newTask }));
+        setActiveTaskIds(prev => [...prev, data.id]);
+        setTaskTagsById(prev => ({
+          ...prev,
+          [data.id]: {
+            isLiked: false,
+            isUrgent: false,
+            isQuick: false
+          }
+        }));
+
+        setNewTaskInput('');
+        
+        // Extract time estimate and category for the new task
+        await extractTimeEstimateAndCategory(data.id, taskTitle);
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
     }
   };
 
@@ -1097,7 +1321,8 @@ const TasksContent = () => {
       return {
         id: `temp-${index}`,
         title: taskTitle,
-        status: 'active' as const,
+        list_location: 'active' as const,
+        task_status: 'incomplete' as const,
         is_liked: tags.isLiked,
         is_urgent: tags.isUrgent,
         is_quick: tags.isQuick,
@@ -1162,13 +1387,21 @@ const TasksContent = () => {
       // Create tasks based on the current order in reviewedTasks
       const tasksToSave = reviewedTasks.map((taskTitle, index) => {
         const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
+        const category = taskCategories[taskTitle] || 'Routine'; // Get AI category or fallback
+        const estimatedTime = taskTimeEstimates[taskTitle];
+        const estimatedMinutes = estimatedTime ? parseTimeToMinutes(estimatedTime) : null;
+        
         return {
           title: taskTitle,
           user_id: user.id,
           source: 'brain_dump' as const,
+          list_location: 'active' as const, // New brain dump tasks go to active list
+          task_status: 'incomplete' as const, // New tasks start as incomplete
+          category: category, // Save AI categorization
           is_liked: tags.isLiked,
           is_urgent: tags.isUrgent,
           is_quick: tags.isQuick,
+          estimated_minutes: estimatedMinutes, // Convert time estimate to minutes
           card_position: index + 1 // Use the order from reviewedTasks
         };
       });
@@ -1258,28 +1491,83 @@ const TasksContent = () => {
     }
   };
 
-  // Function to save a task as 'later' status in the database
-  const saveTaskAsLater = async (taskTitle: string) => {
+  // Function to update task estimated time in database
+  const updateTaskEstimatedTime = async (taskId: string, newTime: string) => {
     if (!user) return;
 
     try {
-      const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-      const estimatedTime = taskTimeEstimates[taskTitle];
-      const estimatedMinutes = estimatedTime ? parseTimeToMinutes(estimatedTime) : null;
+      const estimatedMinutes = newTime ? parseTimeToMinutes(newTime) : null;
       
       const { error } = await supabase
         .from('tasks')
-        .insert({
-          title: taskTitle,
-          user_id: user.id,
-          source: 'manual' as const,
-          status: 'later' as const,
+        .update({
+          estimated_minutes: estimatedMinutes
+        })
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error updating task estimated time:', error);
+        // Don't throw - we still want local state to update even if DB fails
+      } else {
+        const taskTitle = tasksById[taskId]?.title || taskId;
+        console.log(`✅ Updated estimated time for "${taskTitle}" to ${estimatedMinutes} minutes`);
+      }
+    } catch (error) {
+      console.error('Failed to update task estimated time:', error);
+    }
+  };
+
+  // Function to update task tags in database
+  const updateTaskTags = async (taskId: string, tag: 'liked' | 'urgent' | 'quick', value: boolean) => {
+    if (!user) return;
+
+    try {
+      const dbFieldName = tag === 'liked' ? 'is_liked' : tag === 'urgent' ? 'is_urgent' : 'is_quick';
+      
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          [dbFieldName]: value
+        })
+        .eq('id', taskId);
+
+      if (error) {
+        console.error(`Error updating task ${tag} tag:`, error);
+        // Don't throw - we still want local state to update even if DB fails
+      } else {
+        console.log(`✅ Updated ${tag} tag for task ID ${taskId} to ${value}`);
+      }
+    } catch (error) {
+      console.error(`Failed to update task ${tag} tag:`, error);
+    }
+  };
+
+  // Function to save a task as 'later' status in the database
+  const saveTaskAsLater = async (taskId: string) => {
+    if (!user) return;
+
+    try {
+      const task = tasksById[taskId];
+      if (!task) {
+        console.error('Task not found for ID:', taskId);
+        return;
+      }
+      
+      const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
+      const estimatedMinutes = task.estimated_minutes;
+      
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          list_location: 'later' as const, // Move existing task to later list
+          task_status: 'made_progress' as const, // Task had some work started on it
           is_liked: tags.isLiked,
           is_urgent: tags.isUrgent,
           is_quick: tags.isQuick,
           estimated_minutes: estimatedMinutes,
-          later_at: new Date().toISOString(),
-        });
+        })
+        .eq('id', taskId)
+        .eq('list_location', 'active'); // Only update if currently active
 
       if (error) {
         console.error('Error saving later task:', error);
@@ -1291,19 +1579,17 @@ const TasksContent = () => {
   };
 
   // Function to update task status from 'later' to 'active'
-  const moveTaskFromLaterToActive = async (taskTitle: string) => {
+  const moveTaskFromLaterToActive = async (taskId: string) => {
     if (!user) return;
 
     try {
       const { error } = await supabase
         .from('tasks')
         .update({ 
-          status: 'active' as const,
-          later_at: null 
+          list_location: 'active' as const,
         })
-        .eq('user_id', user.id)
-        .eq('title', taskTitle)
-        .eq('status', 'later');
+        .eq('id', taskId)
+        .eq('list_location', 'later');
 
       if (error) {
         console.error('Error moving task from later to active:', error);
@@ -1311,6 +1597,89 @@ const TasksContent = () => {
       }
     } catch (error) {
       console.error('Failed to move task from later to active:', error);
+    }
+  };
+
+  // Function to load all tasks from database and organize by ID
+  const loadTasksById = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, is_disliked, category, estimated_minutes, created_at')
+        .eq('user_id', user.id)
+        .eq('list_location', 'later') // Only load later tasks from database
+        .order('created_at', { ascending: true });
+
+      console.log('🔍 Later tasks query result:', { data, error, count: data?.length });
+
+      if (error) {
+        console.error('Error loading tasks:', error);
+        return;
+      }
+
+      if (data) {
+        // Create lookup map
+        const taskMap: Record<string, Task> = {};
+        const laterIds: string[] = [];
+        const taskTagsMap: Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }> = {};
+        const timeEstimatesMap: Record<string, string> = {};
+
+        data.forEach(task => {
+          // Populate task lookup map
+          taskMap[task.id] = {
+            id: task.id,
+            title: task.title,
+            list_location: task.list_location,
+            task_status: task.task_status,
+            is_liked: task.is_liked || false,
+            is_urgent: task.is_urgent || false,
+            is_quick: task.is_quick || false,
+            is_disliked: task.is_disliked || false
+          };
+
+          // All loaded tasks are later tasks
+          laterIds.push(task.id);
+
+          // Populate tag and time maps (keyed by ID now)
+          taskTagsMap[task.id] = {
+            isLiked: task.is_liked || false,
+            isUrgent: task.is_urgent || false,
+            isQuick: task.is_quick || false
+          };
+
+          if (task.estimated_minutes) {
+            // Convert minutes back to display format
+            const hours = Math.floor(task.estimated_minutes / 60);
+            const minutes = task.estimated_minutes % 60;
+            if (hours > 0) {
+              timeEstimatesMap[task.id] = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+            } else {
+              timeEstimatesMap[task.id] = `${minutes}m`;
+            }
+          }
+        });
+
+        // Update state - only update later tasks and task lookup
+        setTasksById(prev => ({ ...prev, ...taskMap })); // Merge with existing tasks
+        setLaterTaskIds(laterIds);
+        
+        // Keep Later section collapsed by default
+        setTaskTagsById(taskTagsMap);
+        setTaskTimeEstimatesById(timeEstimatesMap);
+        // Keep legacy state for compatibility
+        setTaskTags(taskTagsMap);
+        setTaskTimeEstimates(timeEstimatesMap);
+
+        console.log('✅ Loaded later tasks:', { 
+          laterCount: laterIds.length,
+          laterIds,
+          laterTasks: data.map(t => ({ id: t.id, title: t.title, list_location: t.list_location }))
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load tasks by ID:', error);
     }
   };
 
@@ -1323,7 +1692,7 @@ const TasksContent = () => {
         .from('tasks')
         .select('title, is_liked, is_urgent, is_quick, estimated_minutes')
         .eq('user_id', user.id)
-        .eq('status', 'later')
+        .eq('list_location', 'later')
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -1363,8 +1732,8 @@ const TasksContent = () => {
   };
 
   // Task editing functions
-  const handleTaskEdit = (taskTitle: string) => {
-    setEditingTaskId(taskTitle);
+  const handleTaskEdit = (taskId: string, taskTitle: string) => {
+    setEditingTaskId(taskId);
     setEditingTaskText(taskTitle);
     // Focus the input after state update
     setTimeout(() => {
@@ -1375,14 +1744,24 @@ const TasksContent = () => {
     }, 0);
   };
 
-  const handleTaskSave = (oldTitle: string, newTitle: string) => {
-    if (!newTitle.trim()) {
-      // If empty, delete the task
-      handleTaskDelete(oldTitle);
+  const handleTaskSave = async (taskId: string, newTitle: string) => {
+    if (!user) {
       return;
     }
 
-    if (oldTitle === newTitle.trim()) {
+    if (!newTitle.trim()) {
+      // If empty, delete the task
+      await handleTaskDelete(taskId);
+      return;
+    }
+
+    const currentTask = tasksById[taskId];
+    if (!currentTask) {
+      cancelTaskEdit();
+      return;
+    }
+
+    if (currentTask.title === newTitle.trim()) {
       // No changes, just exit edit mode
       cancelTaskEdit();
       return;
@@ -1390,81 +1769,87 @@ const TasksContent = () => {
 
     const trimmedTitle = newTitle.trim();
 
-    // Update task in all relevant arrays
-    setListTasks(prev => prev.map(task => task === oldTitle ? trimmedTitle : task));
-    setLaterTasks(prev => prev.map(task => task === oldTitle ? trimmedTitle : task));
-    setReviewedTasks(prev => prev.map(task => task === oldTitle ? trimmedTitle : task));
+    try {
+      // Update in Supabase
+      const { error } = await supabase
+        .from('tasks')
+        .update({ title: trimmedTitle })
+        .eq('id', taskId)
+        .eq('user_id', user.id);
 
-    // Update associated data
-    const oldTags = taskTags[oldTitle];
-    const oldTimeEstimate = taskTimeEstimates[oldTitle];
+      if (error) {
+        console.error('Error updating task:', error);
+        return;
+      }
 
-    if (oldTags) {
-      setTaskTags(prev => {
-        const newTags = { ...prev };
-        delete newTags[oldTitle];
-        newTags[trimmedTitle] = oldTags;
-        return newTags;
-      });
+      // Update local state
+      setTasksById(prev => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          title: trimmedTitle
+        }
+      }));
+
+      setEditingTaskId(null);
+      setEditingTaskText('');
+    } catch (error) {
+      console.error('Failed to update task:', error);
     }
-
-    if (oldTimeEstimate) {
-      setTaskTimeEstimates(prev => {
-        const newEstimates = { ...prev };
-        delete newEstimates[oldTitle];
-        newEstimates[trimmedTitle] = oldTimeEstimate;
-        return newEstimates;
-      });
-    }
-
-    setEditingTaskId(null);
-    setEditingTaskText('');
   };
 
-  const handleTaskDelete = async (taskTitle: string) => {
-    // Remove from all task arrays
-    setListTasks(prev => prev.filter(task => task !== taskTitle));
-    setLaterTasks(prev => prev.filter(task => task !== taskTitle));
-    setReviewedTasks(prev => prev.filter(task => task !== taskTitle));
+  const handleTaskDelete = async (taskId: string) => {
+    const task = tasksById[taskId];
+    const taskTitle = task?.title || 'Untitled Task';
 
-    // Clean up associated data
-    setTaskTags(prev => {
-      const newTags = { ...prev };
-      delete newTags[taskTitle];
-      return newTags;
-    });
+    try {
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+        .eq('user_id', user?.id);
 
-    setTaskTimeEstimates(prev => {
-      const newEstimates = { ...prev };
-      delete newEstimates[taskTitle];
-      return newEstimates;
-    });
-
-    // Exit edit mode
-    setEditingTaskId(null);
-    setEditingTaskText('');
-
-    // Delete from database if it exists
-    if (user) {
-      try {
-        const { error } = await supabase
-          .from('tasks')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('title', taskTitle);
-
-        if (error) {
-          console.error('Error deleting task from database:', error);
-        }
-      } catch (error) {
-        console.error('Failed to delete task from database:', error);
+      if (error) {
+        console.error('Error deleting task:', error);
+        return;
       }
-    }
 
-    toast({
-      title: "Task deleted",
-      description: `"${taskTitle}" has been removed.`,
-    });
+      // Remove from local state
+      setActiveTaskIds(prev => prev.filter(id => id !== taskId));
+      setLaterTaskIds(prev => prev.filter(id => id !== taskId));
+      setReviewedTasks(prev => prev.filter(id => id !== taskId));
+      
+      // Clean up associated data
+      setTasksById(prev => {
+        const newTasks = { ...prev };
+        delete newTasks[taskId];
+        return newTasks;
+      });
+
+      setTaskTagsById(prev => {
+        const newTags = { ...prev };
+        delete newTags[taskId];
+        return newTags;
+      });
+
+      setTaskTimeEstimatesById(prev => {
+        const newEstimates = { ...prev };
+        delete newEstimates[taskId];
+        return newEstimates;
+      });
+
+      // Exit edit mode
+      setEditingTaskId(null);
+      setEditingTaskText('');
+
+      toast({
+        title: "Task deleted",
+        description: `"${taskTitle}" has been removed.`,
+      });
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
   };
 
   const cancelTaskEdit = () => {
@@ -1663,12 +2048,12 @@ const TasksContent = () => {
                           const activeId = active.id as string;
                           const overId = over.id as string;
                           
-                          // Handle moving between active and later lists
+                          // Handle moving between active and later lists (ID-based system)
                           if (overId === 'later-zone') {
                             // Move from active to later (only if explicitly dropping on the zone)
-                            if (listTasks.includes(activeId)) {
-                              setListTasks(prev => prev.filter(task => task !== activeId));
-                              setLaterTasks(prev => [...prev, activeId]);
+                            if (activeTaskIds.includes(activeId)) {
+                              setActiveTaskIds(prev => prev.filter(taskId => taskId !== activeId));
+                              setLaterTaskIds(prev => [...prev, activeId]);
                               // Save to database as later task
                               saveTaskAsLater(activeId);
                               // Keep collapsed by default - user can click to expand
@@ -1678,20 +2063,20 @@ const TasksContent = () => {
                           
                           if (overId === 'active-zone') {
                             // Move from later to active (only when dropping on the zone itself)
-                            if (laterTasks.includes(activeId)) {
-                              setLaterTasks(prev => prev.filter(task => task !== activeId));
-                              setListTasks(prev => [...prev, activeId]);
+                            if (laterTaskIds.includes(activeId)) {
+                              setLaterTaskIds(prev => prev.filter(taskId => taskId !== activeId));
+                              setActiveTaskIds(prev => [...prev, activeId]);
                               // Update database status from later to active
                               moveTaskFromLaterToActive(activeId);
                             }
                             return;
                           }
                           
-                          // Handle moving from later to active when dropping on an active task
-                          if (laterTasks.includes(activeId) && listTasks.includes(overId)) {
-                            const targetIndex = listTasks.findIndex((task) => task === overId);
-                            setLaterTasks(prev => prev.filter(task => task !== activeId));
-                            setListTasks(prev => {
+                          // Handle moving from later to active when dropping on an active task (ID-based system)
+                          if (laterTaskIds.includes(activeId) && activeTaskIds.includes(overId)) {
+                            const targetIndex = activeTaskIds.findIndex((taskId) => taskId === overId);
+                            setLaterTaskIds(prev => prev.filter(taskId => taskId !== activeId));
+                            setActiveTaskIds(prev => {
                               const newList = [...prev];
                               newList.splice(targetIndex, 0, activeId);
                               return newList;
@@ -1701,21 +2086,21 @@ const TasksContent = () => {
                             return;
                           }
                           
-                          // Handle reordering within active tasks
-                          if (listTasks.includes(activeId) && listTasks.includes(overId)) {
-                            const oldIndex = listTasks.findIndex((task) => task === activeId);
-                            const newIndex = listTasks.findIndex((task) => task === overId);
+                          // Handle reordering within active tasks (ID-based system)
+                          if (activeTaskIds.includes(activeId) && activeTaskIds.includes(overId)) {
+                            const oldIndex = activeTaskIds.findIndex((taskId) => taskId === activeId);
+                            const newIndex = activeTaskIds.findIndex((taskId) => taskId === overId);
                             if (oldIndex !== -1 && newIndex !== -1) {
-                              setListTasks((items) => arrayMove(items, oldIndex, newIndex));
+                              setActiveTaskIds((items) => arrayMove(items, oldIndex, newIndex));
                             }
                           }
                           
-                          // Handle reordering within later tasks
-                          if (laterTasks.includes(activeId) && laterTasks.includes(overId)) {
-                            const oldIndex = laterTasks.findIndex((task) => task === activeId);
-                            const newIndex = laterTasks.findIndex((task) => task === overId);
+                          // Handle reordering within later tasks (ID-based system)
+                          if (laterTaskIds.includes(activeId) && laterTaskIds.includes(overId)) {
+                            const oldIndex = laterTaskIds.findIndex((taskId) => taskId === activeId);
+                            const newIndex = laterTaskIds.findIndex((taskId) => taskId === overId);
                             if (oldIndex !== -1 && newIndex !== -1) {
-                              setLaterTasks((items) => arrayMove(items, oldIndex, newIndex));
+                              setLaterTaskIds((items) => arrayMove(items, oldIndex, newIndex));
                             }
                           }
                         }}
@@ -1724,49 +2109,62 @@ const TasksContent = () => {
                           {/* Active Tasks */}
                           <DroppableZone id="active-zone">
                             <SortableContext 
-                              items={listTasks}
+                              items={activeTaskIds}
                               strategy={verticalListSortingStrategy}
                             >
                               <div className="space-y-2 transition-all duration-300 ease-out min-h-[40px]">
-                                {listTasks.map((task, index) => {
-                                const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
-                                return (
-                                  <div
-                                    key={task}
-                                    className="animate-in fade-in slide-in-from-top-2 fill-mode-both"
-                                    style={{ 
-                                      animationDelay: `${index * 100}ms`,
-                                      animationDuration: '400ms',
-                                      animationTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                                    }}
-                                  >
-                                    <TaskListItem
-                                      task={task}
-                                      index={index}
-                                      isLiked={tags.isLiked}
-                                      isUrgent={tags.isUrgent}
-                                      isQuick={tags.isQuick}
-                                      estimatedTime={taskTimeEstimates[task]}
-                                      isLoadingTime={loadingTimeEstimates.has(task)}
-                                      isLastInSection={index === listTasks.length - 1}
+                                {(() => {
+                                  const filteredTasks = activeTaskIds.filter(taskId => {
+                                    const task = tasksById[taskId];
+                                    return task && task.title; // Only include tasks with titles
+                                  });
+                                  return filteredTasks.map((taskId, index) => {
+                                    const task = tasksById[taskId];
+                                    const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
+                                    return (
+                                      <div
+                                        key={taskId}
+                                        className="animate-in fade-in slide-in-from-top-2 fill-mode-both"
+                                        style={{ 
+                                          animationDelay: `${index * 100}ms`,
+                                          animationDuration: '400ms',
+                                          animationTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                                        }}
+                                      >
+                                        <TaskListItem
+                                          task={taskId}
+                                          index={index}
+                                          isLiked={tags.isLiked}
+                                          isUrgent={tags.isUrgent}
+                                          isQuick={tags.isQuick}
+                                          estimatedTime={taskTimeEstimatesById[taskId]}
+                                          isLoadingTime={loadingTimeEstimates.has(taskId)}
+                                          isLastInSection={index === filteredTasks.length - 1}
+                                      taskTitle={task?.title || 'NO_TITLE_FOUND'}
                                       onTimeUpdate={(newTime) => {
-                                        setTaskTimeEstimates(prev => ({
+                                        // Update local state immediately for responsive UI
+                                        setTaskTimeEstimatesById(prev => ({
                                           ...prev,
-                                          [task]: newTime
+                                          [taskId]: newTime
                                         }));
+                                        // Update database to maintain single source of truth
+                                        updateTaskEstimatedTime(taskId, newTime);
                                       }}
                                       onReorder={() => {}}
                                       onHover={setHoveredTaskIndex}
                                       onTagUpdate={(tag, value) => {
-                                        setTaskTags(prev => ({
+                                        // Update local state immediately for responsive UI
+                                        setTaskTagsById(prev => ({
                                           ...prev,
-                                          [task]: {
-                                            ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                          [taskId]: {
+                                            ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
                                             [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
                                           }
                                         }));
+                                        // Update database to maintain single source of truth
+                                        updateTaskTags(taskId, tag, value);
                                       }}
-                                      isEditing={editingTaskId === task}
+                                      isEditing={editingTaskId === taskId}
                                       editingText={editingTaskText}
                                       editInputRef={editInputRef}
                                       onTaskEdit={handleTaskEdit}
@@ -1774,15 +2172,16 @@ const TasksContent = () => {
                                       onTaskCancel={cancelTaskEdit}
                                       onEditingTextChange={setEditingTaskText}
                                     />
-                                  </div>
-                                );
-                              })}
+                                      </div>
+                                    );
+                                  });
+                                })()}
                               </div>
                             </SortableContext>
                           </DroppableZone>
 
                           {/* Later Divider - Droppable and Clickable */}
-                          {(listTasks.length + laterTasks.length) >= 1 && (
+                          {(activeTaskIds.length + laterTaskIds.length) >= 1 && (
                             <DroppableZone id="later-zone">
                               <div 
                                 className="flex items-center gap-4 py-6 cursor-pointer hover:bg-muted/10 rounded-lg transition-colors group"
@@ -1791,9 +2190,9 @@ const TasksContent = () => {
                                 <div className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors"></div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-foreground/30 font-medium group-hover:text-foreground transition-colors">
-                                    Later ({laterTasks.length})
+                                    Later ({laterTaskIds.length})
                                   </span>
-                                  {laterTasks.length > 0 && (
+                                  {laterTaskIds.length > 0 && (
                                     <ChevronDown 
                                       className={`h-4 w-4 text-foreground/30 group-hover:text-foreground transition-all duration-200 ${
                                         laterTasksExpanded ? 'rotate-180' : ''
@@ -1807,17 +2206,23 @@ const TasksContent = () => {
                           )}
 
                           {/* Later Tasks - Only show when expanded */}
-                          {(listTasks.length + laterTasks.length) >= 1 && laterTasksExpanded && laterTasks.length > 0 && (
+                          {(activeTaskIds.length + laterTaskIds.length) >= 1 && laterTasksExpanded && laterTaskIds.length > 0 && (
                             <SortableContext 
-                              items={laterTasks}
+                              items={laterTaskIds}
                               strategy={verticalListSortingStrategy}
                             >
                               <div className="space-y-2 transition-all duration-300 ease-out overflow-hidden">
-                                {laterTasks.map((task, index) => {
-                                const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                                {(() => {
+                                  const filteredTasks = laterTaskIds.filter(taskId => {
+                                    const task = tasksById[taskId];
+                                    return task && task.title; // Only include tasks with titles
+                                  });
+                                  return filteredTasks.map((taskId, index) => {
+                                    const task = tasksById[taskId];
+                                    const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
                                 return (
                                   <div
-                                    key={task}
+                                    key={taskId}
                                     className="animate-in fade-in slide-in-from-top-2 fill-mode-both"
                                     style={{ 
                                       animationDelay: `${index * 100}ms`,
@@ -1826,32 +2231,39 @@ const TasksContent = () => {
                                     }}
                                   >
                                     <TaskListItem
-                                      task={task}
+                                      task={taskId}
                                       index={index}
                                       isLiked={tags.isLiked}
                                       isUrgent={tags.isUrgent}
                                       isQuick={tags.isQuick}
-                                      estimatedTime={taskTimeEstimates[task]}
-                                      isLoadingTime={loadingTimeEstimates.has(task)}
-                                      isLastInSection={index === laterTasks.length - 1}
+                                      estimatedTime={taskTimeEstimatesById[taskId]}
+                                      isLoadingTime={loadingTimeEstimates.has(taskId)}
+                                      isLastInSection={index === filteredTasks.length - 1}
+                                      taskTitle={task?.title || 'NO_TITLE_FOUND'}
                                       onTimeUpdate={(newTime) => {
-                                        setTaskTimeEstimates(prev => ({
+                                        // Update local state immediately for responsive UI
+                                        setTaskTimeEstimatesById(prev => ({
                                           ...prev,
-                                          [task]: newTime
+                                          [taskId]: newTime
                                         }));
+                                        // Update database to maintain single source of truth
+                                        updateTaskEstimatedTime(taskId, newTime);
                                       }}
                                       onReorder={() => {}}
                                       onHover={setHoveredTaskIndex}
                                       onTagUpdate={(tag, value) => {
-                                        setTaskTags(prev => ({
+                                        // Update local state immediately for responsive UI
+                                        setTaskTagsById(prev => ({
                                           ...prev,
-                                          [task]: {
-                                            ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                                          [taskId]: {
+                                            ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
                                             [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
                                           }
                                         }));
+                                        // Update database to maintain single source of truth
+                                        updateTaskTags(taskId, tag, value);
                                       }}
-                                      isEditing={editingTaskId === task}
+                                      isEditing={editingTaskId === taskId}
                                       editingText={editingTaskText}
                                       editInputRef={editInputRef}
                                       onTaskEdit={handleTaskEdit}
@@ -1862,7 +2274,8 @@ const TasksContent = () => {
                                     />
                                   </div>
                                 );
-                              })}
+                                  });
+                                })()}
                               </div>
                             </SortableContext>
                           )}
@@ -1876,7 +2289,7 @@ const TasksContent = () => {
                                 <div className="w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium">
                                 </div>
                                 <span className="text-sm font-medium">
-                                  {activeId}
+                                  {tasksById[activeId]?.title || 'Untitled Task'}
                                 </span>
                               </div>
                             </div>
@@ -1988,27 +2401,34 @@ const TasksContent = () => {
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-2 sm:space-y-3">
-                    {reviewedTasks.map((task, index) => {
-                      const tags = taskTags[task] || { isLiked: false, isUrgent: false, isQuick: false };
+                    {reviewedTasks.map((taskId, index) => {
+                      const task = tasksById[taskId];
+                      if (!task) return null;
+                      const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
                       return (
                          <TaskListItem
-                           key={task}
-                           task={task}
+                           key={taskId}
+                           task={taskId}
                            index={index}
                            isLiked={tags.isLiked}
                            isUrgent={tags.isUrgent}
                            isQuick={tags.isQuick}
-                           estimatedTime={taskTimeEstimates[task]}
-                           isLoadingTime={loadingTimeEstimates.has(task)}
+                           estimatedTime={taskTimeEstimatesById[taskId]}
+                           isLoadingTime={loadingTimeEstimates.has(taskId)}
                            isLastInSection={index === reviewedTasks.length - 1}
+                           taskTitle={task?.title || 'NO_TITLE_FOUND'}
                            onTimeUpdate={(newTime) => {
+                             // Update local state immediately for responsive UI
                              setTaskTimeEstimates(prev => ({
                                ...prev,
                                [task]: newTime
                              }));
+                             // Update database to maintain single source of truth
+                             updateTaskEstimatedTime(task, newTime);
                            }}
                            onReorder={handleReorder}
                            onTagUpdate={(tag, value) => {
+                             // Update local state immediately for responsive UI
                              setTaskTags(prev => ({
                                ...prev,
                                [task]: {
@@ -2016,8 +2436,10 @@ const TasksContent = () => {
                                  [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
                                }
                              }));
+                             // Update database to maintain single source of truth
+                             updateTaskTags(task, tag, value);
                            }}
-                           isEditing={editingTaskId === task}
+                           isEditing={editingTaskId === taskId}
                            editingText={editingTaskText}
                            editInputRef={editInputRef}
                            onTaskEdit={handleTaskEdit}
@@ -2120,16 +2542,24 @@ const TasksContent = () => {
                 <Button 
                   onClick={() => {
                     // Save prioritized tasks to database
-                    const tasksToSave = prioritizedTasks.map((task, index) => ({
-                      title: task.title,
-                      user_id: user.id,
-                      source: 'brain_dump' as const,
-                      is_liked: task.is_liked,
-                      is_urgent: task.is_urgent,
-                      is_quick: task.is_quick,
-                      ai_priority_score: task.priority_score,
-                      card_position: index + 1
-                    }));
+                    const tasksToSave = prioritizedTasks.map((task, index) => {
+                      const estimatedTime = taskTimeEstimates[task.title];
+                      const estimatedMinutes = estimatedTime ? parseTimeToMinutes(estimatedTime) : null;
+                      
+                      return {
+                        title: task.title,
+                        user_id: user.id,
+                        source: 'brain_dump' as const,
+                        list_location: 'active' as const, // Prioritized tasks go to active list
+                        task_status: 'incomplete' as const, // New tasks start as incomplete
+                        category: task.category || 'Routine', // Save AI category
+                        is_liked: task.is_liked,
+                        is_urgent: task.is_urgent,
+                        is_quick: task.is_quick,
+                        estimated_minutes: estimatedMinutes, // Convert time estimate to minutes
+                        card_position: index + 1
+                      };
+                    });
                     savePrioritizedTasks(tasksToSave);
                   }}
                   className="flex-1" 
@@ -2214,12 +2644,12 @@ const TasksContent = () => {
                         title: task.title,
                         user_id: user.id,
                         source: 'brain_dump' as const,
-                        status: 'later' as const,
+                        list_location: 'later' as const, // Incomplete tasks go to later list
+                        task_status: 'made_progress' as const, // Task had some work done on it
                         is_liked: tags.isLiked,
                         is_urgent: tags.isUrgent,
                         is_quick: tags.isQuick,
                         estimated_minutes: estimatedMinutes,
-                        later_at: new Date().toISOString(),
                       });
                   } catch (error) {
                     console.error('Error saving incomplete task as later:', error);
