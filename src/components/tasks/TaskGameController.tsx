@@ -5,7 +5,6 @@ import { TaskSwiper } from "./TaskSwiper";
 import { NavigationDots } from "./NavigationDots";
 import { useGameState, TaskCardData } from "./GameState";
 import { ShuffleAnimation } from "./ShuffleAnimation";
-
 // New decomposed managers
 import { useTaskTimerManager, useTaskTimerHelpers } from "./TaskTimerManager";
 import { useTaskNavigationManager } from "./TaskNavigationManager";
@@ -16,6 +15,7 @@ import { getRewardCardData, RewardCardData } from "@/services/cardService";
 // External dependencies
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getNextSequentialCard } from "@/services/cardService";
 
 interface TaskGameControllerProps {
   tasks: TaskCardData[];
@@ -44,8 +44,12 @@ export const TaskGameController = ({
   const { toast } = useToast();
   const { formatTime } = useTaskTimerHelpers();
 
+  // Debounce timers for saving notes
+  const [notesSaveTimers, setNotesSaveTimers] = useState<Record<string, NodeJS.Timeout>>({});
+
   // Function to update task notes
   const updateTaskNotes = useCallback((taskId: string, notes: string) => {
+    // Update local state immediately for responsive UI
     setTasks(prevTasks => 
       prevTasks.map(task => 
         task.id === taskId 
@@ -53,10 +57,61 @@ export const TaskGameController = ({
           : task
       )
     );
-  }, []);
+
+    // Clear existing timer for this task
+    if (notesSaveTimers[taskId]) {
+      clearTimeout(notesSaveTimers[taskId]);
+    }
+
+    // Set new timer to save after 1 second of no typing
+    const newTimer = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('tasks')
+          .update({ notes })
+          .eq('id', taskId);
+
+        if (error) {
+          console.error('Error saving task notes:', error);
+        } else {
+          console.log(`✅ Saved notes for task ${taskId}`);
+        }
+      } catch (error) {
+        console.error('Failed to save task notes:', error);
+      }
+      
+      // Clean up timer
+      setNotesSaveTimers(prev => {
+        const newTimers = { ...prev };
+        delete newTimers[taskId];
+        return newTimers;
+      });
+    }, 1000);
+
+    // Store the new timer
+    setNotesSaveTimers(prev => ({
+      ...prev,
+      [taskId]: newTimer
+    }));
+  }, [notesSaveTimers]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(notesSaveTimers).forEach(timer => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, [notesSaveTimers]);
 
   // Reward card data from Supabase
   const [rewardCards, setRewardCards] = useState<RewardCardData[]>([]);
+  const [nextRewardCard, setNextRewardCard] = useState<{
+    card: RewardCardData;
+    cardId: string;
+    cardNumber: number;
+    collectionId: string;
+  } | null>(null);
 
   useEffect(() => {
     const loadRewardCards = async () => {
@@ -64,6 +119,21 @@ export const TaskGameController = ({
       setRewardCards(cardData);
     };
     loadRewardCards();
+  }, []);
+
+  // Function to load next reward card
+  const loadNextRewardCard = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const nextCard = await getNextSequentialCard(user.id);
+      setNextRewardCard(nextCard);
+      console.log('🎴 Next reward card loaded:', nextCard);
+    }
+  };
+
+  // Load the next reward card for the user on mount
+  useEffect(() => {
+    loadNextRewardCard();
   }, []);
 
   const sunsetImages = rewardCards.map(card => card.imageUrl);
@@ -113,6 +183,24 @@ export const TaskGameController = ({
         ...prev,
         [currentTask.id]: prev[currentTask.id] || Date.now()
       }));
+      
+      // Save start time and update status to incomplete for fresh starts
+      if (!gameState.taskStartTimes[currentTask.id]) {
+        const saveStartTime = async () => {
+          try {
+            await supabase
+              .from('tasks')
+              .update({ 
+                started_at: new Date().toISOString(),
+                task_status: 'incomplete'
+              })
+              .eq('id', currentTask.id);
+          } catch (error) {
+            console.error('Error saving task start time:', error);
+          }
+        };
+        saveStartTime();
+      }
     }
   }, [
     gameState.hasCommittedToTask,
@@ -127,6 +215,20 @@ export const TaskGameController = ({
     gameState.setTaskStartTimes,
     gameState.setPausedTasks
   ]);
+
+  // Wrapper for task completion that also refreshes next card
+  const handleTaskCompleteWithCardRefresh = async (taskId: string) => {
+    await progressTracker.handleTaskComplete(taskId);
+    // Refresh the next reward card after completion
+    await loadNextRewardCard();
+  };
+
+  // Wrapper for made progress that also refreshes next card
+  const handleMadeProgressWithCardRefresh = async (taskId: string) => {
+    await progressTracker.handleMadeProgress(taskId);
+    // Refresh the next reward card after made progress
+    await loadNextRewardCard();
+  };
 
   // Task Progress Tracker
   const progressTracker = useTaskProgressTracker({
@@ -162,7 +264,7 @@ export const TaskGameController = ({
     setCurrentViewingIndex: gameState.setCurrentViewingIndex,
     setShowTaskList: gameState.setShowTaskList,
     onCommitToCurrentTask: handleCommitToCurrentTask,
-    onTaskComplete: progressTracker.handleTaskComplete
+    onTaskComplete: handleTaskCompleteWithCardRefresh
   });
 
   // Timer Manager
@@ -204,13 +306,14 @@ export const TaskGameController = ({
       <PictureInPictureManager
         tasks={tasks}
         onComplete={onComplete}
-        onTaskComplete={progressTracker.handleTaskComplete}
-        onMadeProgress={progressTracker.handleMadeProgress}
+        onTaskComplete={handleTaskCompleteWithCardRefresh}
+        onMadeProgress={handleMadeProgressWithCardRefresh}
         onPauseTask={progressTracker.handlePauseTask}
         onCommitToCurrentTask={handleCommitToCurrentTask}
         onCarryOn={progressTracker.handleCarryOn}
         onSkip={progressTracker.handleSkip}
         onNotesChange={updateTaskNotes}
+        nextRewardCard={nextRewardCard}
         isLoading={isLoading}
         isProcessing={isProcessing}
         onLoadingComplete={onLoadingComplete}
@@ -230,10 +333,11 @@ export const TaskGameController = ({
                   tasks={tasks}
                   gameState={gameState}
                   rewardCards={rewardCards}
+                  nextRewardCard={nextRewardCard}
                   onSlideChange={(activeIndex) => gameState.setCurrentViewingIndex(activeIndex)}
                   onCommit={handleCommitToCurrentTask}
-                  onComplete={progressTracker.handleTaskComplete}
-                  onMadeProgress={progressTracker.handleMadeProgress}
+                  onComplete={handleTaskCompleteWithCardRefresh}
+                  onMadeProgress={handleMadeProgressWithCardRefresh}
                   onMoveOn={progressTracker.handlePauseTask}
                   onCarryOn={progressTracker.handleCarryOn}
                   onSkip={progressTracker.handleSkip}

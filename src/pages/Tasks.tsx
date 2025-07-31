@@ -54,12 +54,14 @@ interface Task {
   id: string;
   title: string;
   list_location: 'active' | 'later' | 'collection';
-  task_status: 'incomplete' | 'made_progress' | 'complete';
+  task_status: 'task_list' | 'not_started' | 'incomplete' | 'made_progress' | 'complete';
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
   is_disliked?: boolean;
   card_position?: number;
+  notes?: string;
+  estimated_minutes?: number;
 }
 
 interface PrioritizedTask {
@@ -820,7 +822,7 @@ const TasksContent = () => {
             user_id: user.id,
             source: 'brain_dump' as const,
             list_location: 'active' as const, // Brain dump tasks go to active list
-            task_status: 'incomplete' as const, // New tasks start as incomplete  
+            task_status: 'task_list' as const, // New tasks start in task list  
             category: category, // Save AI categorization
             estimated_minutes: estimatedMinutes // Convert time estimate to minutes
           };
@@ -829,7 +831,7 @@ const TasksContent = () => {
         const { data: insertedTasks, error: saveError } = await supabase
           .from('tasks')
           .insert(tasksToSave)
-          .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes');
+          .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes, notes');
 
         if (saveError) {
           console.error('Error saving extracted tasks:', saveError);
@@ -852,7 +854,8 @@ const TasksContent = () => {
               is_liked: task.is_liked || false,
               is_urgent: task.is_urgent || false,
               is_quick: task.is_quick || false,
-              is_disliked: false
+              is_disliked: false,
+              notes: task.notes || ''
             };
             
             newTaskIds.push(task.id);
@@ -1075,7 +1078,7 @@ const TasksContent = () => {
           title: taskTitle,
           user_id: currentUser.id,
           list_location: 'active',
-          task_status: 'incomplete',
+          task_status: 'task_list',
           is_liked: false,
           is_urgent: false,
           is_quick: false,
@@ -1099,7 +1102,8 @@ const TasksContent = () => {
           is_liked: data.is_liked || false,
           is_urgent: data.is_urgent || false,
           is_quick: data.is_quick || false,
-          is_disliked: data.is_disliked || false
+          is_disliked: data.is_disliked || false,
+          notes: data.notes || ''
         };
 
         // Add to local state
@@ -1279,6 +1283,30 @@ const TasksContent = () => {
     }
   };
 
+  // Function to convert estimated_minutes to readable format
+  const formatEstimatedTime = (minutes?: number): string | undefined => {
+    if (!minutes) return undefined;
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  };
+
+  // Function to update tasks to 'not_started' when entering game
+  const updateTasksToNotStarted = async (taskIds: string[]) => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('tasks')
+        .update({ task_status: 'not_started' })
+        .in('id', taskIds)
+        .eq('task_status', 'task_list'); // Only update tasks that are still in task_list status
+    } catch (error) {
+      console.error('Error updating tasks to not_started:', error);
+    }
+  };
+
   const handleShuffle = async (tasksToProcess?: string[]) => {
     console.log('🎲 Shuffle button clicked - Starting AI prioritization...');
     
@@ -1292,6 +1320,11 @@ const TasksContent = () => {
     }, 800);
     
     try {
+      // Update tasks to not_started status when entering game
+      const taskIdsToUpdate = tasksToProcess || 
+        activeTasks.filter(task => taskTags[task.id]?.isEnabled !== false).map(t => t.id);
+      await updateTasksToNotStarted(taskIdsToUpdate);
+      
       // Run AI prioritization in background while loading card shows
       const prioritized = await prioritizeTasks(tasksToProcess);
       setPrioritizedTasks(prioritized);
@@ -1329,7 +1362,7 @@ const TasksContent = () => {
         id: taskId, // Use actual task ID instead of temp ID
         title: task.title,
         list_location: 'active' as const,
-        task_status: 'incomplete' as const,
+        task_status: 'task_list' as const,
         is_liked: tags.isLiked,
         is_urgent: tags.isUrgent,
         is_quick: tags.isQuick,
@@ -1339,6 +1372,9 @@ const TasksContent = () => {
     
     console.log('📋 Setting tasks in manual order for game cards...');
     setTaggedTasks(orderedTaggedTasks);
+    
+    // Update tasks to not_started status when entering game
+    await updateTasksToNotStarted(taskIds);
     
     // Go directly to game cards with processing state
     setCurrentStep('game-cards');
@@ -1405,7 +1441,7 @@ const TasksContent = () => {
           user_id: user.id,
           source: 'brain_dump' as const,
           list_location: 'active' as const, // New brain dump tasks go to active list
-          task_status: 'incomplete' as const, // New tasks start as incomplete
+          task_status: 'task_list' as const, // New tasks start in task list
           category: category, // Save AI categorization
           is_liked: tags.isLiked,
           is_urgent: tags.isUrgent,
@@ -1569,7 +1605,7 @@ const TasksContent = () => {
         .from('tasks')
         .update({
           list_location: 'later' as const, // Move existing task to later list
-          task_status: 'made_progress' as const, // Task had some work started on it
+          // Don't update task_status - preserve existing status (task_list or incomplete)
           is_liked: tags.isLiked,
           is_urgent: tags.isUrgent,
           is_quick: tags.isQuick,
@@ -1616,12 +1652,12 @@ const TasksContent = () => {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, is_disliked, category, estimated_minutes, created_at')
+        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, is_disliked, category, estimated_minutes, notes, created_at')
         .eq('user_id', user.id)
-        .eq('list_location', 'later') // Only load later tasks from database
+        .in('list_location', ['active', 'later']) // Load both active and later tasks
         .order('created_at', { ascending: true });
 
-      console.log('🔍 Later tasks query result:', { data, error, count: data?.length });
+      console.log('🔍 All tasks query result:', { data, error, count: data?.length });
 
       if (error) {
         console.error('Error loading tasks:', error);
@@ -1631,6 +1667,7 @@ const TasksContent = () => {
       if (data) {
         // Create lookup map
         const taskMap: Record<string, Task> = {};
+        const activeIds: string[] = [];
         const laterIds: string[] = [];
         const taskTagsMap: Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }> = {};
         const timeEstimatesMap: Record<string, string> = {};
@@ -1645,11 +1682,17 @@ const TasksContent = () => {
             is_liked: task.is_liked || false,
             is_urgent: task.is_urgent || false,
             is_quick: task.is_quick || false,
-            is_disliked: task.is_disliked || false
+            is_disliked: task.is_disliked || false,
+            notes: task.notes || '',
+            estimated_minutes: task.estimated_minutes
           };
 
-          // All loaded tasks are later tasks
-          laterIds.push(task.id);
+          // Separate active and later tasks
+          if (task.list_location === 'active') {
+            activeIds.push(task.id);
+          } else if (task.list_location === 'later') {
+            laterIds.push(task.id);
+          }
 
           // Populate tag and time maps (keyed by ID now)
           taskTagsMap[task.id] = {
@@ -1670,8 +1713,9 @@ const TasksContent = () => {
           }
         });
 
-        // Update state - only update later tasks and task lookup
-        setTasksById(prev => ({ ...prev, ...taskMap })); // Merge with existing tasks
+        // Update state - update both active and later tasks
+        setTasksById(taskMap); // Replace all tasks (don't merge, use fresh data)
+        setActiveTaskIds(activeIds);
         setLaterTaskIds(laterIds);
         
         // Keep Later section collapsed by default
@@ -1681,10 +1725,12 @@ const TasksContent = () => {
         setTaskTags(taskTagsMap);
         setTaskTimeEstimates(timeEstimatesMap);
 
-        console.log('✅ Loaded later tasks:', { 
+        console.log('✅ Loaded all tasks:', { 
+          activeCount: activeIds.length,
           laterCount: laterIds.length,
+          activeIds,
           laterIds,
-          laterTasks: data.map(t => ({ id: t.id, title: t.title, list_location: t.list_location }))
+          allTasks: data.map(t => ({ id: t.id, title: t.title, list_location: t.list_location }))
         });
       }
     } catch (error) {
@@ -2560,7 +2606,7 @@ const TasksContent = () => {
                         user_id: user.id,
                         source: 'brain_dump' as const,
                         list_location: 'active' as const, // Prioritized tasks go to active list
-                        task_status: 'incomplete' as const, // New tasks start as incomplete
+                        task_status: 'task_list' as const, // New tasks start in task list
                         category: task.category || 'Routine', // Save AI category
                         is_liked: task.is_liked,
                         is_urgent: task.is_urgent,
@@ -2595,7 +2641,7 @@ const TasksContent = () => {
           <GameTaskCards
             tasks={prioritizedTasks.length > 0 ? prioritizedTasks.map((task) => ({
               ...task,
-              estimated_time: taskTimeEstimates[task.title]
+              estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(task.estimated_minutes)
             })) : taggedTasks.map((task) => ({
               id: task.id,
               title: task.title,
@@ -2604,7 +2650,7 @@ const TasksContent = () => {
               is_liked: task.is_liked,
               is_urgent: task.is_urgent,
               is_quick: task.is_quick,
-              estimated_time: taskTimeEstimates[task.title]
+              estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes)
             }))}
             isLoading={isProcessing}
             isProcessing={isProcessing}
@@ -2638,30 +2684,21 @@ const TasksContent = () => {
 
               console.log('Incomplete tasks:', incompleteTasks);
 
-              // Save incomplete tasks as "later" in database
+              // Move incomplete tasks to "later" list in database
               if (user && incompleteTasks.length > 0) {
-                console.log('Saving incomplete tasks to later list:', incompleteTasks.map(t => t.title));
+                console.log('Moving incomplete tasks to later list:', incompleteTasks.map(t => t.title));
                 
                 for (const task of incompleteTasks) {
                   try {
-                    const tags = taskTags[task.title] || { isLiked: false, isUrgent: false, isQuick: false };
-                    const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
-                    
                     await supabase
                       .from('tasks')
-                      .insert({
-                        title: task.title,
-                        user_id: user.id,
-                        source: 'brain_dump' as const,
-                        list_location: 'later' as const, // Incomplete tasks go to later list
-                        task_status: 'made_progress' as const, // Task had some work done on it
-                        is_liked: tags.isLiked,
-                        is_urgent: tags.isUrgent,
-                        is_quick: tags.isQuick,
-                        estimated_minutes: estimatedMinutes,
-                      });
+                      .update({
+                        list_location: 'later',
+                        task_status: 'incomplete' // Keep as incomplete since they started but didn't finish
+                      })
+                      .eq('id', task.id);
                   } catch (error) {
-                    console.error('Error saving incomplete task as later:', error);
+                    console.error('Error moving incomplete task to later:', error);
                   }
                 }
 
@@ -2677,6 +2714,8 @@ const TasksContent = () => {
               }
               
               resetFlow();
+              // Refresh task list to show updated state
+              await loadTasksById();
             }}
             onTaskComplete={(taskId) => {
               console.log('Task completed:', taskId);

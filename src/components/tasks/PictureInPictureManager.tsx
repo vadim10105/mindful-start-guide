@@ -26,6 +26,12 @@ interface PictureInPictureManagerProps {
   onCarryOn?: (taskId: string) => void;
   onSkip?: (taskId: string) => Promise<void>;
   onNotesChange?: (taskId: string, notes: string) => void;
+  nextRewardCard: {
+    card: any;
+    cardId: string;
+    cardNumber: number;
+    collectionId: string;
+  } | null;
   onLoadingComplete?: () => void;
   gameState: ReturnType<typeof import('./GameState').useGameState>;
 }
@@ -116,6 +122,7 @@ export const PictureInPictureManager = ({
   onCarryOn,
   onSkip,
   onNotesChange,
+  nextRewardCard,
   isLoading, 
   isProcessing, 
   onLoadingComplete, 
@@ -135,6 +142,7 @@ export const PictureInPictureManager = ({
         onCarryOn={onCarryOn}
         onSkip={onSkip}
         onNotesChange={onNotesChange}
+        nextRewardCard={nextRewardCard}
         isLoading={isLoading}
         isProcessing={isProcessing}
         onLoadingComplete={onLoadingComplete}

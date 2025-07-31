@@ -19,6 +19,10 @@ export interface CompletedTask {
   timeSpent: number;
   completedAt: Date;
   sunsetImageUrl: string;
+  attribution?: string;
+  attributionUrl?: string;
+  description?: string;
+  caption?: string;
 }
 
 export const useGameState = (tasks: TaskCardData[]) => {

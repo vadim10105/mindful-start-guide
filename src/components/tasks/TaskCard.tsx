@@ -376,15 +376,15 @@ export const TaskCard = ({
           <div className="relative h-full flex flex-col justify-end p-6 text-white z-10">
             <div className="text-left flex flex-col gap-3">
               <a 
-                href={attributionUrl || "https://www.instagram.com/p/C5oS4mbIA2F/?igsh=ZjdxbXFodzhoMTE5"} 
+                href={attributionUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-sm opacity-80 hover:opacity-100 underline transition-opacity"
+                className="text-sm text-white hover:text-gray-200 underline transition-colors"
               >
-                {attribution || "@hanontheroad on Instagram"}
+                {attribution}
               </a>
-              <p className="text-xs opacity-70 leading-relaxed italic">
-                {description || "strolling down the street of Paris, listening to the symphony called life. (Paris 2024)"}
+              <p className="text-xs text-white leading-relaxed italic mt-1">
+                {description}
               </p>
             </div>
           </div>

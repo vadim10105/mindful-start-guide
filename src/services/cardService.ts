@@ -183,6 +183,73 @@ export interface RewardCardData {
   cardNumber: number;
 }
 
+// Get the next sequential card for a user based on their progress
+export async function getNextSequentialCard(userId: string, collectionId?: string): Promise<{
+  card: RewardCardData;
+  cardId: string;
+  cardNumber: number;
+  collectionId: string;
+} | null> {
+  try {
+    // Get the first/main collection if no collectionId provided
+    let targetCollectionId = collectionId;
+    if (!targetCollectionId) {
+      const { data: collections } = await supabase
+        .from('card_collections')
+        .select('id')
+        .order('created_at')
+        .limit(1);
+      
+      if (!collections?.length) {
+        console.error('No collections found');
+        return null;
+      }
+      targetCollectionId = collections[0].id;
+    }
+
+    // Get user's current progress
+    const { data: progress } = await supabase
+      .from('user_card_progress')
+      .select('cards_unlocked')
+      .eq('user_id', userId)
+      .eq('collection_id', targetCollectionId)
+      .maybeSingle();
+
+    const currentUnlocked = progress?.cards_unlocked || 0;
+    const nextCardNumber = currentUnlocked + 1;
+
+    // Get the next card in sequence
+    const { data: card, error } = await supabase
+      .from('collection_cards')
+      .select('id, image_url, attribution, attribution_url, description, caption, card_number')
+      .eq('collection_id', targetCollectionId)
+      .eq('card_number', nextCardNumber)
+      .single();
+
+    if (error || !card) {
+      console.error('Error fetching next card:', error);
+      return null;
+    }
+
+    return {
+      card: {
+        imageUrl: card.image_url,
+        attribution: card.attribution,
+        attributionUrl: card.attribution_url,
+        description: card.description,
+        caption: card.caption,
+        cardNumber: card.card_number
+      },
+      cardId: card.id,
+      cardNumber: card.card_number,
+      collectionId: targetCollectionId
+    };
+  } catch (error) {
+    console.error('Error getting next sequential card:', error);
+    return null;
+  }
+}
+
 // Get reward card data from collection_cards table
 export async function getRewardCardData(): Promise<RewardCardData[]> {
   try {

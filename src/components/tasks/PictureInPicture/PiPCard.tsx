@@ -17,6 +17,12 @@ interface PiPCardProps {
   onCarryOn?: (taskId: string) => void;
   onSkip?: (taskId: string) => Promise<void>;
   onNotesChange?: (taskId: string, notes: string) => void;
+  nextRewardCard: {
+    card: any;
+    cardId: string;
+    cardNumber: number;
+    collectionId: string;
+  } | null;
   isLoading?: boolean;
   isProcessing?: boolean;
   onLoadingComplete?: () => void;
@@ -35,6 +41,7 @@ export const PiPCard = ({
   onCarryOn,
   onSkip,
   onNotesChange,
+  nextRewardCard,
   isLoading = false, 
   isProcessing = false, 
   onLoadingComplete,
@@ -316,12 +323,46 @@ export const PiPCard = ({
           isCurrentTask={currentCardIndex === gameState.currentViewingIndex}
           activeCommittedIndex={gameState.activeCommittedIndex}
           flowProgress={gameState.flowProgress}
-          sunsetImageUrl={sunsetImages[currentCardIndex % sunsetImages.length]}
-          attribution={rewardCards[currentCardIndex % rewardCards.length]?.attribution}
-          attributionUrl={rewardCards[currentCardIndex % rewardCards.length]?.attributionUrl}
-          description={rewardCards[currentCardIndex % rewardCards.length]?.description}
-          caption={rewardCards[currentCardIndex % rewardCards.length]?.caption}
-          cardNumber={rewardCards[currentCardIndex % rewardCards.length]?.cardNumber}
+          sunsetImageUrl={(() => {
+            if (gameState.completedTasks.has(currentTask.id)) {
+              // For completed tasks, use their earned card from todaysCompletedTasks
+              const completedTask = gameState.todaysCompletedTasks.find(t => t.id === currentTask.id);
+              return completedTask?.sunsetImageUrl || "";
+            }
+            // For incomplete tasks, show next reward preview
+            return nextRewardCard?.card.imageUrl || "";
+          })()}
+          attribution={(() => {
+            if (gameState.completedTasks.has(currentTask.id)) {
+              // For completed tasks, get metadata from their earned card
+              const completedTask = gameState.todaysCompletedTasks.find(t => t.id === currentTask.id);
+              return completedTask?.attribution || "";
+            }
+            // For incomplete tasks, show nothing
+            return "";
+          })()}
+          attributionUrl={(() => {
+            if (gameState.completedTasks.has(currentTask.id)) {
+              const completedTask = gameState.todaysCompletedTasks.find(t => t.id === currentTask.id);
+              return completedTask?.attributionUrl || "";
+            }
+            return "";
+          })()}
+          description={(() => {
+            if (gameState.completedTasks.has(currentTask.id)) {
+              const completedTask = gameState.todaysCompletedTasks.find(t => t.id === currentTask.id);
+              return completedTask?.description || "";
+            }
+            return "";
+          })()}
+          caption={(() => {
+            if (gameState.completedTasks.has(currentTask.id)) {
+              const completedTask = gameState.todaysCompletedTasks.find(t => t.id === currentTask.id);
+              return completedTask?.caption || "";
+            }
+            return "";
+          })()}
+          cardNumber={gameState.completedTasks.has(currentTask.id) ? undefined : nextRewardCard?.card.cardNumber}
           taskStartTimes={gameState.taskStartTimes}
           onCommit={handleCommitToCurrentTask}
           onComplete={handleTaskComplete}

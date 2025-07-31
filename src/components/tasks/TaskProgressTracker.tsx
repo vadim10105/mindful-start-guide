@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { TaskCardData, CompletedTask } from './GameState';
+import { getNextSequentialCard } from '@/services/cardService';
 
 export interface TaskProgressTrackerHook {
   handleTaskComplete: (taskId: string) => Promise<void>;
@@ -70,34 +71,56 @@ export const useTaskProgressTracker = ({
     setHasCommittedToTask(false);
     setIsInitialLoad(false);
     
-    // Update completion state
+    // Update UI state immediately for instant response
     setCompletedTasks(prev => new Set([...prev, taskId]));
     setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
     
-    // Add to today's collection (UI state update)
-    const taskIndex = tasks.findIndex(t => t.id === taskId);
-    const newCollectedTask: CompletedTask = {
-      id: taskId,
-      title: task.title,
-      timeSpent: timeSpent,
-      completedAt: new Date(),
-      sunsetImageUrl: sunsetImages[taskIndex % sunsetImages.length]
-    };
-    setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
-    
     // Handle database operations asynchronously
+    let collectedCard = null;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
-          .from('tasks')
-          .update({ 
-            list_location: 'collection',
-            task_status: 'complete',
-            completed_at: new Date().toISOString(),
-            time_spent_minutes: timeSpent
-          })
-          .eq('id', taskId);
+        // Get the next sequential card for this user
+        const nextCard = await getNextSequentialCard(user.id);
+        
+        if (nextCard) {
+          collectedCard = nextCard;
+          console.log(`🎴 User earned card #${nextCard.cardNumber}:`, nextCard.card);
+          
+          // Update task with the specific card they earned and mark complete
+          await supabase
+            .from('tasks')
+            .update({ 
+              list_location: 'collection',
+              task_status: 'complete',
+              completed_at: new Date().toISOString(),
+              time_spent_minutes: timeSpent,
+              collection_card_id: nextCard.cardId
+            })
+            .eq('id', taskId);
+
+          // Update user progress to reflect they've unlocked this card
+          await supabase
+            .from('user_card_progress')
+            .upsert({
+              user_id: user.id,
+              collection_id: nextCard.collectionId,
+              cards_unlocked: nextCard.cardNumber
+            }, {
+              onConflict: 'user_id,collection_id'
+            });
+        } else {
+          // No more cards available, just complete the task
+          await supabase
+            .from('tasks')
+            .update({ 
+              list_location: 'collection',
+              task_status: 'complete',
+              completed_at: new Date().toISOString(),
+              time_spent_minutes: timeSpent
+            })
+            .eq('id', taskId);
+        }
 
         await supabase.rpc('update_daily_stats', {
           p_user_id: user.id,
@@ -109,6 +132,20 @@ export const useTaskProgressTracker = ({
     } catch (error) {
       console.error('Error updating task:', error);
     }
+
+    // Add to today's collection with the earned card (or fallback)  
+    const newCollectedTask: CompletedTask = {
+      id: taskId,
+      title: task.title,
+      timeSpent: timeSpent,
+      completedAt: new Date(),
+      sunsetImageUrl: collectedCard?.card.imageUrl || sunsetImages[0], // Use earned card or fallback
+      attribution: collectedCard?.card.attribution,
+      attributionUrl: collectedCard?.card.attributionUrl,
+      description: collectedCard?.card.description,
+      caption: collectedCard?.card.caption
+    };
+    setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
     
     onTaskComplete?.(taskId);
   };
@@ -119,6 +156,23 @@ export const useTaskProgressTracker = ({
 
     const startTime = taskStartTimes[taskId];
     const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
+
+    // Get the original task data from database to preserve all fields
+    let originalTaskData = null;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: dbTask } = await supabase
+          .from('tasks')
+          .select('estimated_minutes, category')
+          .eq('id', taskId)
+          .eq('user_id', user.id)
+          .single();
+        originalTaskData = dbTask;
+      }
+    } catch (error) {
+      console.error('Error fetching original task data:', error);
+    }
     
     // Clear timer and reset flow state
     if (timerRef.current) {
@@ -128,47 +182,116 @@ export const useTaskProgressTracker = ({
     setHasCommittedToTask(false);
     setIsInitialLoad(false);
     
-    // Mark as completed in UI to flip the card
+    // Update UI state immediately for instant response
     setCompletedTasks(prev => new Set([...prev, taskId]));
     setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
     
-    // Save task to database with status 'later' to appear in saved for later list
+    // Handle database operations asynchronously to get the card
+    let collectedCard = null;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Parse estimated time to minutes if available
-        const parseTimeToMinutes = (timeStr: string): number => {
-          const match = timeStr.match(/(\d+)\s*(min|minute|minutes|m|hr|hour|hours|h)/i);
-          if (!match) return 0;
-          
-          const value = parseInt(match[1]);
-          const unit = match[2].toLowerCase();
-          
-          if (unit.startsWith('h')) {
-            return value * 60;
-          }
-          return value;
-        };
-
-        const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
+        // Get the next sequential card for this user (same as completion)
+        const nextCard = await getNextSequentialCard(user.id);
         
-        await supabase
-          .from('tasks')
-          .insert({
-            title: task.title,
-            user_id: user.id,
-            source: 'brain_dump' as const,
-            list_location: 'later' as const, // Tasks with progress go to later list
-            task_status: 'made_progress' as const, // Task had some work done on it
-            is_liked: task.is_liked || false,
-            is_urgent: task.is_urgent || false,
-            is_quick: task.is_quick || false,
-            estimated_minutes: estimatedMinutes,
-          });
+        if (nextCard) {
+          collectedCard = nextCard;
+          console.log(`🎴 User earned card #${nextCard.cardNumber} for made progress:`, nextCard.card);
+          
+          // Mark original task as COMPLETE and move to collection (they earned a card!)
+          await supabase
+            .from('tasks')
+            .update({
+              list_location: 'collection',
+              task_status: 'complete',
+              completed_at: new Date().toISOString(),
+              time_spent_minutes: timeSpent,
+              collection_card_id: nextCard.cardId
+            })
+            .eq('id', taskId);
+
+          // Create duplicate task in later list (so they can continue working on it)
+          await supabase
+            .from('tasks')
+            .insert({
+              title: task.title,
+              user_id: user.id,
+              source: 'brain_dump' as const,
+              list_location: 'later' as const,
+              task_status: 'task_list' as const, // Fresh task status
+              is_liked: task.is_liked || false,
+              is_urgent: task.is_urgent || false,
+              is_quick: task.is_quick || false,
+              notes: task.notes || null,
+              estimated_minutes: originalTaskData?.estimated_minutes || null,
+              category: originalTaskData?.category || null
+            });
+
+          // Update user progress to reflect they've unlocked this card
+          await supabase
+            .from('user_card_progress')
+            .upsert({
+              user_id: user.id,
+              collection_id: nextCard.collectionId,
+              cards_unlocked: nextCard.cardNumber
+            }, {
+              onConflict: 'user_id,collection_id'
+            });
+        } else {
+          // No more cards available - still complete original and create duplicate
+          await supabase
+            .from('tasks')
+            .update({
+              list_location: 'collection',
+              task_status: 'complete',
+              completed_at: new Date().toISOString(),
+              time_spent_minutes: timeSpent
+            })
+            .eq('id', taskId);
+
+          // Create duplicate task in later list
+          await supabase
+            .from('tasks')
+            .insert({
+              title: task.title,
+              user_id: user.id,
+              source: 'brain_dump' as const,
+              list_location: 'later' as const,
+              task_status: 'task_list' as const,
+              is_liked: task.is_liked || false,
+              is_urgent: task.is_urgent || false,
+              is_quick: task.is_quick || false,
+              notes: task.notes || null,
+              estimated_minutes: originalTaskData?.estimated_minutes || null,
+              category: originalTaskData?.category || null
+            });
+        }
+
+        // Update daily stats (since original task is completed)
+        await supabase.rpc('update_daily_stats', {
+          p_user_id: user.id,
+          p_date: new Date().toISOString().split('T')[0],
+          p_tasks_completed: 1,
+          p_time_minutes: timeSpent
+        });
       }
     } catch (error) {
-      console.error('Error saving task as made progress:', error);
+      console.error('Error updating task as made progress:', error);
     }
+
+    // Add to today's collection with the earned card (or fallback)  
+    const newCollectedTask: CompletedTask = {
+      id: taskId,
+      title: task.title,
+      timeSpent: timeSpent,
+      completedAt: new Date(),
+      sunsetImageUrl: collectedCard?.card.imageUrl || sunsetImages[0], // Use earned card or fallback
+      attribution: collectedCard?.card.attribution,
+      attributionUrl: collectedCard?.card.attributionUrl,
+      description: collectedCard?.card.description,
+      caption: collectedCard?.card.caption
+    };
+    setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
     
     onTaskComplete?.(taskId);
   };

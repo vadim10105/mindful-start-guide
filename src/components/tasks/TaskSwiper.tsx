@@ -22,6 +22,12 @@ interface TaskSwiperProps {
   tasks: TaskCardData[];
   gameState: any; // All game state in one object
   rewardCards: RewardCardData[];
+  nextRewardCard: {
+    card: RewardCardData;
+    cardId: string;
+    cardNumber: number;
+    collectionId: string;
+  } | null;
   onSlideChange: (activeIndex: number) => void;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
@@ -39,6 +45,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   tasks,
   gameState,
   rewardCards,
+  nextRewardCard,
   onSlideChange,
   onCommit,
   onComplete,
@@ -89,12 +96,47 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 isCurrentTask={index === gameState.currentViewingIndex}
                 activeCommittedIndex={gameState.activeCommittedIndex}
                 flowProgress={gameState.flowProgress}
-                sunsetImageUrl={sunsetImages[index % sunsetImages.length]}
-                attribution={rewardCards[index % rewardCards.length]?.attribution}
-                attributionUrl={rewardCards[index % rewardCards.length]?.attributionUrl}
-                description={rewardCards[index % rewardCards.length]?.description}
-                caption={rewardCards[index % rewardCards.length]?.caption}
-                cardNumber={rewardCards[index % rewardCards.length]?.cardNumber}
+                sunsetImageUrl={(() => {
+                  if (gameState.completedTasks.has(task.id)) {
+                    // For completed tasks, use their earned card from todaysCompletedTasks
+                    const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
+                    return completedTask?.sunsetImageUrl || "";
+                  }
+                  // For incomplete tasks, show next reward preview
+                  return nextRewardCard?.card.imageUrl || "";
+                })()}
+                attribution={(() => {
+                  if (gameState.completedTasks.has(task.id)) {
+                    // For completed tasks, get metadata from their earned card
+                    const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
+                    console.log('🔍 Looking for completed task:', task.id, 'found:', completedTask, 'attribution:', completedTask?.attribution);
+                    return completedTask?.attribution || "";
+                  }
+                  // For incomplete tasks, show next reward preview
+                  return nextRewardCard?.card.attribution || "";
+                })()}
+                attributionUrl={(() => {
+                  if (gameState.completedTasks.has(task.id)) {
+                    const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
+                    return completedTask?.attributionUrl || "";
+                  }
+                  return nextRewardCard?.card.attributionUrl || "";
+                })()}
+                description={(() => {
+                  if (gameState.completedTasks.has(task.id)) {
+                    const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
+                    return completedTask?.description || "";
+                  }
+                  return nextRewardCard?.card.description || "";
+                })()}
+                caption={(() => {
+                  if (gameState.completedTasks.has(task.id)) {
+                    const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
+                    return completedTask?.caption || "";
+                  }
+                  return nextRewardCard?.card.caption || "";
+                })()}
+                cardNumber={gameState.completedTasks.has(task.id) ? undefined : nextRewardCard?.card.cardNumber}
                 taskStartTimes={gameState.taskStartTimes}
                 onCommit={onCommit}
                 onComplete={onComplete}

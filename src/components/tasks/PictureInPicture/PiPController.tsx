@@ -16,6 +16,12 @@ interface PiPControllerProps {
   onCarryOn?: (taskId: string) => void;
   onSkip?: (taskId: string) => Promise<void>;
   onNotesChange?: (taskId: string, notes: string) => void;
+  nextRewardCard: {
+    card: any;
+    cardId: string;
+    cardNumber: number;
+    collectionId: string;
+  } | null;
   isLoading?: boolean;
   isProcessing?: boolean;
   onLoadingComplete?: () => void;
@@ -32,6 +38,7 @@ export const PiPController: React.FC<PiPControllerProps> = ({
   onCarryOn,
   onSkip,
   onNotesChange,
+  nextRewardCard,
   isLoading,
   isProcessing,
   onLoadingComplete,
@@ -108,6 +115,7 @@ export const PiPController: React.FC<PiPControllerProps> = ({
               onCarryOn={onCarryOn}
               onSkip={onSkip}
               onNotesChange={onNotesChange}
+              nextRewardCard={nextRewardCard}
               isLoading={isLoading}
               isProcessing={isProcessing}
               onLoadingComplete={onLoadingComplete}

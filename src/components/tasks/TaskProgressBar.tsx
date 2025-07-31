@@ -22,8 +22,6 @@ export const TaskProgressBar = ({
   }
 
   const estimatedMinutes = parseTimeToMinutes(estimatedTime);
-  if (!estimatedMinutes) return null;
-
   const [currentTime, setCurrentTime] = useState(Date.now());
 
   // Update display every second when active
