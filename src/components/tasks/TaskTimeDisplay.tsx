@@ -45,15 +45,26 @@ export const TaskTimeDisplay = ({
     if (!estimatedTime) return null;
     const durationMinutes = parseTimeToMinutes(estimatedTime);
     if (!durationMinutes) return null;
-    return startTime + (durationMinutes * 60000); // Convert minutes to milliseconds
+    
+    // Calculate elapsed time since the (possibly adjusted) start time
+    const elapsedMs = currentTime - startTime;
+    const elapsedMinutes = elapsedMs / 60000;
+    
+    // Calculate remaining time
+    const remainingMinutes = Math.max(0, durationMinutes - elapsedMinutes);
+    
+    // Estimated finish time = current time + remaining time  
+    return currentTime + (remainingMinutes * 60000);
   };
 
   // Check if we're in overtime
   const estimatedFinishTime = getEstimatedFinishTime();
   const isOvertime = estimatedFinishTime && currentTime > estimatedFinishTime;
 
-  // Format start time
-  const startTimeFormatted = formatTime(startTime);
+  // For active tasks, show current time as start time for better UX
+  // For inactive tasks, show the actual start time
+  const displayStartTime = isActiveCommitted ? currentTime : startTime;
+  const startTimeFormatted = formatTime(displayStartTime);
   const estimatedFinishTimeFormatted = estimatedFinishTime ? formatTime(estimatedFinishTime) : null;
   const currentTimeFormatted = formatTime(currentTime);
 
