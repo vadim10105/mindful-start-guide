@@ -102,8 +102,8 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                     const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
                     return completedTask?.sunsetImageUrl || "";
                   }
-                  // For incomplete tasks, show next reward preview
-                  return nextRewardCard?.card.imageUrl || "";
+                  // For incomplete tasks, show specific reward for this task index
+                  return rewardCards[index]?.imageUrl || "";
                 })()}
                 attribution={(() => {
                   if (gameState.completedTasks.has(task.id)) {
@@ -112,31 +112,37 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                     console.log('🔍 Looking for completed task:', task.id, 'found:', completedTask, 'attribution:', completedTask?.attribution);
                     return completedTask?.attribution || "";
                   }
-                  // For incomplete tasks, show next reward preview
-                  return nextRewardCard?.card.attribution || "";
+                  // For incomplete tasks, show specific reward for this task index
+                  return rewardCards[index]?.attribution || "";
                 })()}
                 attributionUrl={(() => {
                   if (gameState.completedTasks.has(task.id)) {
                     const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
                     return completedTask?.attributionUrl || "";
                   }
-                  return nextRewardCard?.card.attributionUrl || "";
+                  return rewardCards[index]?.attributionUrl || "";
                 })()}
                 description={(() => {
                   if (gameState.completedTasks.has(task.id)) {
                     const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
                     return completedTask?.description || "";
                   }
-                  return nextRewardCard?.card.description || "";
+                  return rewardCards[index]?.description || "";
                 })()}
                 caption={(() => {
                   if (gameState.completedTasks.has(task.id)) {
                     const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
                     return completedTask?.caption || "";
                   }
-                  return nextRewardCard?.card.caption || "";
+                  return rewardCards[index]?.caption || "";
                 })()}
-                cardNumber={gameState.completedTasks.has(task.id) ? undefined : nextRewardCard?.card.cardNumber}
+                cardNumber={(() => {
+                  if (gameState.completedTasks.has(task.id)) {
+                    const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
+                    return completedTask?.cardNumber;
+                  }
+                  return rewardCards[index]?.cardNumber;
+                })()}
                 taskStartTimes={gameState.taskStartTimes}
                 onCommit={onCommit}
                 onComplete={onComplete}

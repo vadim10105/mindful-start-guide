@@ -127,6 +127,7 @@ export const TaskCard = ({
   }, [task.notes]);
   const [isPauseHovered, setIsPauseHovered] = useState(false);
 
+
   // Simple timer that handles all timing logic
   const { totalElapsedMs } = useSimpleTimer({
     taskId: task.id,
@@ -227,9 +228,12 @@ export const TaskCard = ({
 
 
   return (
-    <div className={`w-full h-full transition-transform duration-700 ${
+    <div className={`w-full h-full transition-transform ${
       isCompleted ? '[transform:rotateY(180deg)]' : ''
-    }`} style={{ transformStyle: 'preserve-3d' }}>
+    }`} style={{ 
+      transformStyle: 'preserve-3d',
+      transitionDuration: '2000ms'
+    }}>
       
       
       {/* Front of Card */}
@@ -371,7 +375,7 @@ export const TaskCard = ({
           {/* White border inside the card */}
           <div className="absolute inset-0 border-2 border-white rounded-2xl opacity-80" />
           <div className="absolute top-2 right-4 text-gray-300 text-4xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
-            {cardNumber ? cardNumber.toString().padStart(2, '0') : (sunsetImageUrl.match(/reward-(\d+)/)?.[1]?.padStart(2, '0') || '01')}
+            {cardNumber ? cardNumber.toString().padStart(2, '0') : '01'}
           </div>
           <div className="absolute top-4 left-4 z-20">
             <span className="inline-flex items-center bg-gray-600/10 backdrop-blur-md rounded-md px-2 py-1">

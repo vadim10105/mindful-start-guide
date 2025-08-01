@@ -80,7 +80,6 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
       {/* Immersive Gallery */}
       {showImmersiveGallery && (
         <ImmersiveGallery
-          completedTasks={completedTasks}
           onClose={() => setShowImmersiveGallery(false)}
         />
       )}
@@ -141,7 +140,7 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                     <div className="absolute top-3 left-2 flex z-30">
                       {Array.from({length: totalCards}, (_, i) => {
                         const attribution = getCardAttribution(task.sunsetImageUrl);
-                        const currentCard = attribution?.cardNumber || parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
+                        const currentCard = task.cardNumber || attribution?.cardNumber || parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
                         return (
                           <div 
                             key={i} 
@@ -154,8 +153,9 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                     </div>
                     <div className="absolute top-1 right-2 text-gray-300 text-2xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
                       {(() => {
-                        const attribution = getCardAttribution(task.sunsetImageUrl);
-                        return attribution?.cardNumber ? attribution.cardNumber.toString().padStart(2, '0') : (task.sunsetImageUrl.match(/reward-(\d+)/)?.[1]?.padStart(2, '0') || '01');
+                        // Use actual cardNumber from task data, fallback to attribution data, then URL parsing
+                        const cardNumber = task.cardNumber || getCardAttribution(task.sunsetImageUrl)?.cardNumber || parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
+                        return cardNumber.toString().padStart(2, '0');
                       })()}
                     </div>
                     
@@ -167,7 +167,7 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                         <h4 className="font-medium text-sm leading-tight">
                           {(() => {
                             const attribution = getCardAttribution(task.sunsetImageUrl);
-                            const cardNumber = attribution?.cardNumber || parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
+                            const cardNumber = task.cardNumber || attribution?.cardNumber || parseInt(task.sunsetImageUrl.match(/reward-(\d+)/)?.[1] || '1');
                             return attribution?.caption ? `${attribution.caption} (${cardNumber} of ${totalCards})` : `Fleeting Moments (${cardNumber} of ${totalCards})`;
                           })()}
                         </h4>

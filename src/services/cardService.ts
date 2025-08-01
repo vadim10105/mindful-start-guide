@@ -14,62 +14,63 @@ export interface CollectionWithProgress extends CardCollection {
   userProgress: UserCardProgress | null;
 }
 
-// Get user's next reward card based on their progress
+// Get user's next reward card based on their progress across collections  
 export async function getNextRewardCard(userId: string): Promise<CollectionCard | null> {
   try {
     console.log('getNextRewardCard called with userId:', userId);
     
-    // Get the first collection (for now we only have one)
-    const { data: collection, error: collectionError } = await supabase
+    // Get all collections ordered by display_order
+    const { data: collections, error: collectionsError } = await supabase
       .from('card_collections')
-      .select('id, total_cards')
-      .limit(1)
-      .single();
+      .select('id, name, display_order')
+      .order('display_order');
 
-    if (collectionError) {
-      console.error('Error fetching collection in getNextRewardCard:', collectionError);
+    if (collectionsError || !collections) {
+      console.error('Error fetching collections:', collectionsError);
       return null;
     }
 
-    if (!collection) {
-      console.log('No collections found in getNextRewardCard');
-      return null;
-    }
-
-    // Get user's progress for this collection
-    const { data: progress, error: progressError } = await supabase
+    // Get user's progress for all collections
+    const { data: allProgress, error: progressError } = await supabase
       .from('user_card_progress')
-      .select('cards_unlocked')
-      .eq('user_id', userId)
-      .eq('collection_id', collection.id)
-      .maybeSingle();
+      .select('collection_id, cards_unlocked')
+      .eq('user_id', userId);
 
     if (progressError) {
-      console.error('Error fetching progress in getNextRewardCard:', progressError);
+      console.error('Error fetching user progress:', progressError);
       return null;
     }
 
-    const cardsUnlocked = progress?.cards_unlocked || 0;
-    console.log('Cards unlocked for user:', cardsUnlocked);
-    
-    // If they've unlocked all cards, cycle back to first card
-    const nextCardNumber = (cardsUnlocked % collection.total_cards) + 1;
+    // Find first incomplete collection (simple 6-card logic)
+    for (const collection of collections) {
+      const progress = allProgress?.find(p => p.collection_id === collection.id);
+      const cardsUnlocked = progress?.cards_unlocked || 0;
+      
+      console.log(`Collection ${collection.name}: ${cardsUnlocked}/6 cards`);
+      
+      if (cardsUnlocked < 6) {  // Found incomplete collection
+        const nextCardNumber = cardsUnlocked + 1;
+        
+        // Get the specific card
+        const { data: nextCard, error: cardError } = await supabase
+          .from('collection_cards')
+          .select('*')
+          .eq('collection_id', collection.id)
+          .eq('card_number', nextCardNumber)
+          .single();
 
-    // Get the next card to unlock
-    const { data: nextCard, error: cardError } = await supabase
-      .from('collection_cards')
-      .select('*')
-      .eq('collection_id', collection.id)
-      .eq('card_number', nextCardNumber)
-      .single();
+        if (cardError) {
+          console.error('Error fetching next card:', cardError);
+          return null;
+        }
 
-    if (cardError) {
-      console.error('Error fetching next card:', cardError);
-      return null;
+        console.log(`Next card: ${collection.name} Card ${nextCardNumber}`);
+        return nextCard;
+      }
     }
 
-    console.log('Found next card:', nextCard);
-    return nextCard;
+    console.log('All collections complete');
+    return null;
   } catch (error) {
     console.error('Error getting next reward card:', error);
     return null;
@@ -80,73 +81,62 @@ export async function getNextRewardCard(userId: string): Promise<CollectionCard 
 export async function unlockNextCard(userId: string): Promise<CollectionCard | null> {
   try {
     console.log('🎴 unlockNextCard called with userId:', userId);
-    console.log('🎴 userId type:', typeof userId, 'length:', userId.length);
     
     if (!userId) {
       console.error('❌ No userId provided to unlockNextCard');
       return null;
     }
     
-    // Get the first collection
-    const { data: collection, error: collectionError } = await supabase
-      .from('card_collections')
-      .select('id, total_cards')
-      .limit(1)
-      .single();
-
-    if (collectionError) {
-      console.error('Error fetching collection:', collectionError);
-      return null;
-    }
-    if (!collection) {
-      console.error('No collections found - you may need to run database migrations or seed initial data');
+    // Get the next card that should be unlocked
+    const nextCard = await getNextRewardCard(userId);
+    if (!nextCard) {
+      console.error('No next card found');
       return null;
     }
 
-    console.log('🎴 Found collection:', collection);
+    console.log('🎴 Next card to unlock:', nextCard);
 
-    // Get or create user progress
-    console.log('🎴 Querying user_card_progress with user_id:', userId, 'collection_id:', collection.id);
+    // Get current progress for the active collection
     const { data: progress, error: progressError } = await supabase
       .from('user_card_progress')
       .select('cards_unlocked')
       .eq('user_id', userId)
-      .eq('collection_id', collection.id)
+      .eq('collection_id', nextCard.collection_id)
       .maybeSingle();
 
     if (progressError) {
       console.error('Error fetching progress:', progressError);
-      console.error('This might be an RLS policy issue. User might not have permission to access user_card_progress table');
       return null;
     }
-
-    console.log('Current progress:', progress);
 
     const currentUnlocked = progress?.cards_unlocked || 0;
     const newUnlocked = currentUnlocked + 1;
 
-    console.log('Updating cards unlocked from', currentUnlocked, 'to', newUnlocked);
+    console.log(`🎴 Updating collection progress: ${currentUnlocked} → ${newUnlocked}`);
 
-    // Update progress
+    // Update or create progress for this collection
     if (progress) {
       // Update existing record
       const { error: updateError } = await supabase
         .from('user_card_progress')
-        .update({ cards_unlocked: newUnlocked })
+        .update({ 
+          cards_unlocked: newUnlocked,
+          updated_at: new Date().toISOString()
+        })
         .eq('user_id', userId)
-        .eq('collection_id', collection.id);
+        .eq('collection_id', nextCard.collection_id);
       
       if (updateError) {
         console.error('Error updating progress:', updateError);
         return null;
       }
     } else {
-      // Insert new record
+      // Insert new record for this collection
       const { error: insertError } = await supabase
         .from('user_card_progress')
         .insert({
           user_id: userId,
-          collection_id: collection.id,
+          collection_id: nextCard.collection_id,
           cards_unlocked: newUnlocked
         });
       
@@ -156,18 +146,8 @@ export async function unlockNextCard(userId: string): Promise<CollectionCard | n
       }
     }
 
-    // Return the card they just unlocked
-    const cardNumber = ((currentUnlocked) % collection.total_cards) + 1;
-    
-    const { data: unlockedCard } = await supabase
-      .from('collection_cards')
-      .select('*')
-      .eq('collection_id', collection.id)
-      .eq('card_number', cardNumber)
-      .single();
-
-    console.log('Unlocked card:', unlockedCard);
-    return unlockedCard;
+    console.log('🎴 Successfully unlocked card:', nextCard.card_number, 'from collection:', nextCard.collection_id);
+    return nextCard;
   } catch (error) {
     console.error('Error unlocking next card:', error);
     return null;
@@ -227,7 +207,24 @@ export async function getNextSequentialCard(userId: string, collectionId?: strin
       .single();
 
     if (error || !card) {
-      console.error('Error fetching next card:', error);
+      // If no card found in current collection, try the next collection
+      const { data: collections } = await supabase
+        .from('card_collections')
+        .select('id')
+        .order('created_at')
+        .gt('created_at', (await supabase
+          .from('card_collections')
+          .select('created_at')
+          .eq('id', targetCollectionId)
+          .single()).data?.created_at || '')
+        .limit(1);
+
+      if (collections?.length) {
+        // Recursively try the next collection
+        return getNextSequentialCard(userId, collections[0].id);
+      }
+      
+      console.error('No more cards available in any collection');
       return null;
     }
 
@@ -290,7 +287,7 @@ export async function getCollectionsWithProgress(userId: string): Promise<Collec
     const { data: collections } = await supabase
       .from('card_collections')
       .select('*')
-      .order('created_at');
+      .order('display_order');
 
     if (!collections) return [];
 

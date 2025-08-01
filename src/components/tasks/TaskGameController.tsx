@@ -240,6 +240,7 @@ export const TaskGameController = ({
     currentViewingIndex: gameState.currentViewingIndex,
     activeCommittedIndex: gameState.activeCommittedIndex,
     sunsetImages,
+    nextRewardCard,
     setFlowProgress: gameState.setFlowProgress,
     setHasCommittedToTask: gameState.setHasCommittedToTask,
     setIsInitialLoad: gameState.setIsInitialLoad,

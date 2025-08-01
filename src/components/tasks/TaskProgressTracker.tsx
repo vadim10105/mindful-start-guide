@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { TaskCardData, CompletedTask } from './GameState';
-import { getNextSequentialCard } from '@/services/cardService';
+import { unlockNextCard } from '@/services/cardService';
 
 export interface TaskProgressTrackerHook {
   handleTaskComplete: (taskId: string) => Promise<void>;
@@ -20,6 +20,12 @@ interface TaskProgressTrackerProps {
   currentViewingIndex: number;
   activeCommittedIndex: number;
   sunsetImages: string[];
+  nextRewardCard: {
+    card: any;
+    cardId: string;
+    cardNumber: number;
+    collectionId: string;
+  } | null;
   setFlowProgress: (progress: number) => void;
   setHasCommittedToTask: (committed: boolean) => void;
   setIsInitialLoad: (isInitial: boolean) => void;
@@ -42,6 +48,7 @@ export const useTaskProgressTracker = ({
   currentViewingIndex,
   activeCommittedIndex,
   sunsetImages,
+  nextRewardCard,
   setFlowProgress,
   setHasCommittedToTask,
   setIsInitialLoad,
@@ -75,17 +82,32 @@ export const useTaskProgressTracker = ({
     setCompletedTasks(prev => new Set([...prev, taskId]));
     setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
     
-    // Handle database operations asynchronously
+    // Use preloaded card data for instant display
     let collectedCard = null;
+    if (nextRewardCard) {
+      collectedCard = {
+        cardId: nextRewardCard.cardId,
+        cardNumber: nextRewardCard.cardNumber,
+        collectionId: nextRewardCard.collectionId,
+        card: {
+          imageUrl: nextRewardCard.card.imageUrl,
+          attribution: nextRewardCard.card.attribution,
+          attributionUrl: nextRewardCard.card.attributionUrl,
+          description: nextRewardCard.card.description,
+          caption: nextRewardCard.card.caption
+        }
+      };
+    }
+
+    // Handle database operations asynchronously
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Get the next sequential card for this user
-        const nextCard = await getNextSequentialCard(user.id);
+      if (user && collectedCard) {
+        // Use the preloaded card data to unlock the card
+        const unlockedCard = await unlockNextCard(user.id);
         
-        if (nextCard) {
-          collectedCard = nextCard;
-          console.log(`🎴 User earned card #${nextCard.cardNumber}:`, nextCard.card);
+        if (unlockedCard) {
+          console.log(`🎴 User earned card #${collectedCard.cardNumber}:`, collectedCard.card);
           
           // Update task with the specific card they earned and mark complete
           await supabase
@@ -95,20 +117,12 @@ export const useTaskProgressTracker = ({
               task_status: 'complete',
               completed_at: new Date().toISOString(),
               time_spent_minutes: timeSpent,
-              collection_card_id: nextCard.cardId
+              collection_card_id: collectedCard.cardId,
+              flipped_image_url: collectedCard.card.imageUrl
             })
             .eq('id', taskId);
 
-          // Update user progress to reflect they've unlocked this card
-          await supabase
-            .from('user_card_progress')
-            .upsert({
-              user_id: user.id,
-              collection_id: nextCard.collectionId,
-              cards_unlocked: nextCard.cardNumber
-            }, {
-              onConflict: 'user_id,collection_id'
-            });
+          // Progress is already updated by unlockNextCard()
         } else {
           // No more cards available, just complete the task
           await supabase
@@ -143,7 +157,8 @@ export const useTaskProgressTracker = ({
       attribution: collectedCard?.card.attribution,
       attributionUrl: collectedCard?.card.attributionUrl,
       description: collectedCard?.card.description,
-      caption: collectedCard?.card.caption
+      caption: collectedCard?.card.caption,
+      cardNumber: collectedCard?.cardNumber
     };
     setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
     
@@ -186,17 +201,32 @@ export const useTaskProgressTracker = ({
     setCompletedTasks(prev => new Set([...prev, taskId]));
     setLastCompletedTask({ id: taskId, title: task.title, timeSpent });
     
-    // Handle database operations asynchronously to get the card
+    // Use preloaded card data for instant display
     let collectedCard = null;
+    if (nextRewardCard) {
+      collectedCard = {
+        cardId: nextRewardCard.cardId,
+        cardNumber: nextRewardCard.cardNumber,
+        collectionId: nextRewardCard.collectionId,
+        card: {
+          imageUrl: nextRewardCard.card.imageUrl,
+          attribution: nextRewardCard.card.attribution,
+          attributionUrl: nextRewardCard.card.attributionUrl,
+          description: nextRewardCard.card.description,
+          caption: nextRewardCard.card.caption
+        }
+      };
+    }
+
+    // Handle database operations asynchronously
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Get the next sequential card for this user (same as completion)
-        const nextCard = await getNextSequentialCard(user.id);
+      if (user && collectedCard) {
+        // Use the preloaded card data to unlock the card
+        const unlockedCard = await unlockNextCard(user.id);
         
-        if (nextCard) {
-          collectedCard = nextCard;
-          console.log(`🎴 User earned card #${nextCard.cardNumber} for made progress:`, nextCard.card);
+        if (unlockedCard) {
+          console.log(`🎴 User earned card #${collectedCard.cardNumber} for made progress:`, collectedCard.card);
           
           // Mark original task as COMPLETE and move to collection (they earned a card!)
           await supabase
@@ -206,7 +236,8 @@ export const useTaskProgressTracker = ({
               task_status: 'complete',
               completed_at: new Date().toISOString(),
               time_spent_minutes: timeSpent,
-              collection_card_id: nextCard.cardId
+              collection_card_id: collectedCard.cardId,
+              flipped_image_url: collectedCard.card.imageUrl
             })
             .eq('id', taskId);
 
@@ -227,16 +258,7 @@ export const useTaskProgressTracker = ({
               category: originalTaskData?.category || null
             });
 
-          // Update user progress to reflect they've unlocked this card
-          await supabase
-            .from('user_card_progress')
-            .upsert({
-              user_id: user.id,
-              collection_id: nextCard.collectionId,
-              cards_unlocked: nextCard.cardNumber
-            }, {
-              onConflict: 'user_id,collection_id'
-            });
+          // Progress is already updated by unlockNextCard()
         } else {
           // No more cards available - still complete original and create duplicate
           await supabase
@@ -289,7 +311,8 @@ export const useTaskProgressTracker = ({
       attribution: collectedCard?.card.attribution,
       attributionUrl: collectedCard?.card.attributionUrl,
       description: collectedCard?.card.description,
-      caption: collectedCard?.card.caption
+      caption: collectedCard?.card.caption,
+      cardNumber: collectedCard?.cardNumber
     };
     setTodaysCompletedTasks(prev => [...prev, newCollectedTask]);
     

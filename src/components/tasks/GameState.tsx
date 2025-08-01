@@ -23,6 +23,7 @@ export interface CompletedTask {
   attributionUrl?: string;
   description?: string;
   caption?: string;
+  cardNumber?: number;
 }
 
 export const useGameState = (tasks: TaskCardData[]) => {
