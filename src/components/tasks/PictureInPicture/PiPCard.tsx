@@ -362,7 +362,13 @@ export const PiPCard = ({
             }
             return "";
           })()}
-          cardNumber={gameState.completedTasks.has(currentTask.id) ? undefined : nextRewardCard?.card.cardNumber}
+          cardNumber={(() => {
+            if (gameState.completedTasks.has(currentTask.id)) {
+              const completedTask = gameState.todaysCompletedTasks.find(t => t.id === currentTask.id);
+              return completedTask?.cardNumber;
+            }
+            return nextRewardCard?.card.cardNumber;
+          })()}
           taskStartTimes={gameState.taskStartTimes}
           onCommit={handleCommitToCurrentTask}
           onComplete={handleTaskComplete}
