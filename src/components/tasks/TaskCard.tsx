@@ -6,7 +6,7 @@ import { TaskActions } from "./TaskActions";
 import { TaskProgressBar } from "./TaskProgressBar";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
 import { useSimpleTimer } from "./useSimpleTimer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Function to balance text across lines (bottom-heavy preferred)
@@ -120,6 +120,11 @@ export const TaskCard = ({
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Update notes when task prop changes (important for PiP synchronization)
+  useEffect(() => {
+    setNotes(task.notes || "");
+  }, [task.notes]);
   const [isPauseHovered, setIsPauseHovered] = useState(false);
 
   // Simple timer that handles all timing logic

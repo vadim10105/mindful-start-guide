@@ -58,7 +58,6 @@ interface Task {
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
-  is_disliked?: boolean;
   card_position?: number;
   notes?: string;
   estimated_minutes?: number;
@@ -816,6 +815,7 @@ const TasksContent = () => {
         const tasksToSave = data.tasks.map((task: ExtractedTask, index: number) => {
           const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
           const category = taskCategories[task.title] || 'Routine';
+          const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
           
           return {
             title: task.title,
@@ -824,7 +824,8 @@ const TasksContent = () => {
             list_location: 'active' as const, // Brain dump tasks go to active list
             task_status: 'task_list' as const, // New tasks start in task list  
             category: category, // Save AI categorization
-            estimated_minutes: estimatedMinutes // Convert time estimate to minutes
+            estimated_minutes: estimatedMinutes, // Convert time estimate to minutes
+            is_quick: isQuick // Auto-apply quick tag if <= 20 minutes
           };
         });
 
@@ -854,7 +855,6 @@ const TasksContent = () => {
               is_liked: task.is_liked || false,
               is_urgent: task.is_urgent || false,
               is_quick: task.is_quick || false,
-              is_disliked: false,
               notes: task.notes || ''
             };
             
@@ -972,13 +972,15 @@ const TasksContent = () => {
 
       // Convert time to minutes for database storage
       const minutes = parseTimeToMinutes(estimatedTime);
+      const isQuick = minutes !== null && minutes <= 20;
 
-      // Update Supabase with time and category
+      // Update Supabase with time, category, and auto-apply quick tag
       const { error: updateError } = await supabase
         .from('tasks')
         .update({ 
           estimated_minutes: minutes,
-          category: category
+          category: category,
+          is_quick: isQuick // Auto-apply quick tag if <= 20 minutes
         })
         .eq('id', taskId)
         .eq('user_id', user?.id);
@@ -1003,6 +1005,18 @@ const TasksContent = () => {
           estimated_minutes: minutes
         }
       }));
+
+      // Update local state to reflect auto-applied quick tag
+      if (isQuick) {
+        setTaskTagsById(prev => ({
+          ...prev,
+          [taskId]: {
+            ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
+            isQuick: true
+          }
+        }));
+        console.log(`✅ Auto-applied quick tag to manually added task "${taskTitle}"`);
+      }
 
     } catch (error) {
       console.error('Failed to extract time estimate and category:', error);
@@ -1081,8 +1095,7 @@ const TasksContent = () => {
           task_status: 'task_list',
           is_liked: false,
           is_urgent: false,
-          is_quick: false,
-          is_disliked: false
+          is_quick: false
         })
         .select()
         .single();
@@ -1102,7 +1115,6 @@ const TasksContent = () => {
           is_liked: data.is_liked || false,
           is_urgent: data.is_urgent || false,
           is_quick: data.is_quick || false,
-          is_disliked: data.is_disliked || false,
           notes: data.notes || ''
         };
 
@@ -1308,33 +1320,85 @@ const TasksContent = () => {
   };
 
   const handleShuffle = async (tasksToProcess?: string[]) => {
-    console.log('🎲 Shuffle button clicked - Starting AI prioritization...');
+    console.log('🎲 Shuffle button clicked - Using simplified shuffle function...');
+    
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please sign in to shuffle tasks.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Go directly to game cards with processing state
     setCurrentStep('game-cards');
     setIsProcessing(true);
     
-    // Auto-open PIP window with slight delay
-    setTimeout(() => {
-      enterPiP();
-    }, 800);
-    
     try {
-      // Update tasks to not_started status when entering game
-      const taskIdsToUpdate = tasksToProcess || 
-        activeTasks.filter(task => taskTags[task.id]?.isEnabled !== false).map(t => t.id);
-      await updateTasksToNotStarted(taskIdsToUpdate);
+      // Call our new simplified shuffle edge function
+      const { data, error } = await supabase.functions.invoke('shuffle-tasks', {
+        body: { userId: user.id }
+      });
+
+      if (error) {
+        console.error('Shuffle function error:', error);
+        throw new Error('Failed to shuffle tasks');
+      }
+
+      console.log('✅ Shuffle complete:', data);
       
-      // Run AI prioritization in background while loading card shows
-      const prioritized = await prioritizeTasks(tasksToProcess);
-      setPrioritizedTasks(prioritized);
-      console.log('✅ Prioritization complete, tasks ready for game cards');
+      // Update the local task order and prepare for game cards
+      if (data.shuffledTasks && data.shuffledTasks.length > 0) {
+        const newOrder = data.shuffledTasks.map(task => task.id);
+        setActiveTaskIds(newOrder);
+        console.log('Updated active task order:', newOrder);
+
+        // Prepare tagged tasks for game cards in the shuffled order
+        const orderedTaggedTasks = data.shuffledTasks.map((shuffledTask, index) => {
+          const task = tasksById[shuffledTask.id];
+          const tags = taskTagsById[shuffledTask.id] || { isLiked: false, isUrgent: false, isQuick: false };
+          
+          if (!task) {
+            console.warn(`Task not found for ID: ${shuffledTask.id}`);
+            return null;
+          }
+          
+          return {
+            id: shuffledTask.id,
+            title: task.title,
+            list_location: 'active' as const,
+            task_status: 'not_started' as const, // Will be updated below
+            is_liked: tags.isLiked,
+            is_urgent: tags.isUrgent,
+            is_quick: tags.isQuick,
+            card_position: index + 1,
+            notes: task.notes || '' // Include notes for game cards, fallback to empty string
+          };
+        }).filter(Boolean); // Remove any null entries
+        
+        setTaggedTasks(orderedTaggedTasks);
+        
+        // Open PiP after tasks are set
+        setTimeout(() => {
+          enterPiP();
+        }, 100);
+      }
+      
+      // Update tasks to not_started status when entering game
+      const activeIds = data.shuffledTasks ? data.shuffledTasks.map(t => t.id) : activeTaskIds;
+      await updateTasksToNotStarted(activeIds);
+      
+      toast({
+        title: "Tasks Shuffled!",
+        description: data.message || "Tasks have been reordered using your preferences.",
+      });
       
     } catch (error) {
       console.error('Error during shuffling:', error);
       toast({
         title: "Error",
-        description: "Failed to prioritize tasks",
+        description: "Failed to shuffle tasks",
         variant: "destructive",
       });
       // Go back to review step on error
@@ -1366,7 +1430,8 @@ const TasksContent = () => {
         is_liked: tags.isLiked,
         is_urgent: tags.isUrgent,
         is_quick: tags.isQuick,
-        card_position: index + 1
+        card_position: index + 1,
+        notes: task.notes || '' // Include notes for game cards, fallback to empty string
       };
     }).filter(Boolean); // Remove any null entries
     
@@ -1380,10 +1445,10 @@ const TasksContent = () => {
     setCurrentStep('game-cards');
     setIsProcessing(true);
     
-    // Auto-open PIP window with slight delay
+    // Open PiP after tasks are set
     setTimeout(() => {
       enterPiP();
-    }, 800);
+    }, 100);
     
     // Run AI categorization in background for logging (optional)
     setTimeout(async () => {
@@ -1542,11 +1607,13 @@ const TasksContent = () => {
 
     try {
       const estimatedMinutes = newTime ? parseTimeToMinutes(newTime) : null;
+      const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
       
       const { error } = await supabase
         .from('tasks')
         .update({
-          estimated_minutes: estimatedMinutes
+          estimated_minutes: estimatedMinutes,
+          is_quick: isQuick // Auto-apply quick tag if <= 20 minutes
         })
         .eq('id', taskId);
 
@@ -1556,6 +1623,18 @@ const TasksContent = () => {
       } else {
         const taskTitle = tasksById[taskId]?.title || taskId;
         console.log(`✅ Updated estimated time for "${taskTitle}" to ${estimatedMinutes} minutes`);
+        
+        // Update local state to reflect auto-applied quick tag
+        if (isQuick) {
+          setTaskTagsById(prev => ({
+            ...prev,
+            [taskId]: {
+              ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
+              isQuick: true
+            }
+          }));
+          console.log(`✅ Auto-applied quick tag to "${taskTitle}"`);
+        }
       }
     } catch (error) {
       console.error('Failed to update task estimated time:', error);
@@ -1652,7 +1731,7 @@ const TasksContent = () => {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, is_disliked, category, estimated_minutes, notes, created_at')
+        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes, notes, created_at, score')
         .eq('user_id', user.id)
         .in('list_location', ['active', 'later']) // Load both active and later tasks
         .order('created_at', { ascending: true });
@@ -1682,7 +1761,6 @@ const TasksContent = () => {
             is_liked: task.is_liked || false,
             is_urgent: task.is_urgent || false,
             is_quick: task.is_quick || false,
-            is_disliked: task.is_disliked || false,
             notes: task.notes || '',
             estimated_minutes: task.estimated_minutes
           };
@@ -2650,7 +2728,8 @@ const TasksContent = () => {
               is_liked: task.is_liked,
               is_urgent: task.is_urgent,
               is_quick: task.is_quick,
-              estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes)
+              estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes),
+              notes: task.notes // Include notes for game cards
             }))}
             isLoading={isProcessing}
             isProcessing={isProcessing}
@@ -2713,9 +2792,9 @@ const TasksContent = () => {
                 });
               }
               
-              resetFlow();
-              // Refresh task list to show updated state
+              // Refresh task list to show updated state BEFORE resetting flow
               await loadTasksById();
+              resetFlow();
             }}
             onTaskComplete={(taskId) => {
               console.log('Task completed:', taskId);
