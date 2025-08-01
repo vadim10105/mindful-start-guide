@@ -2481,7 +2481,7 @@ const TasksContent = () => {
             </Card>
             
             {/* Timeline - Positioned relative to wrapper, height matches Card */}
-            {inputMode === 'list' && listTasks.length > 0 && (
+            {inputMode === 'list' && (listTasks.length > 0 || activeTaskIds.length > 0) && (
               <div 
                 className="hidden lg:block absolute w-80 overflow-y-auto transition-all duration-500 ease-in-out cursor-pointer group"
                 style={{
@@ -2505,7 +2505,19 @@ const TasksContent = () => {
               >
                 <TaskTimeline 
                   tasks={activeTaskIds.map(id => tasksById[id]?.title).filter(title => title)}
-                  timeEstimates={taskTimeEstimates}
+                  timeEstimates={(() => {
+                    // Convert ID-based estimates to title-based estimates for timeline
+                    const titleBasedEstimates: Record<string, string> = {};
+                    activeTaskIds.forEach(id => {
+                      const task = tasksById[id];
+                      const estimate = taskTimeEstimatesById[id];
+                      if (task?.title && estimate) {
+                        titleBasedEstimates[task.title] = estimate;
+                      }
+                    });
+                    // Fallback to legacy taskTimeEstimates for tasks not in ID system
+                    return { ...taskTimeEstimates, ...titleBasedEstimates };
+                  })()}
                   hoveredTaskIndex={hoveredTaskIndex}
                   className={timelineExpanded ? 'bg-transparent' : ''}
                 />
