@@ -2504,7 +2504,7 @@ const TasksContent = () => {
                 onClick={() => setTimelineExpanded(!timelineExpanded)}
               >
                 <TaskTimeline 
-                  tasks={listTasks}
+                  tasks={activeTaskIds.map(id => tasksById[id]?.title).filter(title => title)}
                   timeEstimates={taskTimeEstimates}
                   hoveredTaskIndex={hoveredTaskIndex}
                   className={timelineExpanded ? 'bg-transparent' : ''}
