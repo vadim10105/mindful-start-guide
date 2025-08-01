@@ -134,7 +134,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                     const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
                     return completedTask?.caption || "";
                   }
-                  return rewardCards[index]?.caption || "";
+                  return rewardCards[index]?.collectionName || "";
                 })()}
                 cardNumber={(() => {
                   if (gameState.completedTasks.has(task.id)) {

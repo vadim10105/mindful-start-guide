@@ -161,6 +161,7 @@ export interface RewardCardData {
   description: string;
   caption: string;
   cardNumber: number;
+  collectionName: string;
 }
 
 // Get the next sequential card for a user based on their progress
@@ -252,7 +253,15 @@ export async function getRewardCardData(): Promise<RewardCardData[]> {
   try {
     const { data: cards, error } = await supabase
       .from('collection_cards')
-      .select('image_url, attribution, attribution_url, description, caption, card_number')
+      .select(`
+        image_url, 
+        attribution, 
+        attribution_url, 
+        description, 
+        caption, 
+        card_number,
+        card_collections!inner(name)
+      `)
       .order('card_number');
 
     if (error) {
@@ -266,7 +275,8 @@ export async function getRewardCardData(): Promise<RewardCardData[]> {
       attributionUrl: card.attribution_url,
       description: card.description,
       caption: card.caption,
-      cardNumber: card.card_number
+      cardNumber: card.card_number,
+      collectionName: card.card_collections.name
     })).filter(card => card.imageUrl) || [];
   } catch (error) {
     console.error('Error getting reward card data:', error);
