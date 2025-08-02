@@ -374,27 +374,35 @@ export const TaskCard = ({
           <div className="absolute inset-0 paper-texture rounded-2xl" />
           {/* White border inside the card */}
           <div className="absolute inset-0 border-2 border-white rounded-2xl opacity-80" />
-          <div className="absolute top-2 right-4 text-gray-300 text-4xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
-            {cardNumber ? cardNumber.toString().padStart(2, '0') : '01'}
-          </div>
-          <div className="absolute top-4 left-4 z-20">
-            <span className="inline-flex items-center bg-gray-600/10 backdrop-blur-md rounded-md px-2 py-1">
-              <span className="text-lg font-bold text-white" style={{ fontFamily: 'Calendas Plus' }}>{caption || "Fleeting Moments"}</span>
-            </span>
-          </div>
+          {cardNumber && (
+            <div className="absolute top-2 right-4 text-gray-300 text-4xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
+              {cardNumber.toString().padStart(2, '0')}
+            </div>
+          )}
+          {caption && (
+            <div className="absolute top-4 left-4 z-20">
+              <span className="inline-flex items-center bg-gray-600/10 backdrop-blur-md rounded-md px-2 py-1">
+                <span className="text-lg font-bold text-white" style={{ fontFamily: 'Calendas Plus' }}>{caption}</span>
+              </span>
+            </div>
+          )}
           <div className="relative h-full flex flex-col justify-end p-6 text-white z-10">
             <div className="text-left flex flex-col gap-3">
-              <a 
-                href={attributionUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-sm text-white hover:text-gray-200 underline transition-colors"
-              >
-                {attribution}
-              </a>
-              <p className="text-xs text-white leading-relaxed italic mt-1">
-                {description}
-              </p>
+              {attribution && attributionUrl && (
+                <a 
+                  href={attributionUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-white hover:text-gray-200 underline transition-colors"
+                >
+                  {attribution}
+                </a>
+              )}
+              {description && (
+                <p className="text-xs text-white leading-relaxed italic mt-1">
+                  {description}
+                </p>
+              )}
             </div>
           </div>
         </div>
