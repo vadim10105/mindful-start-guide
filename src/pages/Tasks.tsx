@@ -110,7 +110,7 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   const { text, showCursor } = useTypewriter();
   
   return (
-    <div className={`absolute top-0 left-0 w-full h-full p-3 text-muted-foreground pointer-events-none flex items-start transition-all duration-300 ease-out ${
+    <div className={`absolute top-0 left-0 w-full h-full p-3 text-white/70 pointer-events-none flex items-start transition-all duration-300 ease-out ${
       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
     }`}>
       <span className="text-base leading-relaxed">
@@ -2075,8 +2075,8 @@ const TasksContent = () => {
               {/* Mode Toggle with Magical Transition */}
               <div className="flex items-center justify-center gap-4 mb-2">
                 <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
-                  isTransitioning ? 'text-muted-foreground' : 
-                  inputMode === 'brain-dump' ? 'text-foreground' : 'text-foreground/30'
+                  isTransitioning ? 'text-white/40' : 
+                  inputMode === 'brain-dump' ? 'text-white' : 'text-white/40'
                 }`}>
                   Capture
                 </Label>
@@ -2087,19 +2087,19 @@ const TasksContent = () => {
                   checked={inputMode === 'list'}
                   onCheckedChange={(checked) => !isTransitioning && setInputMode(checked ? 'list' : 'brain-dump')}
                   disabled={isTransitioning}
-                  className="transition-all duration-300 ease-out data-[state=checked]:bg-input data-[state=unchecked]:bg-input"
+                  className="transition-all duration-300 ease-out data-[state=checked]:bg-white/20 data-[state=unchecked]:bg-white/10 border-white/30 [&>span]:bg-white/90 [&>span]:shadow-lg [&>span]:backdrop-blur-sm"
                 />
                 
                 <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
-                  isTransitioning ? 'text-muted-foreground' : 
-                  inputMode === 'list' ? 'text-foreground' : 'text-foreground/30'
+                  isTransitioning ? 'text-white/40' : 
+                  inputMode === 'list' ? 'text-white' : 'text-white/40'
                 }`}>
                   Plan
                 </Label>
               </div>
               
               {/* Separator Line - aligned with content */}
-              <div className="h-px bg-border mt-4 mx-4 sm:mx-6"></div>
+              <div className="h-px bg-white/20 mt-4 mx-4 sm:mx-6"></div>
               
             </CardHeader>
             <CardContent ref={cardContentRef} className="flex-1 sm:flex-none flex flex-col px-4 sm:px-6 transition-all duration-500 ease-out">
@@ -2110,7 +2110,7 @@ const TasksContent = () => {
                   <div className={`relative transition-all duration-600 ease-out flex-1 ${
                     isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
                   }`} style={{ marginTop: '12px' }}>
-                    <div className="bg-card focus-within:bg-muted/50 transition-all duration-300 rounded-md relative">
+                    <div className="bg-black/10 focus-within:bg-black/20 transition-all duration-300 rounded-md relative backdrop-blur-sm border border-white/10">
                       <Textarea
                         ref={textareaRef}
                         value={brainDumpText}
@@ -2118,8 +2118,8 @@ const TasksContent = () => {
                         onFocus={() => setIsTextareaFocused(true)}
                         onBlur={() => setIsTextareaFocused(false)}
                         disabled={isTransitioning}
-                        className={`h-full min-h-[320px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 ${
-                          isTransitioning ? 'text-muted-foreground' : ''
+                        className={`h-full min-h-[320px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder-white/70 ${
+                          isTransitioning ? 'text-white/60' : ''
                         }`}
                         rows={8}
                       />
@@ -2186,10 +2186,10 @@ const TasksContent = () => {
                         onChange={(e) => setNewTaskInput(e.target.value)}
                         onKeyDown={handleAddTaskKeyPress}
                         placeholder="Share your Intention..."
-                        className={`flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent ${
+                        className={`flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent text-white ${
                           (activeTaskIds.length + laterTaskIds.length) > 0 
-                            ? 'placeholder:text-muted-foreground/40' 
-                            : 'placeholder:text-muted-foreground'
+                            ? 'placeholder:text-white/50' 
+                            : 'placeholder:text-white/70'
                         }`}
                         style={{ backgroundColor: 'transparent !important' }}
                       />
