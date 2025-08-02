@@ -26,6 +26,7 @@ interface PictureInPictureManagerProps {
   onCarryOn?: (taskId: string) => void;
   onSkip?: (taskId: string) => Promise<void>;
   onNotesChange?: (taskId: string, notes: string) => void;
+  onRefreshTasks?: () => Promise<void>;
   nextRewardCard: {
     card: any;
     cardId: string;
@@ -122,6 +123,7 @@ export const PictureInPictureManager = ({
   onCarryOn,
   onSkip,
   onNotesChange,
+  onRefreshTasks,
   nextRewardCard,
   isLoading, 
   isProcessing, 
@@ -142,6 +144,7 @@ export const PictureInPictureManager = ({
         onCarryOn={onCarryOn}
         onSkip={onSkip}
         onNotesChange={onNotesChange}
+        onRefreshTasks={onRefreshTasks}
         nextRewardCard={nextRewardCard}
         isLoading={isLoading}
         isProcessing={isProcessing}

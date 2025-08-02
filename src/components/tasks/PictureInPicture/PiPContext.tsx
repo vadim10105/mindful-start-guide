@@ -17,6 +17,7 @@ interface PiPContextType {
   enterPiP: () => Promise<void>;
   exitPiP: () => void;
   setPiPAvailable: (available: boolean) => void;
+  setOnPiPClose: (callback: (() => void) | null) => void;
 }
 
 const PiPContext = createContext<PiPContextType | undefined>(undefined);
@@ -35,6 +36,11 @@ export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
   });
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   const pipContentRef = useRef<HTMLElement | null>(null);
+  const onPiPCloseRef = useRef<(() => void) | null>(null);
+
+  const setOnPiPClose = useCallback((callback: (() => void) | null) => {
+    onPiPCloseRef.current = callback;
+  }, []);
 
   const copyStylesToPiPWindow = useCallback((pipWindow: Window) => {
     // Copy all stylesheets from the main document to the PiP window
@@ -116,6 +122,8 @@ export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
         setIsPiPActive(false);
         setPipWindow(null);
         pipContentRef.current = null;
+        // Call the refresh callback when PiP closes
+        onPiPCloseRef.current?.();
       });
 
       // Handle when the user closes the PiP window via the X button
@@ -123,6 +131,8 @@ export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
         setIsPiPActive(false);
         setPipWindow(null);
         pipContentRef.current = null;
+        // Call the refresh callback when PiP closes
+        onPiPCloseRef.current?.();
       });
 
       // No theme observer needed since we only use dark mode
@@ -147,6 +157,8 @@ export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
       pipWindow.close();
     }
     setIsPiPActive(false);
+    // Call the refresh callback when PiP exits
+    onPiPCloseRef.current?.();
     setPipWindow(null);
     pipContentRef.current = null;
   }, [pipWindow]);
@@ -163,7 +175,8 @@ export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
     pipWindow,
     enterPiP,
     exitPiP,
-    setPiPAvailable: setPiPAvailableCallback
+    setPiPAvailable: setPiPAvailableCallback,
+    setOnPiPClose
   };
 
   return (

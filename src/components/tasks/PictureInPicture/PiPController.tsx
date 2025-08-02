@@ -16,6 +16,7 @@ interface PiPControllerProps {
   onCarryOn?: (taskId: string) => void;
   onSkip?: (taskId: string) => Promise<void>;
   onNotesChange?: (taskId: string, notes: string) => void;
+  onRefreshTasks?: () => Promise<void>;
   nextRewardCard: {
     card: any;
     cardId: string;
@@ -38,6 +39,7 @@ export const PiPController: React.FC<PiPControllerProps> = ({
   onCarryOn,
   onSkip,
   onNotesChange,
+  onRefreshTasks,
   nextRewardCard,
   isLoading,
   isProcessing,
@@ -82,6 +84,9 @@ export const PiPController: React.FC<PiPControllerProps> = ({
 
       renderedWindow.current = pipWindow;
       console.log('Set up PiP window');
+      
+      // Refresh tasks from database when PiP opens
+      onRefreshTasks?.();
 
       // Cleanup when the component unmounts or PiP window closes
       return () => {
@@ -115,6 +120,7 @@ export const PiPController: React.FC<PiPControllerProps> = ({
               onCarryOn={onCarryOn}
               onSkip={onSkip}
               onNotesChange={onNotesChange}
+              onRefreshTasks={onRefreshTasks}
               nextRewardCard={nextRewardCard}
               isLoading={isLoading}
               isProcessing={isProcessing}

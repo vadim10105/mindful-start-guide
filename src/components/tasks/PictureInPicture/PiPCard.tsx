@@ -17,6 +17,7 @@ interface PiPCardProps {
   onCarryOn?: (taskId: string) => void;
   onSkip?: (taskId: string) => Promise<void>;
   onNotesChange?: (taskId: string, notes: string) => void;
+  onRefreshTasks?: () => Promise<void>;
   nextRewardCard: {
     card: any;
     cardId: string;
@@ -41,6 +42,7 @@ export const PiPCard = ({
   onCarryOn,
   onSkip,
   onNotesChange,
+  onRefreshTasks,
   nextRewardCard,
   isLoading = false, 
   isProcessing = false, 

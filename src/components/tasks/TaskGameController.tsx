@@ -10,6 +10,7 @@ import { useTaskTimerManager, useTaskTimerHelpers } from "./TaskTimerManager";
 import { useTaskNavigationManager } from "./TaskNavigationManager";
 import { useTaskProgressTracker } from "./TaskProgressTracker";
 import { usePictureInPictureManager, PictureInPictureManager } from "./PictureInPictureManager";
+import { usePiP } from "./PictureInPicture";
 import { getRewardCardData, RewardCardData } from "@/services/cardService";
 
 // External dependencies
@@ -47,6 +48,35 @@ export const TaskGameController = ({
   // Debounce timers for saving notes
   const [notesSaveTimers, setNotesSaveTimers] = useState<Record<string, NodeJS.Timeout>>({});
 
+  // Function to refresh tasks from database (for PiP sync)
+  const refreshTasksFromDB = useCallback(async () => {
+    if (tasks.length === 0) return;
+    
+    try {
+      const taskIds = tasks.map(t => t.id);
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id, notes')
+        .in('id', taskIds);
+
+      if (error) {
+        console.error('Error refreshing tasks:', error);
+        return;
+      }
+
+      if (data) {
+        setTasks(prevTasks => 
+          prevTasks.map(task => {
+            const dbTask = data.find(d => d.id === task.id);
+            return dbTask ? { ...task, notes: dbTask.notes || '' } : task;
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Failed to refresh tasks:', error);
+    }
+  }, [tasks]);
+
   // Function to update task notes
   const updateTaskNotes = useCallback((taskId: string, notes: string) => {
     // Update local state immediately for responsive UI
@@ -59,41 +89,41 @@ export const TaskGameController = ({
     );
 
     // Clear existing timer for this task
-    if (notesSaveTimers[taskId]) {
-      clearTimeout(notesSaveTimers[taskId]);
-    }
-
-    // Set new timer to save after 1 second of no typing
-    const newTimer = setTimeout(async () => {
-      try {
-        const { error } = await supabase
-          .from('tasks')
-          .update({ notes })
-          .eq('id', taskId);
-
-        if (error) {
-          console.error('Error saving task notes:', error);
-        } else {
-          console.log(`✅ Saved notes for task ${taskId}`);
-        }
-      } catch (error) {
-        console.error('Failed to save task notes:', error);
+    setNotesSaveTimers(prev => {
+      if (prev[taskId]) {
+        clearTimeout(prev[taskId]);
       }
-      
-      // Clean up timer
-      setNotesSaveTimers(prev => {
-        const newTimers = { ...prev };
-        delete newTimers[taskId];
-        return newTimers;
-      });
-    }, 1000);
 
-    // Store the new timer
-    setNotesSaveTimers(prev => ({
-      ...prev,
-      [taskId]: newTimer
-    }));
-  }, [notesSaveTimers]);
+      // Set new timer to save after 1 second of no typing
+      const newTimer = setTimeout(async () => {
+        try {
+          const { error } = await supabase
+            .from('tasks')
+            .update({ notes })
+            .eq('id', taskId);
+
+          if (error) {
+            console.error('Error saving task notes:', error);
+          }
+        } catch (error) {
+          console.error('Failed to save task notes:', error);
+        }
+        
+        // Clean up timer
+        setNotesSaveTimers(current => {
+          const newTimers = { ...current };
+          delete newTimers[taskId];
+          return newTimers;
+        });
+      }, 1000);
+
+      // Store the new timer
+      return {
+        ...prev,
+        [taskId]: newTimer
+      };
+    });
+  }, []);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -139,11 +169,18 @@ export const TaskGameController = ({
   const sunsetImages = rewardCards.map(card => card.imageUrl);
 
   // PiP Manager
+  const { setOnPiPClose } = usePiP();
   const pipManager = usePictureInPictureManager({
     tasks,
     isLoading,
     isProcessing
   });
+
+  // Set up refresh callback for when PiP closes
+  useEffect(() => {
+    setOnPiPClose(refreshTasksFromDB);
+    return () => setOnPiPClose(null);
+  }, [setOnPiPClose, refreshTasksFromDB]);
 
   // Define handleCommitToCurrentTask first since other hooks need it
   const handleCommitToCurrentTask = useCallback(() => {
@@ -314,6 +351,7 @@ export const TaskGameController = ({
         onCarryOn={progressTracker.handleCarryOn}
         onSkip={progressTracker.handleSkip}
         onNotesChange={updateTaskNotes}
+        onRefreshTasks={refreshTasksFromDB}
         nextRewardCard={nextRewardCard}
         isLoading={isLoading}
         isProcessing={isProcessing}

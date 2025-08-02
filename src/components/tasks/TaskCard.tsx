@@ -124,7 +124,7 @@ export const TaskCard = ({
   // Update notes when task prop changes (important for PiP synchronization)
   useEffect(() => {
     setNotes(task.notes || "");
-  }, [task.notes]);
+  }, [task.notes, task.id]);
   const [isPauseHovered, setIsPauseHovered] = useState(false);
 
 
