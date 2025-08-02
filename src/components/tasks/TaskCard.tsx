@@ -388,15 +388,21 @@ export const TaskCard = ({
           )}
           <div className="relative h-full flex flex-col justify-end p-6 text-white z-10">
             <div className="text-left flex flex-col gap-3">
-              {attribution && attributionUrl && (
-                <a 
-                  href={attributionUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-white hover:text-gray-200 underline transition-colors"
-                >
-                  {attribution}
-                </a>
+              {attribution && (
+                attributionUrl ? (
+                  <a 
+                    href={attributionUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-white hover:text-gray-200 underline transition-colors"
+                  >
+                    {attribution}
+                  </a>
+                ) : (
+                  <div className="text-sm text-white">
+                    {attribution}
+                  </div>
+                )
               )}
               {description && (
                 <p className="text-xs text-white leading-relaxed italic mt-1">

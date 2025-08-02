@@ -175,14 +175,20 @@ export const TodaysCollection = ({ completedTasks, isVisible }: TodaysCollection
                           const attribution = getCardAttribution(task.sunsetImageUrl);
                           return attribution ? (
                             <>
-                              <a 
-                                href={attribution.attributionUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-xs opacity-70 hover:opacity-90 underline transition-opacity block text-left"
-                              >
-                                {attribution.attribution}
-                              </a>
+                              {attribution.attributionUrl ? (
+                                <a 
+                                  href={attribution.attributionUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs opacity-70 hover:opacity-90 underline transition-opacity block text-left"
+                                >
+                                  {attribution.attribution}
+                                </a>
+                              ) : (
+                                <div className="text-xs opacity-70 block text-left">
+                                  {attribution.attribution}
+                                </div>
+                              )}
                             </>
                           ) : (
                             <a 
