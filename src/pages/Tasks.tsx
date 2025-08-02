@@ -19,6 +19,7 @@ import { validateAndFormatTimeInput } from "@/utils/timeUtils";
 import { TaskTimeline } from "@/components/tasks/TaskTimeline";
 import { PiPProvider, usePiP } from "@/components/tasks/PictureInPicture";
 import { ImmersiveGallery } from "@/components/tasks/ImmersiveGallery";
+import { SkyBackground } from "@/components/ui/SkyBackground";
 import {
   DndContext,
   closestCenter,
@@ -1993,7 +1994,13 @@ const TasksContent = () => {
   };
 
   return (
-      <div className="h-screen bg-background p-2 sm:p-4 overflow-hidden">
+      <div className="h-screen p-2 sm:p-4 overflow-hidden relative">
+      {/* Fractal Brownian Motion Sky Background */}
+      <SkyBackground 
+        intensity={0.3} 
+        speed={2.0} 
+        className="opacity-85" 
+      />
       {/* Settings - Fixed Top Right */}
       {currentStep === 'input' && (
         <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
@@ -2049,12 +2056,20 @@ const TasksContent = () => {
             <Card 
               ref={cardRef}
               id="main-task-container"
-              className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out shadow-xl ${
-                isTransitioning ? 'shadow-2xl' : ''
+              className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out ${
+                isTransitioning ? 'shadow-2xl' : 'shadow-xl'
               }`} 
               style={{ 
                 transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-                zIndex: 2 // Main container in middle layer
+                zIndex: 2, // Main container in middle layer
+                backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.2)',
+                // Enhanced text readability
+                color: 'rgba(255, 255, 255, 0.95)',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
               }}>
             <CardHeader className="text-center px-4 sm:px-6 pb-2">
               {/* Mode Toggle with Magical Transition */}
@@ -2114,10 +2129,18 @@ const TasksContent = () => {
                   <Button 
                     onClick={handleBrainDumpSubmit}
                     disabled={!brainDumpText.trim() || isProcessing || isTransitioning}
-                    className={`w-full h-12 sm:h-11 transition-all duration-300 mt-3 ${
+                    className={`w-full h-12 sm:h-11 transition-all duration-300 mt-3 font-semibold ${
                       isTransitioning ? 'scale-95 shadow-sm' : ''
                     }`}
                     size="lg"
+                    style={{
+                      backgroundColor: 'rgba(255, 193, 7, 0.9)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 193, 7, 0.3)',
+                      color: 'rgba(0, 0, 0, 0.8)',
+                      textShadow: '0 1px 2px rgba(255, 255, 255, 0.3)',
+                      boxShadow: '0 4px 16px 0 rgba(255, 193, 7, 0.3)',
+                    }}
                   >
                     {isProcessing || isTransitioning ? (
                       <>
