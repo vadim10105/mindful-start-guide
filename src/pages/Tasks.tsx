@@ -2163,7 +2163,11 @@ const TasksContent = () => {
                         onChange={(e) => setNewTaskInput(e.target.value)}
                         onKeyDown={handleAddTaskKeyPress}
                         placeholder="Share your Intention..."
-                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent"
+                        className={`flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent ${
+                          (activeTaskIds.length + laterTaskIds.length) > 0 
+                            ? 'placeholder:text-muted-foreground/40' 
+                            : 'placeholder:text-muted-foreground'
+                        }`}
                         style={{ backgroundColor: 'transparent !important' }}
                       />
                       <Button 
