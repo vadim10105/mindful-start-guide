@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown } from "lucide-react";
+import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, Images } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { GameTaskCards } from "@/components/tasks/GameTaskCards";
@@ -18,6 +18,7 @@ import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
 import { TaskTimeline } from "@/components/tasks/TaskTimeline";
 import { PiPProvider, usePiP } from "@/components/tasks/PictureInPicture";
+import { ImmersiveGallery } from "@/components/tasks/ImmersiveGallery";
 import {
   DndContext,
   closestCenter,
@@ -505,6 +506,7 @@ const TasksContent = () => {
   const [taskTimeEstimatesById, setTaskTimeEstimatesById] = useState<Record<string, string>>({});
   const [prioritizedTasks, setPrioritizedTasks] = useState<PrioritizedTask[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [showImmersiveGallery, setShowImmersiveGallery] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   // Loading messages
@@ -2030,6 +2032,20 @@ const TasksContent = () => {
         {/* Input Step */}
         {currentStep === 'input' && (
           <div className="relative w-full h-full max-h-[700px] flex items-center justify-center">
+            {/* Card Gallery Icon */}
+            <div className="fixed bottom-6 left-6 z-50">
+              <div
+                onClick={() => setShowImmersiveGallery(true)}
+                className="h-16 w-16 rounded-full cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center p-2 relative"
+              >
+                <div className="relative">
+                  {/* Stack of cards effect - vertical */}
+                  <div className="absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform rotate-12"></div>
+                  <div className="absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform rotate-6"></div>
+                  <div className="w-6 h-8 bg-white/40 rounded border border-white/50 transform rotate-0"></div>
+                </div>
+              </div>
+            </div>
             <Card 
               ref={cardRef}
               id="main-task-container"
@@ -2815,6 +2831,13 @@ const TasksContent = () => {
         )}
       </div>
       
+      {/* Immersive Gallery */}
+      {showImmersiveGallery && (
+        <ImmersiveGallery
+          onClose={() => setShowImmersiveGallery(false)}
+        />
+      )}
+
       {/* Settings Modal */}
       <SettingsModal
         open={isSettingsOpen}
