@@ -56,6 +56,7 @@ export const PiPCard = ({
 }: PiPCardProps) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<'left' | 'right' | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
   
   // Drag state
   const isDragging = useRef(false);
@@ -72,6 +73,19 @@ export const PiPCard = ({
     };
     loadRewardCards();
   }, []);
+
+  // Fade in effect when component mounts and is not loading
+  useEffect(() => {
+    if (!isLoading) {
+      // Small delay to allow DOM to settle, then fade in
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setIsVisible(false);
+    }
+  }, [isLoading]);
 
   const sunsetImages = rewardCards.map(card => card.imageUrl);
 
@@ -286,9 +300,9 @@ export const PiPCard = ({
 
   return (
     <div 
-      className={`relative w-full h-full flex flex-col ${
+      className={`relative w-full h-full flex flex-col transition-all duration-700 ease-out ${
         isTransitioning ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
-      }`}
+      } ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onTouchStart={handleTouchStart}
