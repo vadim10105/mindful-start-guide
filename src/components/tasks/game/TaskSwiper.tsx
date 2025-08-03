@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCards } from 'swiper/modules';
 import { TaskCard } from './TaskCard';
+import { TaskProgressManagerHook } from './TaskProgressManager';
 import 'swiper/css';
 import 'swiper/css/effect-cards';
 import { RewardCardData } from '@/services/cardService';
@@ -39,6 +40,7 @@ interface TaskSwiperProps {
   onAddToCollection: () => void;
   onNotesChange?: (taskId: string, notes: string) => void;
   formatTime: (minutes: number) => string;
+  progressManager: TaskProgressManagerHook;
 }
 
 export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
@@ -56,7 +58,8 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   onBackToActive,
   onAddToCollection,
   onNotesChange,
-  formatTime
+  formatTime,
+  progressManager
 }, ref) => {
   const sunsetImages = rewardCards.map(card => card.imageUrl);
   return (
@@ -155,6 +158,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 onNotesChange={onNotesChange}
                 navigationUnlocked={gameState.navigationUnlocked}
                 formatTime={formatTime}
+                progressManager={progressManager}
               />
             </SwiperSlide>
           ))}

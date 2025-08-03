@@ -3,9 +3,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
-import { TaskProgressBar } from "./TaskProgressBar";
+import { TaskProgressManagerHook } from "./TaskProgressManager";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
-import { useSimpleTimer } from "./useSimpleTimer";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -76,6 +75,7 @@ interface TaskCardProps {
   caption?: string;
   cardNumber?: number;
   taskStartTimes: Record<string, number>;
+  progressManager: TaskProgressManagerHook;
   onCommit: () => void;
   onComplete: (taskId: string) => void;
   onMadeProgress: (taskId: string) => void;
@@ -107,6 +107,7 @@ export const TaskCard = ({
   caption,
   cardNumber,
   taskStartTimes,
+  progressManager,
   onCommit,
   onComplete,
   onMadeProgress,
@@ -128,11 +129,6 @@ export const TaskCard = ({
   const [isPauseHovered, setIsPauseHovered] = useState(false);
 
 
-  // Simple timer that handles all timing logic
-  const { totalElapsedMs } = useSimpleTimer({
-    taskId: task.id,
-    isActive: isActiveCommitted && !isPaused
-  });
 
 
   const handleNotesClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
@@ -308,9 +304,8 @@ export const TaskCard = ({
           <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
 
             {/* Progress Bar */}
-            <TaskProgressBar
+            <progressManager.ProgressBar
               taskId={task.id}
-              totalElapsedMs={totalElapsedMs}
               estimatedTime={task.estimated_time}
               isActiveCommitted={isActiveCommitted}
               isPauseHovered={isPauseHovered}

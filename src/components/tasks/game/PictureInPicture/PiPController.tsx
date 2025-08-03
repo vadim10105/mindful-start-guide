@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PiPCard } from './PiPCard';
+import { TaskProgressManagerHook } from '../TaskProgressManager';
 import { usePiP } from './PiPContext';
 import { TaskCardData, GameStateType } from '../GameState';
 
@@ -27,6 +28,7 @@ interface PiPControllerProps {
   isProcessing?: boolean;
   onLoadingComplete?: () => void;
   gameState: GameStateType;
+  progressManager: TaskProgressManagerHook;
 }
 
 export const PiPController: React.FC<PiPControllerProps> = ({
@@ -44,7 +46,8 @@ export const PiPController: React.FC<PiPControllerProps> = ({
   isLoading,
   isProcessing,
   onLoadingComplete,
-  gameState
+  gameState,
+  progressManager
 }) => {
   const { isPiPActive, pipWindow } = usePiP();
   const reactRootRef = useRef<ReturnType<typeof createRoot> | null>(null);
@@ -127,6 +130,7 @@ export const PiPController: React.FC<PiPControllerProps> = ({
               onLoadingComplete={onLoadingComplete}
               pipWindow={pipWindow}
               gameState={gameState}
+              progressManager={progressManager}
             />
           </TooltipProvider>
         </QueryClientProvider>

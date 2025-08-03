@@ -4,8 +4,6 @@ import { TaskCardData } from './GameState';
 export interface TaskNavigationManagerHook {
   handleKeyboardNavigation: () => void;
   handleBackToActiveCard: () => void;
-  handleSeeAheadPress: () => void;
-  handleSeeAheadRelease: () => void;
 }
 
 interface TaskNavigationManagerProps {
@@ -16,7 +14,6 @@ interface TaskNavigationManagerProps {
   completedTasks: Set<string>;
   swiperRef: React.MutableRefObject<{ swiper?: { slidePrev: () => void; slideNext: () => void } } | null>;
   setCurrentViewingIndex: (index: number) => void;
-  setShowTaskList: (show: boolean) => void;
   onCommitToCurrentTask: () => void;
   onTaskComplete: (taskId: string) => void;
 }
@@ -29,7 +26,6 @@ export const useTaskNavigationManager = ({
   completedTasks,
   swiperRef,
   setCurrentViewingIndex,
-  setShowTaskList,
   onCommitToCurrentTask,
   onTaskComplete
 }: TaskNavigationManagerProps): TaskNavigationManagerHook => {
@@ -82,18 +78,8 @@ export const useTaskNavigationManager = ({
     setCurrentViewingIndex(activeCommittedIndex);
   };
 
-  const handleSeeAheadPress = () => {
-    setShowTaskList(true);
-  };
-
-  const handleSeeAheadRelease = () => {
-    setShowTaskList(false);
-  };
-
   return {
     handleKeyboardNavigation,
-    handleBackToActiveCard,
-    handleSeeAheadPress,
-    handleSeeAheadRelease
+    handleBackToActiveCard
   };
 };

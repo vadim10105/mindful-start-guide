@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
-import { PiPController, usePiP } from "./PictureInPicture";
-import { TaskCardData } from './GameState';
+import { PiPController } from "./PiPController";
+import { usePiP } from "./PiPContext";
+import { TaskCardData } from '../GameState';
+import { TaskProgressManagerHook } from '../TaskProgressManager';
 
 export interface PictureInPictureManagerHook {
   isPiPActive: boolean;
@@ -35,6 +37,7 @@ interface PictureInPictureManagerProps {
   } | null;
   onLoadingComplete?: () => void;
   gameState: ReturnType<typeof import('./GameState').useGameState>;
+  progressManager: TaskProgressManagerHook;
 }
 
 const usePictureInPictureManager = ({
@@ -129,7 +132,8 @@ export const PictureInPictureManager = ({
   isProcessing, 
   onLoadingComplete, 
   gameState,
-  pipManager 
+  pipManager,
+  progressManager 
 }: PictureInPictureManagerComponentProps) => {
   return (
     <>
@@ -150,6 +154,7 @@ export const PictureInPictureManager = ({
         isProcessing={isProcessing}
         onLoadingComplete={onLoadingComplete}
         gameState={gameState}
+        progressManager={progressManager}
       />
 
       {/* PiP Active Status Indicator */}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { TaskCard } from "../TaskCard";
+import { TaskProgressManagerHook } from "../TaskProgressManager";
 import { TaskCardData, CompletedTask, GameStateType } from "../GameState";
 import { useTaskTimer } from "../TaskTimer";
 import { ShuffleAnimation } from "../ShuffleAnimation";
@@ -30,6 +31,7 @@ interface PiPCardProps {
   pipWindow?: Window;
   initialCardIndex?: number;
   gameState: GameStateType;
+  progressManager: TaskProgressManagerHook;
 }
 
 export const PiPCard = ({ 
@@ -49,7 +51,8 @@ export const PiPCard = ({
   onLoadingComplete,
   pipWindow,
   initialCardIndex = 0,
-  gameState
+  gameState,
+  progressManager
 }: PiPCardProps) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<'left' | 'right' | null>(null);
@@ -382,6 +385,7 @@ export const PiPCard = ({
           onNotesChange={onNotesChange}
           navigationUnlocked={gameState.navigationUnlocked}
           formatTime={formatTime}
+          progressManager={progressManager}
         />
         </div>
       </div>

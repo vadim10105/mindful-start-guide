@@ -11,14 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, Images } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
-import { GameTaskCards } from "@/components/tasks/GameTaskCards";
+import { TaskGameController } from "@/components/tasks/game/TaskGameController";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categorizeTasks, getCurrentEnergyState } from "@/utils/taskCategorization";
 import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
-import { TaskTimeline } from "@/components/tasks/TaskTimeline";
-import { PiPProvider, usePiP } from "@/components/tasks/PictureInPicture";
-import { ImmersiveGallery } from "@/components/tasks/ImmersiveGallery";
+import { TaskTimeline } from "@/components/tasks/task-capture/TaskTimeline";
+import { PiPProvider, usePiP } from "@/components/tasks/game/PictureInPicture";
+import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery";
 import {
   DndContext,
   closestCenter,
@@ -2889,7 +2889,7 @@ const TasksContent = () => {
 
         {/* Game Cards Step */}
         {currentStep === 'game-cards' && (
-          <GameTaskCards
+          <TaskGameController
             tasks={prioritizedTasks.length > 0 ? prioritizedTasks.map((task) => ({
               ...task,
               estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(task.estimated_minutes)

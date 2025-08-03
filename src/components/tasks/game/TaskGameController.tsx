@@ -1,15 +1,14 @@
 import { useEffect, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { TodaysCollection } from "./TodaysCollection";
 import { TaskSwiper } from "./TaskSwiper";
 import { NavigationDots } from "./NavigationDots";
 import { useGameState, TaskCardData } from "./GameState";
 import { ShuffleAnimation } from "./ShuffleAnimation";
 // New decomposed managers
-import { useTaskTimerManager, useTaskTimerHelpers } from "./TaskTimerManager";
+import { formatTime } from "@/utils/timeUtils";
 import { useTaskNavigationManager } from "./TaskNavigationManager";
-import { useTaskProgressTracker } from "./TaskProgressTracker";
-import { usePictureInPictureManager, PictureInPictureManager } from "./PictureInPictureManager";
+import { useTaskProgressManager } from "./TaskProgressManager";
+import { usePictureInPictureManager, PictureInPictureManager } from "./PictureInPicture/PictureInPictureManager";
 import { usePiP } from "./PictureInPicture";
 import { getRewardCardData, RewardCardData } from "@/services/cardService";
 
@@ -43,7 +42,6 @@ export const TaskGameController = ({
     setTasks(initialTasks);
   }, [initialTasks]);
   const { toast } = useToast();
-  const { formatTime } = useTaskTimerHelpers();
 
   // Debounce timers for saving notes
   const [notesSaveTimers, setNotesSaveTimers] = useState<Record<string, NodeJS.Timeout>>({});
@@ -255,20 +253,20 @@ export const TaskGameController = ({
 
   // Wrapper for task completion that also refreshes next card
   const handleTaskCompleteWithCardRefresh = async (taskId: string) => {
-    await progressTracker.handleTaskComplete(taskId);
+    await progressManager.handleTaskComplete(taskId);
     // Refresh the next reward card after completion
     await loadNextRewardCard();
   };
 
   // Wrapper for made progress that also refreshes next card
   const handleMadeProgressWithCardRefresh = async (taskId: string) => {
-    await progressTracker.handleMadeProgress(taskId);
+    await progressManager.handleMadeProgress(taskId);
     // Refresh the next reward card after made progress
     await loadNextRewardCard();
   };
 
-  // Task Progress Tracker
-  const progressTracker = useTaskProgressTracker({
+  // Task Progress Manager
+  const progressManager = useTaskProgressManager({
     tasks,
     timerRef: gameState.timerRef,
     taskStartTimes: gameState.taskStartTimes,
@@ -305,16 +303,15 @@ export const TaskGameController = ({
     onTaskComplete: handleTaskCompleteWithCardRefresh
   });
 
-  // Timer Manager
-  useTaskTimerManager({
-    flowStartTime: gameState.flowStartTime,
-    hasCommittedToTask: gameState.hasCommittedToTask,
-    activeCommittedIndex: gameState.activeCommittedIndex,
-    tasks,
-    timerRef: gameState.timerRef,
-    setFlowProgress: gameState.setFlowProgress,
-    setIsInitialLoad: gameState.setIsInitialLoad
-  });
+  // Essential effect for task loading (moved from TaskTimerManager)
+  useEffect(() => {
+    // Essential useEffect that app depends on for proper task loading
+    // (removed 20-minute timer logic but kept dependency structure)
+    
+    return () => {
+      if (gameState.timerRef.current) clearInterval(gameState.timerRef.current);
+    };
+  }, [gameState.flowStartTime, gameState.hasCommittedToTask, gameState.activeCommittedIndex, tasks, gameState.timerRef, gameState.setFlowProgress, gameState.setIsInitialLoad]);
 
   // Auto-activate first card on initial load (skip "Play Card" step)
   useEffect(() => {
@@ -346,10 +343,10 @@ export const TaskGameController = ({
         onComplete={onComplete}
         onTaskComplete={handleTaskCompleteWithCardRefresh}
         onMadeProgress={handleMadeProgressWithCardRefresh}
-        onPauseTask={progressTracker.handlePauseTask}
+        onPauseTask={progressManager.handlePauseTask}
         onCommitToCurrentTask={handleCommitToCurrentTask}
-        onCarryOn={progressTracker.handleCarryOn}
-        onSkip={progressTracker.handleSkip}
+        onCarryOn={progressManager.handleCarryOn}
+        onSkip={progressManager.handleSkip}
         onNotesChange={updateTaskNotes}
         onRefreshTasks={refreshTasksFromDB}
         nextRewardCard={nextRewardCard}
@@ -358,6 +355,7 @@ export const TaskGameController = ({
         onLoadingComplete={onLoadingComplete}
         gameState={gameState}
         pipManager={pipManager}
+        progressManager={progressManager}
       />
 
       {/* Main Interface - Hide when PiP is active */}
@@ -377,13 +375,14 @@ export const TaskGameController = ({
                   onCommit={handleCommitToCurrentTask}
                   onComplete={handleTaskCompleteWithCardRefresh}
                   onMadeProgress={handleMadeProgressWithCardRefresh}
-                  onMoveOn={progressTracker.handlePauseTask}
-                  onCarryOn={progressTracker.handleCarryOn}
-                  onSkip={progressTracker.handleSkip}
+                  onMoveOn={progressManager.handlePauseTask}
+                  onCarryOn={progressManager.handleCarryOn}
+                  onSkip={progressManager.handleSkip}
                   onBackToActive={navigationManager.handleBackToActiveCard}
-                  onAddToCollection={progressTracker.handleAddToCollectionDB}
+                  onAddToCollection={progressManager.handleAddToCollectionDB}
                   onNotesChange={updateTaskNotes}
                   formatTime={formatTime}
+                  progressManager={progressManager}
                 />
 
                 {/* Navigation Dots */}
@@ -410,11 +409,6 @@ export const TaskGameController = ({
             </div>
           </div>
 
-          {/* Today's Collection */}
-          <TodaysCollection 
-            completedTasks={gameState.todaysCompletedTasks}
-            isVisible={gameState.todaysCompletedTasks.length > 0}
-          />
 
 
         </div>
