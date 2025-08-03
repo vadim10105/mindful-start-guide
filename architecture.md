@@ -1,170 +1,138 @@
 # Mindful Start Guide - Architecture Overview
 
-## üó∫Ô∏è User-Friendly Navigation Guide
+## What This App Does
+A productivity app that helps users manage tasks through gamification. Users can create tasks, work on them in focused sessions, and unlock collectible cards as rewards. The app uses AI to break down complex tasks and categorize them.
 
-*This section helps you understand where everything is in the codebase so you can point me to the right files.*
+## Project Structure
 
-### Main App Structure
+### =¡ Root Files
+- `package.json` - Dependencies and build scripts for the React/Vite app
+- `vite.config.ts` - Build configuration (bundling, dev server, etc.)
+- `tailwind.config.ts` - Styling configuration
+- `components.json` - UI component library settings (shadcn/ui)
 
-**üì± Pages (`src/pages/`)**
-- `Tasks.tsx` - **The main app** - where users do everything (brain dump, task lists, card game)
-- `Welcome.tsx` - Landing page for new users
-- `Auth.tsx` - Login/signup page
-- `Onboarding.tsx` - Multi-step setup for new users
+### =¡ src/ - Main Application Code
+
+#### =¡ src/pages/ - Main App Screens
+- `Index.tsx` - Landing page with task overview and quick actions
+- `Tasks.tsx` - Main task management interface with card-based game UI
+- `Auth.tsx` - Login/signup screen
+- `Onboarding.tsx` - First-time user setup flow
 - `Settings.tsx` - User preferences and account settings
+- `NotFound.tsx` - 404 error page
 
-### Key Feature Areas
+#### =¡ src/components/ - Reusable UI Components
 
-**üéÆ Task Game & Cards (`src/components/tasks/`)**
-- `GameTaskCards.tsx` - The actual card game interface
-- `TaskSwiper.tsx` - The swipeable card interface
-- `TaskCard.tsx` - Individual task card design
-- `TaskTimer/` - Timer functionality for focus sessions
-- `PictureInPicture/` - The pop-out window feature for focus mode
+##### =¡ src/components/onboarding/ - First-Time User Setup
+- `OnboardingFlow.tsx` - Guides new users through initial setup
+- `NameStep.tsx` - Collects user's display name
+- `EnergyTimeSteps.tsx` - Asks about peak/low energy times for task scheduling
+- `TaskPreferenceStep.tsx` - Learns what types of tasks user prefers
+- `TaskSwipeCards.tsx` - Interactive card interface for task preferences
+- `ReviewStep.tsx` - Shows summary before completing onboarding
 
-**üéØ Task Management (`src/components/tasks/`)**
-- `TaskActions.tsx` - What happens when you swipe/interact with cards
-- `TaskProgressTracker.tsx` - Progress tracking and visual feedback
-- `TaskTimeline.tsx` - The day planning timeline view
-- `CardLibrary.tsx` - Collection of earned cards
+##### =¡ src/components/tasks/ - Task Management Features
 
-**‚öôÔ∏è Setup & Settings (`src/components/onboarding/` & `src/components/settings/`)**
-- `OnboardingFlow.tsx` - Guides new users through setup
-- `TaskPreferences.tsx` - Category preference settings
-- `UserAccount.tsx` - Profile management
+###### =¡ src/components/tasks/game/ - Gamified Task Interface
+- `TaskGameController.tsx` - Main game logic and state management
+- `TaskCard.tsx` - Individual task display with swipe actions
+- `TaskSwiper.tsx` - Handles swiping gestures for task interactions
+- `TaskActions.tsx` - Action buttons (complete, skip, break down, etc.)
+- `GameState.tsx` - Manages game progression and scoring
+- `TaskProgressManager.tsx` - Tracks completion stats and streaks
+- `TaskNavigationManager.tsx` - Handles moving between tasks
+- `TaskTimeDisplay.tsx` - Shows timers and time estimates
+- `NavigationDots.tsx` - Visual indicator of position in task queue
+- `ShuffleAnimation.tsx` - Visual feedback when tasks are reordered
 
-### Behind-the-Scenes Magic
+###### =¡ src/components/tasks/PictureInPicture/ - Multi-Task Management
+- `PictureInPictureManager.tsx` - Enables working on multiple tasks simultaneously
+- `PiPController.tsx` - Controls for managing picture-in-picture mode
+- `PiPCard.tsx` - Compact task card for PiP view
+- `PiPContext.tsx` - State management for PiP functionality
+- `index.ts` - Exports all PiP components
 
-**ü§ñ AI Functions (`supabase/functions/`)**
-- `process-brain-dump` - Turns messy thoughts into organized tasks
-- `categorize-task` - Figures out what type of task it is
-- `shuffle-tasks` - Smart task reordering with user preferences (replaces old prioritize-tasks)
-- `breakdown-task` - Breaks complex tasks into simple steps
+###### =¡ src/components/tasks/collection/ - Card Collection System
+- `ImmersiveGallery.tsx` - Displays unlocked collectible cards as rewards
 
-**üíæ Database Tables (Supabase)**
-- `tasks` - All your tasks and their details
-- `profiles` - User preferences and settings
-- `card_collections` - Achievement cards you can earn
-- `subtasks` - AI-generated step-by-step breakdowns
+###### =¡ src/components/tasks/task-capture/ - Task Input and Organization
+- `TaskTimeline.tsx` - Visual timeline view of tasks and progress
+- `TaskListItem.tsx` - Individual task in list format
+- `DroppableZone.tsx` - Drag-and-drop interface for task organization
 
-### Common Issues & Where To Look
+##### =¡ src/components/settings/ - User Preferences
+- `SettingsModal.tsx` - Popup settings interface
+- `SettingsPage.tsx` - Full-page settings view
 
-**"Tasks aren't saving properly"** ‚Üí Check `src/pages/Tasks.tsx` (database functions)
-**"AI features not working"** ‚Üí Check `supabase/functions/` edge functions
-**"Cards/achievements broken"** ‚Üí Check `src/components/tasks/CardLibrary.tsx`
-**"Onboarding problems"** ‚Üí Check `src/components/onboarding/` files
-**"Picture-in-Picture issues"** ‚Üí Check `src/components/tasks/PictureInPicture/` 
-**"Timer problems"** ‚Üí Check `src/components/tasks/TaskTimer/` files
+##### =¡ src/components/ui/ - Base UI Components
+All the foundational UI elements (buttons, cards, dialogs, etc.) from shadcn/ui library plus custom components:
+- `InlineTimeEditor.tsx` - Quick editing of task time estimates
+- `TypewriterPlaceholder.tsx` - Animated placeholder text
+- `glsl-background.tsx` - Animated shader background
+- `progress-ring.tsx` - Circular progress indicators
+- `theme-toggle.tsx` - Dark/light mode switcher
 
----
+#### =¡ src/hooks/ - Reusable Logic
+- `use-typewriter.tsx` - Animated typing effect
+- `use-loading-typewriter.tsx` - Typewriter effect with loading states
+- `use-mobile.tsx` - Detects if user is on mobile device
+- `use-toast.ts` - Toast notification system
 
-## üîß Technical Reference
+#### =¡ src/integrations/supabase/ - Database Connection
+- `client.ts` - Supabase connection and configuration
+- `types.ts` - TypeScript definitions for database tables
+- `types-old.ts` - Legacy type definitions (kept for migration reference)
 
-*Detailed technical information for development work.*
+#### =¡ src/services/ - Business Logic
+- `cardService.ts` - Handles card collection and unlocking logic
 
-### Architecture Overview
+#### =¡ src/utils/ - Helper Functions
+- `taskCategorization.ts` - Logic for automatically categorizing tasks
+- `timeUtils.ts` - Time formatting and calculation helpers
 
-**Framework**: React 18 + TypeScript + Vite
-**Backend**: Supabase (PostgreSQL + Edge Functions + Auth)
-**UI**: shadcn/ui components + Tailwind CSS
-**State**: TanStack Query + React hooks
-**Special APIs**: Chrome Document Picture-in-Picture API
+#### =¡ src/lib/ - Third-Party Integrations
+- `utils.ts` - Utility functions and class name helpers
 
-### Critical Files Requiring Attention
+### =¡ supabase/ - Backend Services
 
-**‚ö†Ô∏è IMMEDIATE REFACTORING NEEDED**
-- `src/pages/Tasks.tsx` (2000+ lines) - Needs to be broken into logical sections:
-  - Brain dump processing logic
-  - Task list management 
-  - Drag & drop handlers
-  - Database operations
-  - State management
+#### Database Schema (from current_schema.sql)
+- **profiles** - User account info, preferences, onboarding status
+- **tasks** - Individual tasks with status, timing, categorization
+- **card_collections** - Groups of collectible cards
+- **collection_cards** - Individual cards with images and metadata
+- **user_card_progress** - Which cards each user has unlocked
+- **daily_stats** - User progress tracking (tasks completed, time spent)
 
-### Database Schema
+#### =¡ supabase/functions/ - AI-Powered Edge Functions
+- `process-brain-dump/` - Takes messy text input and extracts organized tasks
+- `process-image-brain-dump/` - Same as above but for image input (OCR + AI)
+- `breakdown-task/` - Breaks complex tasks into smaller, manageable subtasks
+- `categorize-task/` - Automatically assigns categories to tasks
+- `shuffle-tasks/` - Intelligently reorders tasks based on user preferences
 
-**Core Tables:**
-```sql
-tasks: id, user_id, title, status, category, estimated_minutes, is_liked, is_urgent, is_quick, list_location, task_status, notes, score
-profiles: user_id, task_preferences, peak_energy_time, lowest_energy_time, task_start_preference
-subtasks: id, task_id, content, is_done
-card_collections: id, name, description, is_active
-collection_cards: id, collection_id, title, description, image_url, position_in_collection
-user_card_progress: user_id, collection_id, cards_unlocked, is_completed
-daily_stats: user_id, stat_date, tasks_completed, total_time_minutes, cards_collected
-```
+### =¡ public/ - Static Assets
+- `favicon.ico` - Browser tab icon
+- `robots.txt` - Search engine instructions
+- `Calendas_Plus (1).otf` - Custom font file
 
-### AI Edge Functions
+## Key Features Explained
 
-**Location**: `supabase/functions/`
-- `process-brain-dump/index.ts` - GPT-4 powered task extraction
-- `categorize-task/index.ts` - Task categorization (7 categories)
-- `shuffle-tasks/index.ts` - Rule-based task reordering with user preference scoring (replaced prioritize-tasks)
-- `breakdown-task/index.ts` - ADHD-friendly task decomposition
+### Task Management Flow
+1. **Input**: Users add tasks via brain dump (text/image) or manual entry
+2. **AI Processing**: Tasks get broken down and categorized automatically
+3. **Game Interface**: Tasks appear as cards that can be swiped through
+4. **Completion**: Users work on tasks and track time spent
+5. **Rewards**: Completing tasks unlocks collectible cards
 
-### Component Architecture
+### Data Flow
+1. Frontend (React/TypeScript) handles UI and user interactions
+2. Supabase Edge Functions process AI requests (OpenAI integration)
+3. Supabase database stores all user data with row-level security
+4. Real-time updates keep the UI synchronized across sessions
 
-**State Management Patterns:**
-- Server state: TanStack Query with Supabase
-- Local state: React hooks (useState, useReducer)
-- Cross-component state: Context providers (PiP)
+### Authentication & Security
+- Supabase Auth handles user login/signup
+- Row Level Security ensures users only see their own data
+- All AI processing happens server-side for security
 
-**Key Custom Hooks:**
-- `use-toast` - Notification system
-- `use-typewriter` - Text animation effects
-- Task-specific hooks in TaskTimer components
-
-### Development Utilities
-
-**Utils (`src/utils/`):**
-- `timeUtils.ts` - Time parsing and formatting
-- `taskCategorization.ts` - AI categorization logic
-
-**Services (`src/services/`):**
-- `cardService.ts` - Collection management
-
-### Performance Notes
-
-**Current Bottlenecks:**
-- Tasks.tsx file size (2000+ lines)
-- AI function call frequency (no caching)
-- Large task list rendering (no virtualization)
-
-**Optimization Opportunities:**
-- Component decomposition (Tasks.tsx)
-- AI response caching
-- List virtualization for 100+ tasks
-- Image optimization for card collections
-
-### Recent Major Changes
-
-- **Component Refactoring**: Broke down GameTaskCards.tsx monolith into specialized managers
-- **Card Collection System**: Progressive achievement unlocking with database-driven rewards
-- **Rule-Based Task Shuffling**: Advanced scoring algorithm with user preference integration (replaced AI prioritize-tasks)
-- **Enhanced PiP Features**: Cross-window state synchronization for distraction-free focus
-- **Task Editing**: Inline editing with delete-on-empty functionality
-
-### Development Environment
-
-**Required Environment Variables:**
-```
-OPENAI_API_KEY=xxx
-SUPABASE_URL=xxx
-SUPABASE_ANON_KEY=xxx
-SUPABASE_SERVICE_ROLE_KEY=xxx
-```
-
-**Key Scripts:**
-- `npm run dev` - Development server
-- `npm run build` - Production build
-- `npm run lint` - ESLint check
-
-### Security Model
-
-- Row Level Security (RLS) on all tables
-- JWT authentication via Supabase
-- User data isolation through RLS policies
-- Input validation with Zod schemas
-
----
-
-*Last updated: February 2025*
+This architecture enables a smooth, gamified productivity experience while keeping user data secure and providing intelligent task management features.

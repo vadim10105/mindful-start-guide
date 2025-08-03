@@ -8,6 +8,9 @@ I prefer simple, direct solutions over "best practices"
 I'm a vibe coder who values shipping over perfect architecture
 Default Approach
 
+# Architecture Reference
+See architecture.md for complete folder structure and component explanations. This should save you time when searching for certain files.
+
 Always assume this is a POC (Proof of Concept) unless explicitly told otherwise
 Keep it simple and direct - don't overthink it
 Start with the most obvious solution that works
@@ -30,13 +33,3 @@ Add basic error handling (try/catch, input validation)
 Improve user-facing messages
 Extract functions only for readability, not for "reusability"
 Keep the same simple approach - just make it more reliable
-Language to Use
-
-"Quick POC to test if this works"
-"Throwaway prototype"
-"Just make it work"
-"The dumbest thing that works"
-"Keep it simple and direct"
-When in Doubt
-
-Ask: "Would copy-pasting this code be simpler than making it generic?" If yes, copy-paste it. '''
