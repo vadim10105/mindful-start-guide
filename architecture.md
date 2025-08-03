@@ -5,15 +5,15 @@ A productivity app that helps users manage tasks through gamification. Users can
 
 ## Project Structure
 
-### =Á Root Files
+### =ï¿½ Root Files
 - `package.json` - Dependencies and build scripts for the React/Vite app
 - `vite.config.ts` - Build configuration (bundling, dev server, etc.)
 - `tailwind.config.ts` - Styling configuration
 - `components.json` - UI component library settings (shadcn/ui)
 
-### =Á src/ - Main Application Code
+### =ï¿½ src/ - Main Application Code
 
-#### =Á src/pages/ - Main App Screens
+#### =ï¿½ src/pages/ - Main App Screens
 - `Index.tsx` - Landing page with task overview and quick actions
 - `Tasks.tsx` - Main task management interface with card-based game UI
 - `Auth.tsx` - Login/signup screen
@@ -21,9 +21,9 @@ A productivity app that helps users manage tasks through gamification. Users can
 - `Settings.tsx` - User preferences and account settings
 - `NotFound.tsx` - 404 error page
 
-#### =Á src/components/ - Reusable UI Components
+#### =ï¿½ src/components/ - Reusable UI Components
 
-##### =Á src/components/onboarding/ - First-Time User Setup
+##### =ï¿½ src/components/onboarding/ - First-Time User Setup
 - `OnboardingFlow.tsx` - Guides new users through initial setup
 - `NameStep.tsx` - Collects user's display name
 - `EnergyTimeSteps.tsx` - Asks about peak/low energy times for task scheduling
@@ -31,9 +31,9 @@ A productivity app that helps users manage tasks through gamification. Users can
 - `TaskSwipeCards.tsx` - Interactive card interface for task preferences
 - `ReviewStep.tsx` - Shows summary before completing onboarding
 
-##### =Á src/components/tasks/ - Task Management Features
+##### =ï¿½ src/components/tasks/ - Task Management Features
 
-###### =Á src/components/tasks/game/ - Gamified Task Interface
+###### =ï¿½ src/components/tasks/game/ - Gamified Task Interface
 - `TaskGameController.tsx` - Main game logic and state management
 - `TaskCard.tsx` - Individual task display with swipe actions
 - `TaskSwiper.tsx` - Handles swiping gestures for task interactions
@@ -45,26 +45,26 @@ A productivity app that helps users manage tasks through gamification. Users can
 - `NavigationDots.tsx` - Visual indicator of position in task queue
 - `ShuffleAnimation.tsx` - Visual feedback when tasks are reordered
 
-###### =Á src/components/tasks/PictureInPicture/ - Multi-Task Management
-- `PictureInPictureManager.tsx` - Enables working on multiple tasks simultaneously
+###### =ï¿½ src/components/tasks/PictureInPicture/ - Multi-Task Management
+- `PictureInPictureManager.tsx` - Displays Card as a floating window via PIP.
 - `PiPController.tsx` - Controls for managing picture-in-picture mode
 - `PiPCard.tsx` - Compact task card for PiP view
 - `PiPContext.tsx` - State management for PiP functionality
 - `index.ts` - Exports all PiP components
 
-###### =Á src/components/tasks/collection/ - Card Collection System
+###### =ï¿½ src/components/tasks/collection/ - Card Collection System
 - `ImmersiveGallery.tsx` - Displays unlocked collectible cards as rewards
 
-###### =Á src/components/tasks/task-capture/ - Task Input and Organization
-- `TaskTimeline.tsx` - Visual timeline view of tasks and progress
+###### =ï¿½ src/components/tasks/task-capture/ - Task Input and Organization
+- `TaskTimeline.tsx` - Visual timeline view of tasks 
 - `TaskListItem.tsx` - Individual task in list format
 - `DroppableZone.tsx` - Drag-and-drop interface for task organization
 
-##### =Á src/components/settings/ - User Preferences
+##### =ï¿½ src/components/settings/ - User Preferences
 - `SettingsModal.tsx` - Popup settings interface
 - `SettingsPage.tsx` - Full-page settings view
 
-##### =Á src/components/ui/ - Base UI Components
+##### =ï¿½ src/components/ui/ - Base UI Components
 All the foundational UI elements (buttons, cards, dialogs, etc.) from shadcn/ui library plus custom components:
 - `InlineTimeEditor.tsx` - Quick editing of task time estimates
 - `TypewriterPlaceholder.tsx` - Animated placeholder text
@@ -72,28 +72,28 @@ All the foundational UI elements (buttons, cards, dialogs, etc.) from shadcn/ui 
 - `progress-ring.tsx` - Circular progress indicators
 - `theme-toggle.tsx` - Dark/light mode switcher
 
-#### =Á src/hooks/ - Reusable Logic
+#### =ï¿½ src/hooks/ - Reusable Logic
 - `use-typewriter.tsx` - Animated typing effect
 - `use-loading-typewriter.tsx` - Typewriter effect with loading states
 - `use-mobile.tsx` - Detects if user is on mobile device
 - `use-toast.ts` - Toast notification system
 
-#### =Á src/integrations/supabase/ - Database Connection
+#### =ï¿½ src/integrations/supabase/ - Database Connection
 - `client.ts` - Supabase connection and configuration
 - `types.ts` - TypeScript definitions for database tables
 - `types-old.ts` - Legacy type definitions (kept for migration reference)
 
-#### =Á src/services/ - Business Logic
+#### =ï¿½ src/services/ - Business Logic
 - `cardService.ts` - Handles card collection and unlocking logic
 
-#### =Á src/utils/ - Helper Functions
+#### =ï¿½ src/utils/ - Helper Functions
 - `taskCategorization.ts` - Logic for automatically categorizing tasks
 - `timeUtils.ts` - Time formatting and calculation helpers
 
-#### =Á src/lib/ - Third-Party Integrations
+#### =ï¿½ src/lib/ - Third-Party Integrations
 - `utils.ts` - Utility functions and class name helpers
 
-### =Á supabase/ - Backend Services
+### =ï¿½ supabase/ - Backend Services
 
 #### Database Schema (from current_schema.sql)
 - **profiles** - User account info, preferences, onboarding status
@@ -103,14 +103,14 @@ All the foundational UI elements (buttons, cards, dialogs, etc.) from shadcn/ui 
 - **user_card_progress** - Which cards each user has unlocked
 - **daily_stats** - User progress tracking (tasks completed, time spent)
 
-#### =Á supabase/functions/ - AI-Powered Edge Functions
+#### =ï¿½ supabase/functions/ - AI-Powered Edge Functions
 - `process-brain-dump/` - Takes messy text input and extracts organized tasks
 - `process-image-brain-dump/` - Same as above but for image input (OCR + AI)
 - `breakdown-task/` - Breaks complex tasks into smaller, manageable subtasks
 - `categorize-task/` - Automatically assigns categories to tasks
 - `shuffle-tasks/` - Intelligently reorders tasks based on user preferences
 
-### =Á public/ - Static Assets
+### =ï¿½ public/ - Static Assets
 - `favicon.ico` - Browser tab icon
 - `robots.txt` - Search engine instructions
 - `Calendas_Plus (1).otf` - Custom font file

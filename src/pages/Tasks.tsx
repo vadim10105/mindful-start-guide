@@ -17,6 +17,7 @@ import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categori
 import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
 import { TaskTimeline } from "@/components/tasks/task-capture/TaskTimeline";
+import { DoLessBetter } from "@/components/tasks/task-capture/DoLessBetter";
 import { PiPProvider, usePiP } from "@/components/tasks/game/PictureInPicture";
 import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery";
 import {
@@ -2271,132 +2272,17 @@ const TasksContent = () => {
                               }, 0);
                             };
 
-                            // Smart shortening function
-                            const shortenActiveList = async () => {
-                              if (!user) return;
-
-                              // Calculate shortening score (separate from shuffle-tasks)
-                              const calculateShorteningScore = (taskId: string, userPreferences: any = {}) => {
-                                const task = tasksById[taskId];
-                                const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
-                                
-                                let categoryScore = 0;
-                                let tagScore = 0;
-                                
-                                // Category score based on user preferences
-                                if (task?.category && userPreferences) {
-                                  const preference = userPreferences[task.category];
-                                  if (preference === 'Loved') categoryScore = 3;
-                                  else if (preference === 'Neutral') categoryScore = 0;  
-                                  else if (preference === 'Disliked') categoryScore = -2;
-                                }
-                                
-                                // Tag scores
-                                if (tags.isLiked) tagScore += 3;
-                                if (tags.isQuick) tagScore += 2;
-                                if (tags.isUrgent) tagScore += 1;
-                                
-                                return categoryScore + tagScore;
-                              };
-
-                              const tasksWithScores = activeTaskIds.map(taskId => ({
-                                taskId,
-                                score: calculateShorteningScore(taskId),
-                                timeMinutes: parseTimeToMinutes(taskTimeEstimatesById[taskId] || '') || 0,
-                                tags: taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false }
-                              }));
-
-                              // Selection strategy: keep 1+ liked, 1+ quick, 1+ urgent, then fill to 2 hours
-                              const mustKeep: string[] = [];
-                              const available = [...tasksWithScores];
-
-                              // Keep 1+ liked task (highest scoring)
-                              const likedTasks = available.filter(t => t.tags.isLiked).sort((a, b) => b.score - a.score);
-                              if (likedTasks.length > 0) {
-                                mustKeep.push(likedTasks[0].taskId);
-                                const index = available.findIndex(t => t.taskId === likedTasks[0].taskId);
-                                available.splice(index, 1);
-                              }
-
-                              // Keep 1+ quick task (highest scoring)
-                              const quickTasks = available.filter(t => t.tags.isQuick).sort((a, b) => b.score - a.score);
-                              if (quickTasks.length > 0) {
-                                mustKeep.push(quickTasks[0].taskId);
-                                const index = available.findIndex(t => t.taskId === quickTasks[0].taskId);
-                                available.splice(index, 1);
-                              }
-
-                              // Keep 1+ urgent task (highest scoring)
-                              const urgentTasks = available.filter(t => t.tags.isUrgent).sort((a, b) => b.score - a.score);
-                              if (urgentTasks.length > 0) {
-                                mustKeep.push(urgentTasks[0].taskId);
-                                const index = available.findIndex(t => t.taskId === urgentTasks[0].taskId);
-                                available.splice(index, 1);
-                              }
-
-                              // Fill remaining time with highest-scoring tasks until ≤ 2 hours
-                              const sorted = available.sort((a, b) => b.score - a.score);
-                              let currentTime = mustKeep.reduce((total, taskId) => {
-                                const timeEstimate = taskTimeEstimatesById[taskId];
-                                return total + (parseTimeToMinutes(timeEstimate || '') || 0);
-                              }, 0);
-
-                              const toKeep = [...mustKeep];
-                              for (const task of sorted) {
-                                if (currentTime + task.timeMinutes <= 120) { // 2 hours = 120 minutes
-                                  toKeep.push(task.taskId);
-                                  currentTime += task.timeMinutes;
-                                }
-                              }
-
-                              // Move remaining tasks to later
-                              const toMoveToLater = activeTaskIds.filter(taskId => !toKeep.includes(taskId));
-                              
-                              if (toMoveToLater.length > 0) {
-                                // Update local state
-                                setActiveTaskIds(toKeep);
-                                setLaterTaskIds(prev => [...prev, ...toMoveToLater]);
-
-                                // Update database
-                                for (const taskId of toMoveToLater) {
-                                  await saveTaskAsLater(taskId);
-                                }
-
-                                toast({
-                                  title: "List shortened",
-                                  description: `Moved ${toMoveToLater.length} tasks to later to keep under 2 hours`,
-                                });
-                              }
-                            };
-
-                            const totalMinutes = calculateTotalActiveTime();
-                            const totalTimeDisplay = formatMinutesToDisplay(totalMinutes);
-                            const shouldShowShortenSuggestion = totalMinutes > 120; // 2 hours
-
-                            if (activeTaskIds.length === 0) return null;
-
                             return (
-                              <div className="flex items-center gap-4 py-4 mb-4">
-                                <div className="flex-1 h-px bg-border"></div>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-sm text-foreground/70 font-medium flex items-center gap-2">
-                                    <Clock className="w-4 h-4" />
-                                    {totalTimeDisplay}
-                                  </span>
-                                  {shouldShowShortenSuggestion && (
-                                    <>
-                                      <span className="text-foreground/40">•</span>
-                                      <button
-                                        onClick={shortenActiveList}
-                                        className="text-sm text-yellow-500 hover:text-yellow-600 font-medium transition-colors"
-                                      >
-                                        Do less, better
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                                <div className="flex-1 h-px bg-border"></div>
-                              </div>
+                              <DoLessBetter
+                                user={user}
+                                activeTaskIds={activeTaskIds}
+                                tasksById={tasksById}
+                                taskTagsById={taskTagsById}
+                                taskTimeEstimatesById={taskTimeEstimatesById}
+                                setActiveTaskIds={setActiveTaskIds}
+                                setLaterTaskIds={setLaterTaskIds}
+                                saveTaskAsLater={saveTaskAsLater}
+                              />
                             );
                           })()}
 
