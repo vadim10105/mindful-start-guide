@@ -20,6 +20,7 @@ import { TaskTimeline } from "@/components/tasks/task-capture/TaskTimeline";
 import { DoLessBetter } from "@/components/tasks/task-capture/DoLessBetter";
 import { PiPProvider, usePiP } from "@/components/tasks/game/PictureInPicture";
 import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery";
+import { GalleryIcon } from "@/components/tasks/collection/GalleryIcon";
 import {
   DndContext,
   closestCenter,
@@ -490,6 +491,7 @@ const customCollisionDetection: CollisionDetection = (args) => {
   return collisions;
 };
 
+
 const TasksContent = () => {
   const { enterPiP } = usePiP();
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
@@ -501,6 +503,8 @@ const TasksContent = () => {
   const [taskTimeEstimates, setTaskTimeEstimates] = useState<Record<string, string>>({});
   // Add task lookup maps for ID-based system
   const [tasksById, setTasksById] = useState<Record<string, Task>>({});
+  // Gallery refresh trigger for when tasks are completed
+  const [galleryRefreshTrigger, setGalleryRefreshTrigger] = useState(0);
   const [activeTaskIds, setActiveTaskIds] = useState<string[]>([]);
   const [laterTaskIds, setLaterTaskIds] = useState<string[]>([]);
   const [taskTagsById, setTaskTagsById] = useState<Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }>>({});
@@ -2051,19 +2055,7 @@ const TasksContent = () => {
         {currentStep === 'input' && (
           <div className="relative w-full h-full max-h-[700px] flex items-center justify-center">
             {/* Card Gallery Icon */}
-            <div className="fixed bottom-6 left-6 z-50">
-              <div
-                onClick={() => setShowImmersiveGallery(true)}
-                className="h-16 w-16 rounded-full cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center p-2 relative"
-              >
-                <div className="relative">
-                  {/* Stack of cards effect - vertical */}
-                  <div className="absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform rotate-12"></div>
-                  <div className="absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform rotate-6"></div>
-                  <div className="w-6 h-8 bg-white/40 rounded border border-white/50 transform rotate-0"></div>
-                </div>
-              </div>
-            </div>
+            <GalleryIcon onOpenGallery={() => setShowImmersiveGallery(true)} refreshTrigger={galleryRefreshTrigger} />
             <Card 
               ref={cardRef}
               id="main-task-container"
@@ -2793,7 +2785,10 @@ const TasksContent = () => {
 
         {/* Game Cards Step */}
         {currentStep === 'game-cards' && (
-          <TaskGameController
+          <>
+            <GalleryIcon onOpenGallery={() => setShowImmersiveGallery(true)} refreshTrigger={galleryRefreshTrigger} />
+            
+            <TaskGameController
             tasks={prioritizedTasks.length > 0 ? prioritizedTasks.map((task) => ({
               ...task,
               estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(task.estimated_minutes)
@@ -2875,8 +2870,11 @@ const TasksContent = () => {
             }}
             onTaskComplete={(taskId) => {
               console.log('Task completed:', taskId);
+              // Refresh gallery progress counter
+              setGalleryRefreshTrigger(prev => prev + 1);
             }}
           />
+          </>
         )}
       </div>
       
