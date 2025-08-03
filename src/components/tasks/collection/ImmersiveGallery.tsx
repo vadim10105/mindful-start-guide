@@ -142,10 +142,13 @@ export const ImmersiveGallery = ({ onClose }: ImmersiveGalleryProps) => {
           // Get first card image for background (always use first card from collection)
           const firstCardImage = firstCardsByCollection[dbCollection.id] || null;
           
-          // Collection 2+ is locked until first collection has 6 cards
-          const firstCollection = dbCollections.find(c => c.display_order === 1);
-          const firstCollectionCards = firstCollection ? earnedCardsByCollection[firstCollection.id] || [] : [];
-          const isLocked = dbCollection.display_order > 1 && firstCollectionCards.length < 6;
+          // Sequential unlocking: each collection unlocks when previous collection has 6 cards
+          let isLocked = false;
+          if (dbCollection.display_order > 1) {
+            const previousCollection = dbCollections.find(c => c.display_order === dbCollection.display_order - 1);
+            const previousCollectionCards = previousCollection ? earnedCardsByCollection[previousCollection.id] || [] : [];
+            isLocked = previousCollectionCards.length < 6;
+          }
 
           return {
             id: dbCollection.id,
@@ -352,7 +355,7 @@ export const ImmersiveGallery = ({ onClose }: ImmersiveGalleryProps) => {
                         transform: flippedCards.has(index) ? 'rotateY(180deg)' : 'rotateY(0deg)'
                       }}
                     >
-                      <div className="absolute inset-0 bg-black/40 rounded-2xl" />
+                      <div className="absolute inset-0 bg-black/10 rounded-2xl" />
                       <div className="absolute inset-0 paper-texture rounded-2xl" />
                       {/* White border inside the card */}
                       <div className="absolute inset-0 border-2 border-white rounded-2xl opacity-80" />

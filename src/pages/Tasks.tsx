@@ -1397,6 +1397,13 @@ const TasksContent = () => {
         description: data.message || "Tasks have been reordered using your preferences.",
       });
       
+      // Let shuffle animation control processing state
+      // Safety timeout in case shuffle animation fails to complete
+      setTimeout(() => {
+        console.log('Safety timeout: forcing processing to false after 10 seconds');
+        setIsProcessing(false);
+      }, 10000);
+      
     } catch (error) {
       console.error('Error during shuffling:', error);
       toast({
@@ -1406,8 +1413,7 @@ const TasksContent = () => {
       });
       // Go back to review step on error
       setCurrentStep('review');
-    } finally {
-      setIsProcessing(false);
+      setIsProcessing(false); // Keep this for error case
     }
   };
 
@@ -1480,9 +1486,8 @@ const TasksContent = () => {
         });
       } catch (error) {
         console.log('AI categorization failed (non-critical):', error);
-      } finally {
-        setIsProcessing(false);
       }
+      // Removed finally block - this background task shouldn't control processing state
     }, 100);
   };
 
@@ -1535,8 +1540,14 @@ const TasksContent = () => {
         description: `${tasksToSave.length} tasks saved in order`,
       });
 
-      // Already on game-cards step, just stop processing
-      setIsProcessing(false);
+      // Already on game-cards step, let shuffle animation control processing state
+      // setIsProcessing(false); // Removed - let shuffle animation handle this
+      
+      // Safety timeout in case shuffle animation fails to complete
+      setTimeout(() => {
+        console.log('Safety timeout: forcing processing to false after 10 seconds');
+        setIsProcessing(false);
+      }, 10000);
     } catch (error) {
       console.error('Error saving tasks:', error);
       
@@ -1583,8 +1594,14 @@ const TasksContent = () => {
         description: `${tasksToSave.length} prioritized tasks saved`,
       });
 
-      // Already on game-cards step, just stop processing
-      setIsProcessing(false);
+      // Already on game-cards step, let shuffle animation control processing state
+      // setIsProcessing(false); // Removed - let shuffle animation handle this
+      
+      // Safety timeout in case shuffle animation fails to complete
+      setTimeout(() => {
+        console.log('Safety timeout: forcing processing to false after 10 seconds');
+        setIsProcessing(false);
+      }, 10000);
     } catch (error) {
       console.error('Error saving prioritized tasks:', error);
       

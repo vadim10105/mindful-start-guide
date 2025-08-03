@@ -365,7 +365,7 @@ export const TaskCard = ({
               backgroundImage: `url('${sunsetImageUrl}')` 
             }}
           />
-          <div className="absolute inset-0 bg-black/40 rounded-2xl" />
+          <div className="absolute inset-0 bg-black/10 rounded-2xl" />
           <div className="absolute inset-0 paper-texture rounded-2xl" />
           {/* White border inside the card */}
           <div className="absolute inset-0 border-2 border-white rounded-2xl opacity-80" />

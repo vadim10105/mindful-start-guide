@@ -266,6 +266,7 @@ export const PiPCard = ({
         <ShuffleAnimation
           isProcessing={isProcessing}
           onLoadingComplete={onLoadingComplete}
+          isPiP={true}
         />
       </div>
     );
