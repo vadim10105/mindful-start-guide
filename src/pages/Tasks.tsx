@@ -2508,7 +2508,7 @@ const TasksContent = () => {
                           // Pass only active tasks to shuffle (later tasks stay in later list)
                           handleShuffle(listTasks);
                         }}
-                        disabled={activeTaskIds.length === 0 || isProcessing || isTransitioning}
+                        disabled={activeTaskIds.length <= 1 || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
@@ -2658,7 +2658,7 @@ const TasksContent = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-4 md:pt-6">
                 <Button
                   onClick={() => handleShuffle()}
-                  disabled={activeTaskIds.length === 0 || isProcessing}
+                  disabled={activeTaskIds.length <= 1 || isProcessing}
                   className="w-full h-12 sm:h-11"
                   size="lg"
                 >
