@@ -821,7 +821,7 @@ const TasksContent = () => {
       if (user) {
         const tasksToSave = data.tasks.map((task: ExtractedTask, index: number) => {
           const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
-          const category = taskCategories[task.title] || 'Routine';
+          const category = taskCategories[task.title] || 'Admin Work';
           const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
           
           return {
@@ -1200,7 +1200,7 @@ const TasksContent = () => {
     // Create task input format for the edge function with AI categorization
     const taskInputs = tasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-      const category = taskCategories[taskTitle] || 'Routine'; // Fallback to Routine if categorization failed
+      const category = taskCategories[taskTitle] || 'Admin Work'; // Fallback to Routine if categorization failed
       
       console.log(`🔍 Task "${taskTitle}":`, {
         category: category,
@@ -1481,7 +1481,7 @@ const TasksContent = () => {
         taskIds.forEach((taskId, index) => {
           const task = tasksById[taskId];
           const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
-          const category = taskCategories[task?.title] || 'Routine';
+          const category = taskCategories[task?.title] || 'Admin Work';
           
           console.log(`📝 Task #${index + 1}: "${task?.title}"`, {
             position: index + 1,
@@ -1515,7 +1515,7 @@ const TasksContent = () => {
       // Create tasks based on the current order in reviewedTasks
       const tasksToSave = reviewedTasks.map((taskTitle, index) => {
         const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-        const category = taskCategories[taskTitle] || 'Routine'; // Get AI category or fallback
+        const category = taskCategories[taskTitle] || 'Admin Work'; // Get AI category or fallback
         const estimatedTime = taskTimeEstimates[taskTitle];
         const estimatedMinutes = estimatedTime ? parseTimeToMinutes(estimatedTime) : null;
         
@@ -1654,16 +1654,19 @@ const TasksContent = () => {
         const taskTitle = tasksById[taskId]?.title || taskId;
         console.log(`✅ Updated estimated time for "${taskTitle}" to ${estimatedMinutes} minutes`);
         
-        // Update local state to reflect auto-applied quick tag
+        // Update local state to reflect auto-applied/removed quick tag
+        setTaskTagsById(prev => ({
+          ...prev,
+          [taskId]: {
+            ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
+            isQuick: isQuick
+          }
+        }));
+        
         if (isQuick) {
-          setTaskTagsById(prev => ({
-            ...prev,
-            [taskId]: {
-              ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
-              isQuick: true
-            }
-          }));
-          console.log(`✅ Auto-applied quick tag to "${taskTitle}"`);
+          console.log(`✅ Auto-applied quick tag to "${taskTitle}" (${estimatedMinutes} minutes)`);
+        } else if (estimatedMinutes !== null && estimatedMinutes > 20) {
+          console.log(`✅ Auto-removed quick tag from "${taskTitle}" (${estimatedMinutes} minutes)`);
         }
       }
     } catch (error) {
@@ -2760,7 +2763,7 @@ const TasksContent = () => {
                         source: 'brain_dump' as const,
                         list_location: 'active' as const, // Prioritized tasks go to active list
                         task_status: 'task_list' as const, // New tasks start in task list
-                        category: task.category || 'Routine', // Save AI category
+                        category: task.category || 'Admin Work', // Save AI category
                         is_liked: task.is_liked,
                         is_urgent: task.is_urgent,
                         is_quick: task.is_quick,

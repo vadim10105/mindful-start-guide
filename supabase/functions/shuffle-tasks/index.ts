@@ -17,24 +17,66 @@ interface Task {
   score: number;
 }
 
-function calculateTaskScore(task: Task, userPreferences: any): number {
+function calculateTaskScore(task: Task, userPreferences: any): { score: number, reasoning: string } {
   let categoryScore = 0;
   let tagScore = 0;
+  let categoryReasoning = '';
+  let tagReasoning = '';
   
   // Category score based on user preferences
   if (task.category && userPreferences) {
-    const preference = userPreferences[task.category];
-    if (preference === 'Loved') categoryScore = 3;
-    else if (preference === 'Neutral') categoryScore = 0;  
-    else if (preference === 'Disliked') categoryScore = -2;
+    // Map database category names to preference keys
+    const categoryToPreferenceKey: Record<string, string> = {
+      'Creative Work': 'creative_work',
+      'Data Analysis': 'data_analysis',
+      'Team Meetings': 'team_meetings',
+      'Physical Tasks': 'physical_tasks',
+      'Admin Work': 'admin_work',
+      'Learning New Skills': 'learning_new_skills',
+      'Project Planning': 'project_planning',
+      'Technical Work': 'technical_work'
+    };
+    
+    const preferenceKey = categoryToPreferenceKey[task.category];
+    const preference = preferenceKey ? userPreferences[preferenceKey] : null;
+    
+    if (preference === 'liked') {
+      categoryScore = 3;
+      categoryReasoning = `${task.category} (liked: +3)`;
+    } else if (preference === 'neutral') {
+      categoryScore = 0;
+      categoryReasoning = `${task.category} (neutral: +0)`;
+    } else if (preference === 'disliked') {
+      categoryScore = -2;
+      categoryReasoning = `${task.category} (disliked: -2)`;
+    } else {
+      categoryReasoning = `${task.category} (no preference: +0)`;
+    }
+  } else {
+    categoryReasoning = 'No category';
   }
   
   // Tag scores
-  if (task.is_liked) tagScore += 3;
-  if (task.is_quick) tagScore += 2;
-  if (task.is_urgent) tagScore += 1;
+  const tags = [];
+  if (task.is_liked) {
+    tagScore += 3;
+    tags.push('liked (+3)');
+  }
+  if (task.is_quick) {
+    tagScore += 2;
+    tags.push('quick (+2)');
+  }
+  if (task.is_urgent) {
+    tagScore += 1;
+    tags.push('urgent (+1)');
+  }
   
-  return categoryScore + tagScore;
+  tagReasoning = tags.length > 0 ? `Tags: ${tags.join(', ')}` : 'No tags';
+  
+  const totalScore = categoryScore + tagScore;
+  const reasoning = `${categoryReasoning} | ${tagReasoning} | Total: ${totalScore}`;
+  
+  return { score: totalScore, reasoning };
 }
 
 function applyRulePlacement(tasks: Task[]): Task[] {
@@ -177,9 +219,17 @@ serve(async (req) => {
 
     // Calculate scores and update in database
     console.log('Calculating scores...');
+    console.log('\n📊 TASK SCORING BREAKDOWN:');
+    console.log('==========================================');
+    
     const scoreUpdates = tasks.map(async (task) => {
-      const calculatedScore = calculateTaskScore(task, userPreferences);
+      const { score: calculatedScore, reasoning } = calculateTaskScore(task, userPreferences);
       task.score = calculatedScore; // Update local copy
+      
+      // Log detailed scoring for each task
+      console.log(`📝 "${task.title}"`);
+      console.log(`   ${reasoning}`);
+      console.log('');
       
       return supabase
         .from('tasks')
@@ -188,13 +238,21 @@ serve(async (req) => {
     });
 
     await Promise.all(scoreUpdates);
-    console.log('Scores updated in database');
+    console.log('✅ Scores updated in database');
 
     // Apply rule placement to get shuffled order
     const shuffledTasks = applyRulePlacement(tasks);
 
-    console.log(`Shuffled ${tasks.length} tasks for user ${userId}`);
-    console.log('New order:', shuffledTasks.map((t, i) => `${i+1}. ${t.title} (score: ${t.score})`));
+    console.log('\n🔄 FINAL SHUFFLE ORDER:');
+    console.log('==========================================');
+    shuffledTasks.forEach((task, i) => {
+      const { reasoning } = calculateTaskScore(task, userPreferences);
+      console.log(`${i+1}. "${task.title}" (score: ${task.score})`);
+      console.log(`   ${reasoning}`);
+      console.log('');
+    });
+    
+    console.log(`✅ Successfully shuffled ${tasks.length} tasks for user ${userId}`);
 
     return new Response(JSON.stringify({
       message: `Successfully shuffled ${tasks.length} tasks`,

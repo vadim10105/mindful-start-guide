@@ -50,7 +50,8 @@ const taskTypes = [
   { id: "physical_tasks", title: "Physical Tasks" },
   { id: "admin_work", title: "Admin Work" },
   { id: "learning_new_skills", title: "Learning New Skills" },
-  { id: "project_planning", title: "Project Planning" }
+  { id: "project_planning", title: "Project Planning" },
+  { id: "technical_work", title: "Technical Work" }
 ];
 
 export const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
