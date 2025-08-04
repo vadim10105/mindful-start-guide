@@ -2797,7 +2797,7 @@ const TasksContent = () => {
             <TaskGameController
             tasks={prioritizedTasks.length > 0 ? prioritizedTasks.map((task) => ({
               ...task,
-              estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(task.estimated_minutes)
+              estimated_time: taskTimeEstimatesById[task.id] || taskTimeEstimates[task.title] || formatEstimatedTime(task.estimated_minutes)
             })) : taggedTasks.map((task) => ({
               id: task.id,
               title: task.title,
@@ -2806,7 +2806,7 @@ const TasksContent = () => {
               is_liked: task.is_liked,
               is_urgent: task.is_urgent,
               is_quick: task.is_quick,
-              estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes),
+              estimated_time: taskTimeEstimatesById[task.id] || taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes),
               notes: task.notes // Include notes for game cards
             }))}
             isLoading={isProcessing}
