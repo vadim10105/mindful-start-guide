@@ -101,12 +101,6 @@ export const WhatsAheadOverlay = ({
                           </div>
                         )}
                         
-                        {/* Notes Preview */}
-                        {task.notes && (
-                          <div className="mt-2 text-sm" style={{ color: '#d0d0d0' }}>
-                            {task.notes.substring(0, 100)}{task.notes.length > 100 ? '...' : ''}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
