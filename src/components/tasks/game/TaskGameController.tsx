@@ -340,7 +340,20 @@ export const TaskGameController = ({
       {/* Picture-in-Picture Manager */}
       <PictureInPictureManager
         tasks={tasks}
-        onComplete={onComplete}
+        onComplete={async (completedTasks) => {
+          // Save time for incomplete tasks before finishing session
+          const incompleteTasks = tasks
+            .filter(task => !completedTasks.has(task.id))
+            .map(task => task.id);
+          
+          if (incompleteTasks.length > 0) {
+            await progressManager.saveTimeForIncompleteTasks(incompleteTasks);
+          }
+          
+          // Reset timers for next session when game completes through PiP
+          progressManager.resetGameSession();
+          onComplete(completedTasks);
+        }}
         onTaskComplete={handleTaskCompleteWithCardRefresh}
         onMadeProgress={handleMadeProgressWithCardRefresh}
         onPauseTask={progressManager.handlePauseTask}
@@ -398,7 +411,20 @@ export const TaskGameController = ({
                 {/* Completion */}
                 <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
                   <Button 
-                    onClick={() => onComplete(gameState.completedTasks)} 
+                    onClick={async () => {
+                      // Save time for incomplete tasks before finishing session
+                      const incompleteTasks = tasks
+                        .filter(task => !gameState.completedTasks.has(task.id))
+                        .map(task => task.id);
+                      
+                      if (incompleteTasks.length > 0) {
+                        await progressManager.saveTimeForIncompleteTasks(incompleteTasks);
+                      }
+                      
+                      // Reset timers for next session
+                      progressManager.resetGameSession();
+                      onComplete(gameState.completedTasks);
+                    }} 
                     size="lg" 
                     className="w-full max-w-xs bg-transparent hover:bg-yellow-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300"
                   >

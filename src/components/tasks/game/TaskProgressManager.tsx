@@ -8,7 +8,12 @@ import { parseTimeToMinutes } from '@/utils/timeUtils';
 const taskTimers = new Map<string, {
   baseElapsedMs: number;
   currentSessionStart: number | null;
+  sessionStartElapsedMs: number; // Track elapsed time at start of this session
 }>();
+
+// Track which tasks have been reset this session
+const resetTasksThisSession = new Set<string>();
+let hasGameSessionStarted = false;
 
 export interface TaskProgressManagerHook {
   // Visual component
@@ -20,6 +25,9 @@ export interface TaskProgressManagerHook {
   handleCarryOn: (taskId: string) => void;
   handleSkip: (taskId: string) => Promise<void>;
   handleAddToCollectionDB: () => Promise<void>;
+  // Session management
+  resetGameSession: () => void;
+  saveTimeForIncompleteTasks: (taskIds: string[]) => Promise<void>;
 }
 
 interface TaskProgressBarProps {
@@ -94,11 +102,25 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
     if (!taskTimers.has(taskId)) {
       taskTimers.set(taskId, {
         baseElapsedMs: 0,
-        currentSessionStart: null
+        currentSessionStart: null,
+        sessionStartElapsedMs: 0
       });
     }
 
     const timerState = taskTimers.get(taskId)!;
+
+    // Reset session start time on fresh game session for each task
+    useEffect(() => {
+      if (!hasGameSessionStarted) {
+        hasGameSessionStarted = true;
+      }
+      
+      if (!resetTasksThisSession.has(taskId)) {
+        // Reset this task's session timer
+        timerState.sessionStartElapsedMs = timerState.baseElapsedMs;
+        resetTasksThisSession.add(taskId);
+      }
+    }, [taskId]);
 
     // Timer logic (from useSimpleTimer)
     useEffect(() => {
@@ -134,17 +156,22 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
 
     const estimatedMinutes = parseTimeToMinutes(estimatedTime);
     
-    // Calculate total elapsed time
+    // Calculate total elapsed time (for database)
     const totalElapsedMs = timerState.currentSessionStart 
       ? timerState.baseElapsedMs + (currentTime - timerState.currentSessionStart)
       : timerState.baseElapsedMs;
 
+    // Calculate session elapsed time (for visual display - resets each game session)
+    const sessionElapsedMs = timerState.currentSessionStart 
+      ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (currentTime - timerState.currentSessionStart)
+      : (timerState.baseElapsedMs - timerState.sessionStartElapsedMs);
+
     const elapsedMinutes = Math.floor(totalElapsedMs / 60000);
-    const elapsedSeconds = totalElapsedMs / 1000;
+    const sessionElapsedSeconds = sessionElapsedMs / 1000;
     const estimatedSeconds = estimatedMinutes * 60;
     
-    // Calculate progress percentage (capped at 100% for visual)
-    const progressPercentage = Math.min((elapsedSeconds / estimatedSeconds) * 100, 100);
+    // Calculate progress percentage using session time (capped at 100% for visual)
+    const progressPercentage = Math.min((sessionElapsedSeconds / estimatedSeconds) * 100, 100);
     
     // Check if we're overtime
     const isOvertime = elapsedMinutes > estimatedMinutes;
@@ -158,10 +185,10 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
       return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const elapsedTimeDisplay = formatElapsedTime(totalElapsedMs);
+    const elapsedTimeDisplay = formatElapsedTime(sessionElapsedMs);
     
-    // Dim text after 1 minute (60 seconds)
-    const shouldDimText = totalElapsedMs > 60000;
+    // Dim text after 1 minute (60 seconds) of session time
+    const shouldDimText = sessionElapsedMs > 60000;
 
     // Segmentation logic for tasks 39+ minutes
     const shouldSegment = estimatedMinutes >= 39;
@@ -182,12 +209,13 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
       }
     }
 
-    // Calculate which segments are filled and how much
+    // Calculate which segments are filled and how much (using session time)
     const getSegmentProgress = () => {
       if (!shouldSegment) return [];
       
       const segmentProgress: number[] = [];
-      let remainingElapsedMinutes = elapsedMinutes;
+      const sessionElapsedMinutes = Math.floor(sessionElapsedMs / 60000);
+      let remainingElapsedMinutes = sessionElapsedMinutes;
       
       for (const segmentDuration of segments) {
         if (remainingElapsedMinutes <= 0) {
@@ -665,6 +693,49 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
     }
   };
 
+  const resetGameSession = () => {
+    // Clear the tracking so next game session will reset all timers
+    resetTasksThisSession.clear();
+    hasGameSessionStarted = false;
+  };
+
+  const saveTimeForIncompleteTasks = async (taskIds: string[]) => {
+    // Save current session time for tasks that will be marked incomplete
+    for (const taskId of taskIds) {
+      const startTime = taskStartTimes[taskId];
+      if (startTime) {
+        const currentSessionTimeMs = Date.now() - startTime;
+        const currentSessionMinutes = Math.round(currentSessionTimeMs / 60000);
+        
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user && currentSessionMinutes > 0) {
+            // Get existing time from database
+            const { data: existingTask } = await supabase
+              .from('tasks')
+              .select('time_spent_minutes')
+              .eq('id', taskId)
+              .eq('user_id', user.id)
+              .single();
+            
+            const existingMinutes = existingTask?.time_spent_minutes || 0;
+            const totalMinutes = existingMinutes + currentSessionMinutes;
+            
+            await supabase
+              .from('tasks')
+              .update({ 
+                time_spent_minutes: totalMinutes
+              })
+              .eq('id', taskId);
+            console.log(`💾 Added ${currentSessionMinutes} minutes to existing ${existingMinutes} minutes (total: ${totalMinutes}) for incomplete task: ${taskId}`);
+          }
+        } catch (error) {
+          console.error('Error saving time for incomplete task:', error);
+        }
+      }
+    }
+  };
+
   return {
     ProgressBar,
     handleTaskComplete,
@@ -672,6 +743,8 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
     handlePauseTask,
     handleCarryOn,
     handleSkip,
-    handleAddToCollectionDB
+    handleAddToCollectionDB,
+    resetGameSession,
+    saveTimeForIncompleteTasks
   };
 };
