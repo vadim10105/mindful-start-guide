@@ -697,6 +697,15 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
     // Clear the tracking so next game session will reset all timers
     resetTasksThisSession.clear();
     hasGameSessionStarted = false;
+    
+    // Force reset all existing timers' session start times AND base elapsed times for visual reset
+    taskTimers.forEach((timerState, taskId) => {
+      // For visual reset, set both baseElapsedMs and sessionStartElapsedMs to 0
+      // This ensures timers display from 0:00 for new game session
+      timerState.baseElapsedMs = 0;
+      timerState.sessionStartElapsedMs = 0;
+      timerState.currentSessionStart = null; // Also clear any active session
+    });
   };
 
   const saveTimeForIncompleteTasks = async (taskIds: string[]) => {

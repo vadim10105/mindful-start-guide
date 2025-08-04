@@ -319,10 +319,11 @@ export const TaskGameController = ({
   // Auto-activate first card on initial load (skip "Play Card" step)
   useEffect(() => {
     if (tasks.length > 0 && gameState.isInitialLoad && !gameState.hasCommittedToTask) {
-      console.log('Auto-activating first card on initial load');
+      // Reset timers for new game session
+      progressManager.resetGameSession();
       handleCommitToCurrentTask();
     }
-  }, [tasks, gameState.isInitialLoad, gameState.hasCommittedToTask, handleCommitToCurrentTask]);
+  }, [tasks, gameState.isInitialLoad, gameState.hasCommittedToTask, handleCommitToCurrentTask, progressManager]);
 
   // Show loading state if tasks are being processed
   if (isLoading) {
