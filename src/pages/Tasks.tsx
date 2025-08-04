@@ -1404,9 +1404,9 @@ const TasksContent = () => {
       // Let shuffle animation control processing state
       // Safety timeout in case shuffle animation fails to complete
       setTimeout(() => {
-        console.log('Safety timeout: forcing processing to false after 10 seconds');
+        console.log('Safety timeout: forcing processing to false after 3 seconds');
         setIsProcessing(false);
-      }, 10000);
+      }, 3000);
       
     } catch (error) {
       console.error('Error during shuffling:', error);
@@ -1462,6 +1462,12 @@ const TasksContent = () => {
     setTimeout(() => {
       enterPiP();
     }, 100);
+    
+    // Safety timeout to stop processing state (same as shuffle function)
+    setTimeout(() => {
+      console.log('Safety timeout: forcing processing to false after 3 seconds');
+      setIsProcessing(false);
+    }, 3000);
     
     // Run AI categorization in background for logging (optional)
     setTimeout(async () => {

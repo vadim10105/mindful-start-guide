@@ -29,10 +29,10 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
   // Preload images and enforce minimum loading time
   useEffect(() => {
     if (randomCards.length > 0 && isProcessing) {
-      // Start minimum time timer (5 seconds)
+      // Start minimum time timer (2 seconds)
       const minTimeTimer = setTimeout(() => {
         setMinTimeElapsed(true);
-      }, 5000);
+      }, 2000);
 
       // Preload all images
       const imagePromises = randomCards.map((card) => {
