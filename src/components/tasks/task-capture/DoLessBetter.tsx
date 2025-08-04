@@ -166,7 +166,7 @@ export const DoLessBetter = ({
               onClick={shortenActiveList}
               className="text-sm text-yellow-500 hover:text-yellow-600 font-medium transition-colors"
             >
-              Do less, better
+              Shorten List
             </button>
           </>
         )}

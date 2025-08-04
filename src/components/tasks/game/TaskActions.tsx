@@ -63,20 +63,7 @@ export const TaskActions = ({
     );
   }
 
-  if (isPaused) {
-    return (
-      <Button 
-        onClick={() => onCarryOn(task.id)}
-        size="sm"
-        className="w-full bg-primary hover:bg-primary/90 transition-all duration-700"
-        style={{ color: '#434343' }}
-      >
-        <Play className="w-4 h-4 mr-2" />
-        Play
-      </Button>
-    );
-  }
-
+  // Check if this paused card should show "Back to Active Card" instead of "Play"
   if (!isActiveCommitted && hasCommittedToTask && activeCommittedIndex >= 0) {
     return (
       <div className="space-y-2">
@@ -90,6 +77,20 @@ export const TaskActions = ({
           Back to Active Card
         </Button>
       </div>
+    );
+  }
+
+  if (isPaused) {
+    return (
+      <Button 
+        onClick={() => onCarryOn(task.id)}
+        size="sm"
+        className="w-full bg-primary hover:bg-primary/90 transition-all duration-700"
+        style={{ color: '#434343' }}
+      >
+        <Play className="w-4 h-4 mr-2" />
+        Play
+      </Button>
     );
   }
 
