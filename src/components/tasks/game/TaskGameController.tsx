@@ -420,48 +420,51 @@ export const TaskGameController = ({
                   pausedTasks={gameState.pausedTasks}
                 />
 
-                {/* Bottom Actions */}
-                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-4">
-                  {/* What's Ahead Eye Icon */}
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    onMouseDown={() => setShowWhatsAhead(true)}
-                    onMouseUp={() => setShowWhatsAhead(false)}
-                    onTouchStart={() => setShowWhatsAhead(true)}
-                    onTouchEnd={() => setShowWhatsAhead(false)}
-                    className="bg-transparent hover:bg-blue-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300 px-4"
-                  >
-                    <Eye className="h-5 w-5" />
-                  </Button>
-                  
-                  {/* Finish Session */}
-                  <Button 
-                    onClick={async () => {
-                      // Save time for incomplete tasks before finishing session
-                      const incompleteTasks = tasks
-                        .filter(task => !gameState.completedTasks.has(task.id))
-                        .map(task => task.id);
-                      
-                      if (incompleteTasks.length > 0) {
-                        await progressManager.saveTimeForIncompleteTasks(incompleteTasks);
-                      }
-                      
-                      // Reset timers for next session
-                      progressManager.resetGameSession();
-                      onComplete(gameState.completedTasks);
-                    }} 
-                    size="lg" 
-                    className="bg-transparent hover:bg-yellow-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300 px-8"
-                  >
-                    Finish Session
-                  </Button>
-                </div>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Bottom Actions - Fixed position outside main interface */}
+      {!pipManager.isPiPActive && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-4">
+          {/* What's Ahead Eye Icon */}
+          <Button
+            variant="ghost"
+            size="lg"
+            onMouseDown={() => setShowWhatsAhead(true)}
+            onMouseUp={() => setShowWhatsAhead(false)}
+            onTouchStart={() => setShowWhatsAhead(true)}
+            onTouchEnd={() => setShowWhatsAhead(false)}
+            className="bg-transparent hover:bg-blue-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300 px-4"
+          >
+            <Eye className="h-5 w-5" />
+          </Button>
+          
+          {/* Finish Session */}
+          <Button 
+            onClick={async () => {
+              // Save time for incomplete tasks before finishing session
+              const incompleteTasks = tasks
+                .filter(task => !gameState.completedTasks.has(task.id))
+                .map(task => task.id);
+              
+              if (incompleteTasks.length > 0) {
+                await progressManager.saveTimeForIncompleteTasks(incompleteTasks);
+              }
+              
+              // Reset timers for next session
+              progressManager.resetGameSession();
+              onComplete(gameState.completedTasks);
+            }} 
+            size="lg" 
+            className="bg-transparent hover:bg-yellow-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300 px-8"
+          >
+            Finish Session
+          </Button>
+        </div>
+      )}
 
       {/* What's Ahead Overlay */}
       <WhatsAheadOverlay 
