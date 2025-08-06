@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { TaskCard } from "../TaskCard";
+import { TaskActions } from "../TaskActions";
 import { TaskProgressManagerHook } from "../TaskProgressManager";
 import { TaskCardData, CompletedTask, GameStateType } from "../GameState";
 import { useTaskTimer } from "../TaskTimer";
@@ -401,9 +402,36 @@ export const PiPCard = ({
           navigationUnlocked={gameState.navigationUnlocked}
           formatTime={formatTime}
           progressManager={progressManager}
+          hideTaskActions={true}
         />
         </div>
       </div>
+
+      {/* Fixed Task Actions at PiP level */}
+      {!gameState.completedTasks.has(currentTask.id) && (
+        <div className="absolute bottom-4 left-4 right-4 bg-gradient-to-t from-[hsl(48_20%_97%)] via-[hsl(48_20%_97%)] to-transparent p-4 rounded-lg">
+          <TaskActions
+            task={currentTask}
+            isCompleted={gameState.completedTasks.has(currentTask.id)}
+            isPaused={gameState.pausedTasks.has(currentTask.id)}
+            pausedTime={gameState.pausedTasks.get(currentTask.id) || 0}
+            isActiveCommitted={currentCardIndex === gameState.activeCommittedIndex}
+            hasCommittedToTask={gameState.hasCommittedToTask}
+            isCurrentTask={currentCardIndex === gameState.currentViewingIndex}
+            activeCommittedIndex={gameState.activeCommittedIndex}
+            onCommit={handleCommitToCurrentTask}
+            onComplete={handleTaskComplete}
+            onMadeProgress={onMadeProgress}
+            onMoveOn={handlePauseTask}
+            onCarryOn={handleCarryOn}
+            onSkip={handleSkip}
+            onBackToActive={handleBackToActiveCard}
+            navigationUnlocked={gameState.navigationUnlocked}
+            formatTime={formatTime}
+            onPauseHover={() => {}}
+          />
+        </div>
+      )}
 
     </div>
   );

@@ -55,12 +55,7 @@ export const TaskActions = ({
 }: TaskActionsProps) => {
   const [showCompletionOptions, setShowCompletionOptions] = useState(false);
   if (isCompleted) {
-    return (
-      <div className="flex items-center justify-center gap-2" style={{ color: 'hsl(142 70% 45%)' }}>
-        <Check className="w-4 h-4" />
-        <span className="font-medium text-sm">Completed!</span>
-      </div>
-    );
+    return null;
   }
 
   // Check if this paused card should show "Back to Active Card" instead of "Play"
@@ -70,7 +65,7 @@ export const TaskActions = ({
         <Button
           onClick={onBackToActive}
           size="sm"
-          className="w-full flex items-center gap-2 bg-gray-300 hover:bg-primary hover:text-white transition-all duration-700"
+          className="w-full flex items-center gap-2 bg-gray-200 hover:bg-primary hover:text-white transition-all duration-700"
           style={{ color: 'hsl(220 10% 30%)' }}
         >
           <RotateCcw className="w-4 h-4" />
@@ -133,7 +128,7 @@ export const TaskActions = ({
           <Button 
             onClick={() => setShowCompletionOptions(false)}
             size="sm"
-            className="bg-gray-300 hover:bg-gray-400 px-3 transition-all duration-700"
+            className="bg-gray-200 hover:bg-gray-300 px-3 transition-all duration-700"
             style={{ color: 'hsl(220 10% 30%)' }}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -141,7 +136,7 @@ export const TaskActions = ({
           <Button 
             onClick={() => onMadeProgress(task.id)}
             size="sm"
-            className="flex-1 bg-gray-300 hover:bg-orange-500 hover:text-white transition-all duration-700"
+            className="flex-1 bg-gray-200 hover:bg-orange-500 hover:text-white transition-all duration-700"
             style={{ color: 'hsl(220 10% 30%)' }}
           >
             Made Progress
@@ -149,7 +144,7 @@ export const TaskActions = ({
           <Button 
             onClick={() => onComplete(task.id)}
             size="sm"
-            className="flex-1 bg-gray-300 hover:bg-green-600 hover:text-white transition-all duration-700"
+            className="flex-1 bg-gray-200 hover:bg-green-600 hover:text-white transition-all duration-700"
             style={{ color: 'hsl(220 10% 30%)' }}
           >
             Complete
@@ -165,7 +160,7 @@ export const TaskActions = ({
         <Button 
           onClick={() => setShowCompletionOptions(true)}
           size="sm"
-          className="bg-gray-300 hover:bg-green-600 hover:text-white px-3 transition-all duration-700"
+          className="bg-gray-200 hover:bg-green-600 hover:text-white px-3 transition-all duration-700"
           style={{ color: 'hsl(220 10% 30%)' }}
         >
           <Check className="w-4 h-4" />
@@ -175,7 +170,7 @@ export const TaskActions = ({
           onMouseEnter={() => onPauseHover?.(true)}
           onMouseLeave={() => onPauseHover?.(false)}
           size="sm"
-          className="flex-1 bg-gray-300 hover:bg-primary hover:text-white transition-all duration-700"
+          className="flex-1 bg-gray-200 hover:bg-primary hover:text-white transition-all duration-700"
           style={{ color: 'hsl(220 10% 30%)' }}
         >
           <Pause className="w-4 h-4 mr-1" />

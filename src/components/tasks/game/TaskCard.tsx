@@ -86,6 +86,7 @@ interface TaskCardProps {
   onNotesChange?: (taskId: string, notes: string) => void;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
+  hideTaskActions?: boolean;
 }
 
 export const TaskCard = ({
@@ -117,7 +118,8 @@ export const TaskCard = ({
   onBackToActive,
   onNotesChange,
   navigationUnlocked,
-  formatTime
+  formatTime,
+  hideTaskActions = false
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -301,7 +303,7 @@ export const TaskCard = ({
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4">
+          <CardContent className="flex-1 flex flex-col justify-between space-y-4 px-4 pb-4 overflow-hidden">
 
             {/* Progress Bar */}
             <progressManager.ProgressBar
@@ -312,7 +314,7 @@ export const TaskCard = ({
             />
 
             {/* Notes Section */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               <div className="relative flex-1">
                 <Textarea
                   value={notes}
@@ -329,26 +331,28 @@ export const TaskCard = ({
             </div>
 
             {/* Task Actions */}
-            <TaskActions
-              task={task}
-              isCompleted={isCompleted}
-              isPaused={isPaused}
-              pausedTime={pausedTime}
-              isActiveCommitted={isActiveCommitted}
-              hasCommittedToTask={hasCommittedToTask}
-              isCurrentTask={isCurrentTask}
-              activeCommittedIndex={activeCommittedIndex}
-              onCommit={onCommit}
-              onComplete={onComplete}
-              onMadeProgress={onMadeProgress}
-              onMoveOn={onMoveOn}
-              onCarryOn={onCarryOn}
-              onSkip={onSkip}
-              onBackToActive={onBackToActive}
-              navigationUnlocked={navigationUnlocked}
-              formatTime={formatTime}
-              onPauseHover={setIsPauseHovered}
-            />
+            {!hideTaskActions && (
+              <TaskActions
+                task={task}
+                isCompleted={isCompleted}
+                isPaused={isPaused}
+                pausedTime={pausedTime}
+                isActiveCommitted={isActiveCommitted}
+                hasCommittedToTask={hasCommittedToTask}
+                isCurrentTask={isCurrentTask}
+                activeCommittedIndex={activeCommittedIndex}
+                onCommit={onCommit}
+                onComplete={onComplete}
+                onMadeProgress={onMadeProgress}
+                onMoveOn={onMoveOn}
+                onCarryOn={onCarryOn}
+                onSkip={onSkip}
+                onBackToActive={onBackToActive}
+                navigationUnlocked={navigationUnlocked}
+                formatTime={formatTime}
+                onPauseHover={setIsPauseHovered}
+              />
+            )}
           </CardContent>
         </div>
       </Card>
