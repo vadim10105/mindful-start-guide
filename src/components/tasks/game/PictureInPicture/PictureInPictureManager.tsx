@@ -65,7 +65,6 @@ const usePictureInPictureManager = ({
       <div className="fixed top-4 left-4 z-50 bg-green-500/10 border border-green-500/20 backdrop-blur-sm px-3 py-2 rounded-md">
         <div className="flex items-center gap-2 text-green-400 text-sm">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          <span>Picture-in-Picture Active</span>
         </div>
       </div>
     );
@@ -157,8 +156,6 @@ export const PictureInPictureManager = ({
         progressManager={progressManager}
       />
 
-      {/* PiP Active Status Indicator */}
-      {pipManager.renderPiPIndicator()}
 
       {/* PiP Toggle Button - Fixed position (when not in PiP mode) */}
       {!pipManager.isPiPActive && pipManager.renderPiPToggleButton()}

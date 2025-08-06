@@ -13,6 +13,7 @@ import { usePictureInPictureManager, PictureInPictureManager } from "./PictureIn
 import { usePiP } from "./PictureInPicture";
 import { getRewardCardData, RewardCardData } from "@/services/cardService";
 import { WhatsAheadOverlay } from "./WhatsAheadOverlay";
+import { WhatsAheadMainWindow } from "./WhatsAheadMainWindow";
 
 // External dependencies
 import { supabase } from "@/integrations/supabase/client";
@@ -375,9 +376,16 @@ export const TaskGameController = ({
         progressManager={progressManager}
       />
 
-      {/* Main Interface - Hide when PiP is active */}
-      {!pipManager.isPiPActive && (
-        <div className="min-h-screen bg-background flex items-center justify-center">
+      {/* Main Interface */}
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        {pipManager.isPiPActive ? (
+          /* Show What's Ahead when PiP is active */
+          <WhatsAheadMainWindow 
+            tasks={tasks}
+            gameState={gameState}
+          />
+        ) : (
+          /* Show normal task interface when PiP is not active */
           <div className="w-full px-4">
             <div className="w-full animate-in fade-in-0 duration-500 ease-out">
               {/* Main Card Display */}
@@ -452,8 +460,8 @@ export const TaskGameController = ({
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* What's Ahead Overlay */}
       <WhatsAheadOverlay 
