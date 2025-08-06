@@ -939,6 +939,147 @@ const TasksContent = () => {
     }
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Follow exact same pattern as handleBrainDumpSubmit
+    setIsProcessing(true);
+    setIsTransitioning(true);
+    setCameFromBrainDump(true); // Track that we came from brain dump
+    setInputMode('list'); // Toggle immediately transitions to list position
+    console.log('Starting image upload transition...');
+
+    try {
+      // Upload image to Supabase storage
+      const fileName = `public/${user.id}_${Date.now()}_${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('brain-dumps-images')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw new Error(`Failed to upload image: ${uploadError.message}`);
+      }
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('brain-dumps-images')
+        .getPublicUrl(uploadData.path);
+
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to get image URL');
+      }
+
+      console.log('Calling edge function with image URL...');
+      
+      const { data, error } = await supabase.functions.invoke('process-image-brain-dump', {
+        body: { imageUrl: urlData.publicUrl }
+      });
+
+      console.log('Edge function response:', { data, error });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error('Failed to process image');
+      }
+
+      if (!data?.tasks) {
+        console.error('No tasks in response:', data);
+        throw new Error('No tasks extracted from image');
+      }
+
+      console.log('Successfully extracted tasks:', data.tasks);
+      
+      // Categorize extracted tasks
+      const taskTitles = data.tasks.map((task: ExtractedTask) => task.title);
+      const categorizedTasks = await categorizeTasks(taskTitles);
+      console.log('Categorized tasks:', categorizedTasks);
+      
+      // Prepare tasks for database insertion
+      const tasksToInsert = data.tasks.map((task: ExtractedTask) => {
+        const formattedTime = validateAndFormatTimeInput(task.estimated_time) || task.estimated_time;
+        return {
+          title: task.title,
+          user_id: user.id,
+          list_location: 'active',
+          task_status: 'task_list',
+          is_liked: false,
+          is_urgent: false,
+          is_quick: false,
+          category: categorizedTasks[task.title] || 'Technical Work',
+          estimated_minutes: parseTimeToMinutes(formattedTime)
+        };
+      });
+      
+      // Save to database
+      const { data: insertedTasks, error: saveError } = await supabase
+        .from('tasks')
+        .insert(tasksToInsert)
+        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes');
+        
+      if (saveError) {
+        console.error('Error saving extracted tasks:', saveError);
+        throw new Error('Failed to save tasks to database');
+      }
+      
+      console.log('✅ Successfully saved extracted tasks to database:', insertedTasks);
+      
+      // Refresh tasks from database to show in UI
+      await loadTasksById();
+      
+      // Also add task titles to listTasks to ensure buttons show correctly
+      const newTaskTitles = insertedTasks.map(task => task.title);
+      setListTasks(prev => [...prev, ...newTaskTitles]);
+      
+      setBrainDumpText('');
+
+      // Just switch to Plan mode - same as text brain dump
+      setTimeout(() => {
+        setInputMode('list'); // Switch toggle to Plan
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 100);
+      }, 600);
+
+    } catch (error) {
+      console.error('Error processing image:', error);
+      
+      let errorMessage = "Failed to process image. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("quota") || error.message.includes("billing")) {
+          errorMessage = "OpenAI API quota exceeded. Please check your OpenAI billing at platform.openai.com/usage.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // Reset transition states on error (same as brain dump)
+      setIsTransitioning(false);
+    } finally {
+      setIsProcessing(false);
+      console.log('Processing finished, set isProcessing to false');
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
 
   const resetFlow = () => {
     setCurrentStep('input');
@@ -2122,12 +2263,35 @@ const TasksContent = () => {
                         onFocus={() => setIsTextareaFocused(true)}
                         onBlur={() => setIsTextareaFocused(false)}
                         disabled={isTransitioning}
-                        className={`h-full min-h-[320px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 ${
+                        className={`h-full min-h-[320px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 pb-12 ${
                           isTransitioning ? 'text-muted-foreground' : ''
                         }`}
                         rows={8}
                       />
                       <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
+                      
+                      {/* Image Upload Icon - Bottom Left Corner */}
+                      <label className="absolute bottom-3 left-3 z-50 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={isProcessing || isTransitioning}
+                          className="sr-only"
+                          aria-label="Upload image"
+                        />
+                        <div className={`p-2 rounded-md transition-all duration-200 ${
+                          isProcessing || isTransitioning 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : 'hover:bg-muted/30 cursor-pointer'
+                        }`}>
+                          <Images className={`w-5 h-5 transition-colors duration-200 ${
+                            isProcessing || isTransitioning 
+                              ? 'text-gray-400' 
+                              : 'text-gray-500 hover:text-gray-300'
+                          }`} />
+                        </div>
+                      </label>
                     </div>
                   </div>
                   <Button 
@@ -2507,8 +2671,7 @@ const TasksContent = () => {
                       className="w-full h-12 sm:h-11"
                       size="lg"
                     >
-                      <ArrowRight className="w-4 h-4 mr-2" />
-                      Share for AI Processing
+                      Shuffle
                     </Button>
                   ) : (listTasks.length > 0 || laterTasks.length > 0 || !isTransitioning) ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-12">
