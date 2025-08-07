@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface GalleryIconProps {
-  onOpenGallery: () => void;
+  onOpenGallery: (collectionId?: string) => void;
   refreshTrigger?: number;
 }
 
@@ -10,6 +10,8 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
   const [collections, setCollections] = useState<any[]>([]);
   const [isHovered, setIsHovered] = useState(false);
   const [firstCardImage, setFirstCardImage] = useState<string | null>(null);
+  const [isCelebrating, setIsCelebrating] = useState(false);
+  const [previousProgress, setPreviousProgress] = useState(0);
 
   // Load collection data
   useEffect(() => {
@@ -105,10 +107,29 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
   const progress = currentCollection ? currentCollection.earnedCards.length : 0;
   const total = currentCollection ? currentCollection.totalCards : 6;
 
+  // Detect progress increase and trigger celebration
+  useEffect(() => {
+    if (progress > previousProgress && previousProgress >= 0) {
+      setIsCelebrating(true);
+      // Reset celebration after animation (longer duration for more visibility)
+      setTimeout(() => {
+        setIsCelebrating(false);
+      }, 2000);
+    }
+    setPreviousProgress(progress);
+  }, [progress, previousProgress]);
+
   return (
     <div className="fixed bottom-6 left-6 z-50">
+      {/* Background Overlay - dims and blurs everything when hovering */}
+      {isHovered && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-all duration-700 ease-out"
+          style={{ zIndex: -1, left: '-1000px', top: '-1000px' }}
+        />
+      )}
       <div
-        onClick={onOpenGallery}
+        onClick={() => onOpenGallery(currentCollection?.id)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={`cursor-pointer transition-all duration-500 ease-out ${
@@ -128,10 +149,32 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
           {/* Main Icon */}
           <div className="h-16 w-16 rounded-full flex flex-col items-center justify-center p-2 relative">
             <div className="relative">
-              {/* Stack of cards effect - vertical */}
-              <div className="absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform rotate-12"></div>
-              <div className="absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform rotate-6"></div>
-              <div className="w-6 h-8 bg-white/40 rounded border border-white/50 transform rotate-0"></div>
+              {/* Silvery glow behind cards when celebrating */}
+              {isCelebrating && (
+                <div className="absolute -inset-2 bg-gradient-radial from-gray-300/40 via-gray-400/20 to-transparent rounded-full animate-pulse blur-sm"></div>
+              )}
+              
+              {/* Stack of cards effect - simulate new card being added */}
+              <div className={`absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform transition-all duration-500 ease-out ${
+                isCelebrating 
+                  ? 'rotate-[20deg] translate-x-1 translate-y-1 scale-105' 
+                  : 'rotate-12'
+              }`}></div>
+              <div className={`absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform transition-all duration-400 ease-out ${
+                isCelebrating 
+                  ? 'rotate-[15deg] translate-x-1 scale-105' 
+                  : 'rotate-6'
+              }`}></div>
+              <div className={`w-6 h-8 bg-white/40 rounded border border-white/50 transform transition-all duration-300 ease-out ${
+                isCelebrating 
+                  ? 'rotate-[8deg] translate-y-0.5 scale-105 shadow-lg' 
+                  : 'rotate-0'
+              }`}></div>
+              
+              {/* New card appearing effect */}
+              {isCelebrating && (
+                <div className="absolute -top-1.5 -left-1.5 w-6 h-8 bg-white/50 rounded border border-white/60 transform rotate-[25deg] translate-x-2 translate-y-2 scale-110 animate-bounce shadow-xl"></div>
+              )}
             </div>
           </div>
 
@@ -143,7 +186,7 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
 
         {/* Hover State - Collection Preview */}
         <div
-          className={`absolute bottom-0 left-0 transition-all duration-500 ease-out ${
+          className={`absolute bottom-0 left-0 transition-all duration-700 ease-out ${
             isHovered 
               ? 'opacity-100 scale-100' 
               : 'opacity-0 scale-75 pointer-events-none'

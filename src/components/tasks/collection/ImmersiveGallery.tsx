@@ -32,12 +32,14 @@ interface Collection {
 
 interface ImmersiveGalleryProps {
   onClose: () => void;
+  initialCollectionId?: string;
 }
 
-export const ImmersiveGallery = ({ onClose }: ImmersiveGalleryProps) => {
+export const ImmersiveGallery = ({ onClose, initialCollectionId }: ImmersiveGalleryProps) => {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [collectionsLoaded, setCollectionsLoaded] = useState(false);
+  const [hasUserNavigated, setHasUserNavigated] = useState(false);
 
   useEffect(() => {
     const loadCollections = async () => {
@@ -173,6 +175,16 @@ export const ImmersiveGallery = ({ onClose }: ImmersiveGalleryProps) => {
     loadCollections();
   }, []);
 
+  // Auto-select initial collection if provided (only if user hasn't navigated)
+  useEffect(() => {
+    if (initialCollectionId && collections.length > 0 && !selectedCollection && !hasUserNavigated) {
+      const targetCollection = collections.find(c => c.id === initialCollectionId);
+      if (targetCollection && !targetCollection.isLocked) {
+        setSelectedCollection(targetCollection);
+      }
+    }
+  }, [initialCollectionId, collections, selectedCollection, hasUserNavigated]);
+
   // Don't render until collections are loaded
   if (!collectionsLoaded) {
     return null;
@@ -190,7 +202,12 @@ export const ImmersiveGallery = ({ onClose }: ImmersiveGalleryProps) => {
             ? 'cursor-not-allowed opacity-60' 
             : 'cursor-pointer group hover:scale-105'
         }`}
-        onClick={() => !collection.isLocked && setSelectedCollection(collection)}
+        onClick={() => {
+          if (!collection.isLocked) {
+            setSelectedCollection(collection);
+            setHasUserNavigated(true);
+          }
+        }}
       >
         <div className={`w-72 h-96 rounded-2xl p-6 shadow-lg ${
           !collection.isLocked ? 'hover:shadow-2xl' : ''
@@ -295,7 +312,10 @@ export const ImmersiveGallery = ({ onClose }: ImmersiveGalleryProps) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setSelectedCollection(null)}
+              onClick={() => {
+                setSelectedCollection(null);
+                setHasUserNavigated(true);
+              }}
               className="text-white hover:bg-white/10 -ml-2"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

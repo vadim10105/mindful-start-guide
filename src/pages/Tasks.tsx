@@ -512,6 +512,12 @@ const TasksContent = () => {
   const [prioritizedTasks, setPrioritizedTasks] = useState<PrioritizedTask[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showImmersiveGallery, setShowImmersiveGallery] = useState(false);
+  const [initialCollectionId, setInitialCollectionId] = useState<string | undefined>(undefined);
+
+  const handleOpenGallery = (collectionId?: string) => {
+    setInitialCollectionId(collectionId);
+    setShowImmersiveGallery(true);
+  };
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   // Loading messages
@@ -2208,7 +2214,7 @@ const TasksContent = () => {
         {currentStep === 'input' && (
           <div className="relative w-full h-full max-h-[700px] flex items-center justify-center">
             {/* Card Gallery Icon */}
-            <GalleryIcon onOpenGallery={() => setShowImmersiveGallery(true)} refreshTrigger={galleryRefreshTrigger} />
+            <GalleryIcon onOpenGallery={handleOpenGallery} refreshTrigger={galleryRefreshTrigger} />
             <Card 
               ref={cardRef}
               id="main-task-container"
@@ -2961,7 +2967,7 @@ const TasksContent = () => {
         {/* Game Cards Step */}
         {currentStep === 'game-cards' && (
           <>
-            <GalleryIcon onOpenGallery={() => setShowImmersiveGallery(true)} refreshTrigger={galleryRefreshTrigger} />
+            <GalleryIcon onOpenGallery={handleOpenGallery} refreshTrigger={galleryRefreshTrigger} />
             
             <TaskGameController
             tasks={prioritizedTasks.length > 0 ? prioritizedTasks.map((task) => ({
@@ -3056,7 +3062,11 @@ const TasksContent = () => {
       {/* Immersive Gallery */}
       {showImmersiveGallery && (
         <ImmersiveGallery
-          onClose={() => setShowImmersiveGallery(false)}
+          onClose={() => {
+            setShowImmersiveGallery(false);
+            setInitialCollectionId(undefined);
+          }}
+          initialCollectionId={initialCollectionId}
         />
       )}
 
