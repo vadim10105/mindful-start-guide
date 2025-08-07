@@ -1008,6 +1008,9 @@ const TasksContent = () => {
       // Prepare tasks for database insertion
       const tasksToInsert = data.tasks.map((task: ExtractedTask) => {
         const formattedTime = validateAndFormatTimeInput(task.estimated_time) || task.estimated_time;
+        const estimatedMinutes = parseTimeToMinutes(formattedTime);
+        const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
+        
         return {
           title: task.title,
           user_id: user.id,
@@ -1015,9 +1018,9 @@ const TasksContent = () => {
           task_status: 'task_list',
           is_liked: false,
           is_urgent: false,
-          is_quick: false,
+          is_quick: isQuick, // Auto-apply quick tag if <= 20 minutes
           category: categorizedTasks[task.title] || 'Technical Work',
-          estimated_minutes: parseTimeToMinutes(formattedTime)
+          estimated_minutes: estimatedMinutes
         };
       });
       
@@ -2358,7 +2361,7 @@ const TasksContent = () => {
                         disabled={!newTaskInput.trim()}
                         size="sm"
                         variant="ghost"
-                        className="border-0 rounded-l-none hover:bg-transparent"
+                        className="border-0 rounded-l-none hover:bg-transparent flex items-center justify-center p-2 h-auto aspect-square"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>

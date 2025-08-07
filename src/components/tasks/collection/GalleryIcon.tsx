@@ -102,7 +102,7 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
         </div>
 
         {/* Progress Counter */}
-        <div className="mt-1 text-xs text-white/70 font-medium">
+        <div className="mt-0.5 text-xs text-white/70 font-medium">
           {progress}/{total}
         </div>
       </div>

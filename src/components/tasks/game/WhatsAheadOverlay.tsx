@@ -104,14 +104,6 @@ export const WhatsAheadOverlay = ({
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Separator Line */}
-                  {index < tasks.length - 1 && (
-                    <div 
-                      className="h-px mx-6" 
-                      style={{ backgroundColor: '#404040' }}
-                    />
-                  )}
                 </div>
               );
             })}

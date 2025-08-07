@@ -84,13 +84,6 @@ export const WhatsAheadMainWindow = ({
                       </div>
                     </div>
                   </div>
-                  
-                  {index < tasks.length - 1 && (
-                    <div 
-                      className="h-px mx-6" 
-                      style={{ backgroundColor: '#404040' }}
-                    />
-                  )}
                 </div>
               );
             })}
