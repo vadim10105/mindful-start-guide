@@ -214,29 +214,31 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
         }
       `}</style>
       {/* Background Overlay - dims and blurs everything when hovering */}
-      {isHovered && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-all duration-1000 ease-out"
-          style={{ zIndex: -1, left: '-1000px', top: '-1000px' }}
-        />
-      )}
+      <div 
+        className={`fixed inset-0 backdrop-blur-sm transition-all ease-out ${
+          isHovered ? 'bg-black/50 opacity-100' : 'bg-black/0 opacity-0 pointer-events-none'
+        }`}
+        style={{ zIndex: -1, left: '-1000px', top: '-1000px', transitionDuration: '1.3s' }}
+      />
       <div
         onClick={() => onOpenGallery(currentCollection?.id)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`cursor-pointer transition-all duration-500 ease-out ${
+        className={`cursor-pointer transition-all ease-out ${
           isHovered 
             ? 'transform scale-110' 
             : 'hover:scale-105'
         }`}
+        style={{ transitionDuration: '1.3s' }}
       >
         {/* Normal State - Simple Icon */}
         <div
-          className={`transition-all duration-500 ease-out ${
+          className={`transition-all ease-out ${
             isHovered 
               ? 'opacity-0 scale-75 pointer-events-none' 
               : 'opacity-100 scale-100'
           } flex flex-col items-center`}
+          style={{ transitionDuration: '1.3s' }}
         >
           {/* Main Icon */}
           <div className="h-16 w-16 rounded-full flex flex-col items-center justify-center p-2 relative">
@@ -279,11 +281,12 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
 
         {/* Hover State - Collection Preview */}
         <div
-          className={`absolute bottom-0 left-0 transition-all duration-1000 ease-out ${
+          className={`absolute bottom-0 left-0 transition-all ease-out ${
             isHovered 
               ? 'opacity-100 scale-100' 
               : 'opacity-0 scale-95 pointer-events-none'
           }`}
+          style={{ transitionDuration: '1.3s' }}
         >
           <div className="w-72 h-96 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden">
             
