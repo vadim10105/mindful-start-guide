@@ -428,7 +428,7 @@ export const TaskGameController = ({
 
       {/* Bottom Actions - Fixed position outside main interface */}
       {!pipManager.isPiPActive && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-4">
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 flex items-center gap-4">
           {/* What's Ahead Eye Icon */}
           <Button
             variant="ghost"

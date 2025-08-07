@@ -12,6 +12,13 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
   const [firstCardImage, setFirstCardImage] = useState<string | null>(null);
   const [isCelebrating, setIsCelebrating] = useState(false);
   const [previousProgress, setPreviousProgress] = useState(0);
+  const [isCollectionComplete, setIsCollectionComplete] = useState(false);
+  const [completedCollection, setCompletedCollection] = useState<any>(null);
+  const [completedCollectionImage, setCompletedCollectionImage] = useState<string | null>(null);
+  const [previousCollectionId, setPreviousCollectionId] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [nextCollection, setNextCollection] = useState<any>(null);
+  const [nextCollectionImage, setNextCollectionImage] = useState<string | null>(null);
 
   // Load collection data
   useEffect(() => {
@@ -110,8 +117,8 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
   // Detect progress increase and trigger celebration
   useEffect(() => {
     if (progress > previousProgress && previousProgress >= 0) {
+      // Regular card celebration
       setIsCelebrating(true);
-      // Reset celebration after animation (longer duration for more visibility)
       setTimeout(() => {
         setIsCelebrating(false);
       }, 2000);
@@ -119,12 +126,97 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
     setPreviousProgress(progress);
   }, [progress, previousProgress]);
 
+  // Detect collection completion (when we move to next collection)
+  useEffect(() => {
+    if (previousCollectionId && currentCollection?.id !== previousCollectionId) {
+      // Find the completed collection
+      const completedColl = collections.find(c => c.id === previousCollectionId);
+      if (completedColl && completedColl.earnedCards.length === 6) {
+        // Get first card image for completed collection
+        const getCompletedCollectionImage = async () => {
+          try {
+            const { data: firstCardData } = await supabase
+              .from('collection_cards')
+              .select('image_url')
+              .eq('collection_id', completedColl.id)
+              .eq('card_number', 1)
+              .single();
+            
+            if (firstCardData?.image_url) {
+              setCompletedCollectionImage(firstCardData.image_url);
+            }
+          } catch (error) {
+            console.error('Error loading completed collection image:', error);
+          }
+        };
+
+        getCompletedCollectionImage();
+        
+        // Delay the celebration by 2 seconds
+        setTimeout(() => {
+          setIsCollectionComplete(true);
+          setCompletedCollection(completedColl);
+          setIsHovered(true); // Auto-show hover state
+        }, 2000);
+        
+        // Show completed collection for 3 seconds, then fade to next collection (accounting for 2s delay)
+        setTimeout(() => {
+          // Start transition to next collection
+          const nextColl = collections.find(c => !c.isLocked && c.earnedCards.length < c.totalCards);
+          if (nextColl) {
+            setNextCollection(nextColl);
+            setIsTransitioning(true);
+            
+            // Get next collection image
+            const getNextCollectionImage = async () => {
+              try {
+                const { data: firstCardData } = await supabase
+                  .from('collection_cards')
+                  .select('image_url')
+                  .eq('collection_id', nextColl.id)
+                  .eq('card_number', 1)
+                  .single();
+                
+                if (firstCardData?.image_url) {
+                  setNextCollectionImage(firstCardData.image_url);
+                }
+              } catch (error) {
+                console.error('Error loading next collection image:', error);
+              }
+            };
+            getNextCollectionImage();
+          }
+        }, 5000);
+
+        // Show next collection for 3 seconds, then fade out (accounting for 2s delay)
+        setTimeout(() => {
+          setIsCollectionComplete(false);
+          setCompletedCollection(null);
+          setCompletedCollectionImage(null);
+          setIsTransitioning(false);
+          setNextCollection(null);
+          setNextCollectionImage(null);
+          setIsHovered(false);
+        }, 10000);
+      }
+    }
+    setPreviousCollectionId(currentCollection?.id || null);
+  }, [currentCollection?.id, collections, previousCollectionId]);
+
+
   return (
     <div className="fixed bottom-6 left-6 z-50">
+      {/* Shimmer animation styles */}
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+      `}</style>
       {/* Background Overlay - dims and blurs everything when hovering */}
       {isHovered && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-all duration-700 ease-out"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-all duration-1000 ease-out"
           style={{ zIndex: -1, left: '-1000px', top: '-1000px' }}
         />
       )}
@@ -184,22 +276,24 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
           </div>
         </div>
 
+
         {/* Hover State - Collection Preview */}
         <div
-          className={`absolute bottom-0 left-0 transition-all duration-700 ease-out ${
+          className={`absolute bottom-0 left-0 transition-all duration-1000 ease-out ${
             isHovered 
               ? 'opacity-100 scale-100' 
-              : 'opacity-0 scale-75 pointer-events-none'
+              : 'opacity-0 scale-95 pointer-events-none'
           }`}
         >
           <div className="w-72 h-96 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden">
             
+
             {/* Background image (first card from collection, blurred) */}
-            {firstCardImage && (
+            {((isTransitioning && nextCollectionImage) || (isCollectionComplete && completedCollectionImage) || firstCardImage) && (
               <div 
                 className="absolute inset-0 bg-cover bg-center blur-sm scale-110"
                 style={{ 
-                  backgroundImage: `url('${firstCardImage}')` 
+                  backgroundImage: `url('${(isTransitioning && nextCollectionImage) || (isCollectionComplete && completedCollectionImage) || firstCardImage}')` 
                 }}
               />
             )}
@@ -208,33 +302,70 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
             <div className="absolute inset-0 bg-black/70" />
             
             {/* Fallback gradient if no image */}
-            {!firstCardImage && (
+            {!((isCollectionComplete && completedCollectionImage) || firstCardImage) && (
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500" />
             )}
 
-            <div className="h-full flex flex-col justify-between text-white relative z-10 p-6">
-              {/* Header and Description */}
+            {/* Completed collection content */}
+            <div className={`absolute inset-0 flex flex-col justify-between text-white z-10 p-6 transition-opacity duration-1000 ${
+              !isTransitioning ? 'opacity-100' : 'opacity-0'
+            }`}>
               <div className="space-y-2">
-                <div className="font-bold text-lg" style={{ fontFamily: 'Calendas Plus' }}>
-                  {currentCollection?.name || 'Collection'}
+                <div className="font-bold text-lg text-white" style={{ fontFamily: 'Calendas Plus' }}>
+                  {(isCollectionComplete && completedCollection) ? completedCollection.name : (currentCollection?.name || 'Collection')}
                 </div>
-                {currentCollection?.description && (
+                {((isCollectionComplete && completedCollection) ? completedCollection.description : currentCollection?.description) && (
                   <div className="text-xs opacity-80 leading-relaxed">
-                    {currentCollection.description}
+                    {(isCollectionComplete && completedCollection) ? completedCollection.description : currentCollection?.description}
                   </div>
                 )}
               </div>
               
-              {/* Progress at bottom */}
               <div className="space-y-2">
                 <div className="text-sm opacity-90">
-                  {progress} of {total} collected
+                  {isCollectionComplete ? '6 of 6 collected' : `${progress} of ${total} collected`}
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-2">
                   <div 
-                    className="bg-white rounded-full h-2 transition-all duration-500"
-                    style={{ width: `${(progress / total) * 100}%` }}
-                  />
+                    className="rounded-full h-2 transition-all duration-500 relative overflow-hidden bg-white"
+                    style={{ width: `${isCollectionComplete ? 100 : (progress / total) * 100}%` }}
+                  >
+                    {isCollectionComplete && (
+                      <div 
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-400/80 to-transparent"
+                        style={{
+                          animation: 'shimmer 1.5s ease-in-out infinite',
+                          transform: 'translateX(-100%)',
+                          backgroundSize: '200% 100%'
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next collection content */}
+            <div className={`absolute inset-0 flex flex-col justify-between text-white z-10 p-6 transition-opacity duration-1000 ${
+              isTransitioning ? 'opacity-100' : 'opacity-0'
+            }`}>
+              <div className="space-y-2">
+                <div className="font-bold text-lg text-white" style={{ fontFamily: 'Calendas Plus' }}>
+                  {nextCollection?.name || 'Next Collection'}
+                </div>
+                {nextCollection?.description && (
+                  <div className="text-xs opacity-80 leading-relaxed">
+                    {nextCollection.description}
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="text-sm opacity-90">
+                  {nextCollection ? `0 of ${nextCollection.totalCards} collected` : '0 of 6 collected'}
+                </div>
+                <div className="w-full bg-white/20 rounded-full h-2">
+                  <div className="rounded-full h-2 bg-white" style={{ width: '0%' }} />
                 </div>
               </div>
             </div>
