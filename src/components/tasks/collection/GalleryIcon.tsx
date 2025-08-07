@@ -8,6 +8,8 @@ interface GalleryIconProps {
 
 export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps) => {
   const [collections, setCollections] = useState<any[]>([]);
+  const [isHovered, setIsHovered] = useState(false);
+  const [firstCardImage, setFirstCardImage] = useState<string | null>(null);
 
   // Load collection data
   useEffect(() => {
@@ -72,6 +74,24 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
         });
 
         setCollections(uiCollections);
+
+        // Get first card image from current collection for hover state
+        if (uiCollections.length > 0) {
+          const currentCollection = uiCollections.find(c => !c.isLocked && c.earnedCards.length < c.totalCards) || uiCollections.find(c => !c.isLocked) || uiCollections[0];
+          
+          if (currentCollection) {
+            const { data: firstCardData } = await supabase
+              .from('collection_cards')
+              .select('image_url')
+              .eq('collection_id', currentCollection.id)
+              .eq('card_number', 1)
+              .single();
+            
+            if (firstCardData?.image_url) {
+              setFirstCardImage(firstCardData.image_url);
+            }
+          }
+        }
       } catch (error) {
         console.error('Error loading collections for gallery icon:', error);
       }
@@ -89,21 +109,93 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
     <div className="fixed bottom-6 left-6 z-50">
       <div
         onClick={onOpenGallery}
-        className="cursor-pointer transition-all duration-300 hover:scale-105 flex flex-col items-center"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={`cursor-pointer transition-all duration-500 ease-out ${
+          isHovered 
+            ? 'transform scale-110' 
+            : 'hover:scale-105'
+        }`}
       >
-        {/* Main Icon */}
-        <div className="h-16 w-16 rounded-full flex flex-col items-center justify-center p-2 relative">
-          <div className="relative">
-            {/* Stack of cards effect - vertical */}
-            <div className="absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform rotate-12"></div>
-            <div className="absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform rotate-6"></div>
-            <div className="w-6 h-8 bg-white/40 rounded border border-white/50 transform rotate-0"></div>
+        {/* Normal State - Simple Icon */}
+        <div
+          className={`transition-all duration-500 ease-out ${
+            isHovered 
+              ? 'opacity-0 scale-75 pointer-events-none' 
+              : 'opacity-100 scale-100'
+          } flex flex-col items-center`}
+        >
+          {/* Main Icon */}
+          <div className="h-16 w-16 rounded-full flex flex-col items-center justify-center p-2 relative">
+            <div className="relative">
+              {/* Stack of cards effect - vertical */}
+              <div className="absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform rotate-12"></div>
+              <div className="absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform rotate-6"></div>
+              <div className="w-6 h-8 bg-white/40 rounded border border-white/50 transform rotate-0"></div>
+            </div>
+          </div>
+
+          {/* Progress Counter */}
+          <div className="mt-0.5 text-xs text-white/70 font-medium">
+            {progress}/{total}
           </div>
         </div>
 
-        {/* Progress Counter */}
-        <div className="mt-0.5 text-xs text-white/70 font-medium">
-          {progress}/{total}
+        {/* Hover State - Collection Preview */}
+        <div
+          className={`absolute bottom-0 left-0 transition-all duration-500 ease-out ${
+            isHovered 
+              ? 'opacity-100 scale-100' 
+              : 'opacity-0 scale-75 pointer-events-none'
+          }`}
+        >
+          <div className="w-72 h-96 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden">
+            
+            {/* Background image (first card from collection, blurred) */}
+            {firstCardImage && (
+              <div 
+                className="absolute inset-0 bg-cover bg-center blur-sm scale-110"
+                style={{ 
+                  backgroundImage: `url('${firstCardImage}')` 
+                }}
+              />
+            )}
+            
+            {/* Dark overlay */}
+            <div className="absolute inset-0 bg-black/70" />
+            
+            {/* Fallback gradient if no image */}
+            {!firstCardImage && (
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500" />
+            )}
+
+            <div className="h-full flex flex-col justify-between text-white relative z-10 p-6">
+              {/* Header and Description */}
+              <div className="space-y-2">
+                <div className="font-bold text-lg" style={{ fontFamily: 'Calendas Plus' }}>
+                  {currentCollection?.name || 'Collection'}
+                </div>
+                {currentCollection?.description && (
+                  <div className="text-xs opacity-80 leading-relaxed">
+                    {currentCollection.description}
+                  </div>
+                )}
+              </div>
+              
+              {/* Progress at bottom */}
+              <div className="space-y-2">
+                <div className="text-sm opacity-90">
+                  {progress} of {total} collected
+                </div>
+                <div className="w-full bg-white/20 rounded-full h-2">
+                  <div 
+                    className="bg-white rounded-full h-2 transition-all duration-500"
+                    style={{ width: `${(progress / total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
