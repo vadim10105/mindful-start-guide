@@ -45,7 +45,7 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
             )
           `)
           .eq('user_id', user.id)
-          .eq('task_status', 'complete')
+          .in('task_status', ['complete', 'made_progress'])
           .not('collection_card_id', 'is', null);
 
         // Process earned cards by collection

@@ -112,6 +112,7 @@ interface TaskListItemProps {
   totalTimeSpent?: string | null; // Total time spent on linked tasks
   tasksById?: Record<string, Task>; // Task lookup for parent task access
   setShowImmersiveGallery?: (show: boolean) => void; // Function to open gallery
+  handleOpenGallery?: (collectionId?: string, cardId?: string) => void; // Function to open gallery with specific card
 }
 
 const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
@@ -153,7 +154,8 @@ const TaskListItem = ({
   taskTitle,
   totalTimeSpent,
   tasksById,
-  setShowImmersiveGallery
+  setShowImmersiveGallery,
+  handleOpenGallery
 }: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
@@ -247,10 +249,14 @@ const TaskListItem = ({
                     <p className="text-xs text-gray-500">
                       Time Spent: {totalTimeSpent}
                     </p>
-                    {true && (
+                    {tasksById && task && tasksById[task]?.parent_task_id && tasksById[tasksById[task]?.parent_task_id]?.collection_card_id && (
                       <button
                         onClick={() => {
-                          setShowImmersiveGallery?.(true);
+                          const parentTaskId = tasksById[task]?.parent_task_id;
+                          const parentTask = parentTaskId ? tasksById[parentTaskId] : null;
+                          if (parentTask?.collection_card_id) {
+                            handleOpenGallery?.(undefined, parentTask.collection_card_id);
+                          }
                         }}
                         className="text-gray-400 hover:text-gray-600 transition-colors"
                         title="View in collection"
@@ -403,7 +409,11 @@ const TaskListItem = ({
                   {tasksById && tasksById[task]?.parent_task_id && tasksById[tasksById[task]?.parent_task_id]?.collection_card_id && (
                     <button
                       onClick={() => {
-                        setShowImmersiveGallery?.(true);
+                        const parentTaskId = tasksById[task]?.parent_task_id;
+                        const parentTask = parentTaskId ? tasksById[parentTaskId] : null;
+                        if (parentTask?.collection_card_id) {
+                          handleOpenGallery?.(undefined, parentTask.collection_card_id);
+                        }
                       }}
                       className="text-gray-400 hover:text-gray-600 transition-colors"
                       title="View in collection"
@@ -563,9 +573,11 @@ const TasksContent = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showImmersiveGallery, setShowImmersiveGallery] = useState(false);
   const [initialCollectionId, setInitialCollectionId] = useState<string | undefined>(undefined);
+  const [initialCardId, setInitialCardId] = useState<string | undefined>(undefined);
 
-  const handleOpenGallery = (collectionId?: string) => {
+  const handleOpenGallery = (collectionId?: string, cardId?: string) => {
     setInitialCollectionId(collectionId);
+    setInitialCardId(cardId);
     setShowImmersiveGallery(true);
   };
   const [isProcessing, setIsProcessing] = useState(false);
@@ -2588,6 +2600,7 @@ const TasksContent = () => {
                                       })()}
                                       tasksById={tasksById}
                                       setShowImmersiveGallery={setShowImmersiveGallery}
+                                      handleOpenGallery={handleOpenGallery}
                                       onTimeUpdate={(newTime) => {
                                         // Update local state immediately for responsive UI
                                         setTaskTimeEstimatesById(prev => ({
@@ -2711,6 +2724,7 @@ const TasksContent = () => {
                                       })()}
                                       tasksById={tasksById}
                                       setShowImmersiveGallery={setShowImmersiveGallery}
+                                      handleOpenGallery={handleOpenGallery}
                                       onTimeUpdate={(newTime) => {
                                         // Update local state immediately for responsive UI
                                         setTaskTimeEstimatesById(prev => ({
@@ -3165,8 +3179,10 @@ const TasksContent = () => {
           onClose={() => {
             setShowImmersiveGallery(false);
             setInitialCollectionId(undefined);
+            setInitialCardId(undefined);
           }}
           initialCollectionId={initialCollectionId}
+          initialCardId={initialCardId}
         />
       )}
 

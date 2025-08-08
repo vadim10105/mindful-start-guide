@@ -33,13 +33,15 @@ interface Collection {
 interface ImmersiveGalleryProps {
   onClose: () => void;
   initialCollectionId?: string;
+  initialCardId?: string;
 }
 
-export const ImmersiveGallery = ({ onClose, initialCollectionId }: ImmersiveGalleryProps) => {
+export const ImmersiveGallery = ({ onClose, initialCollectionId, initialCardId }: ImmersiveGalleryProps) => {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [collectionsLoaded, setCollectionsLoaded] = useState(false);
   const [hasUserNavigated, setHasUserNavigated] = useState(false);
+  const [cardToFlip, setCardToFlip] = useState<string | undefined>(initialCardId);
 
   useEffect(() => {
     const loadCollections = async () => {
@@ -84,7 +86,7 @@ export const ImmersiveGallery = ({ onClose, initialCollectionId }: ImmersiveGall
             )
           `)
           .eq('user_id', user.id)
-          .eq('task_status', 'complete')
+          .in('task_status', ['complete', 'made_progress'])
           .not('collection_card_id', 'is', null)
           .order('completed_at');
 
@@ -177,13 +179,26 @@ export const ImmersiveGallery = ({ onClose, initialCollectionId }: ImmersiveGall
 
   // Auto-select initial collection if provided (only if user hasn't navigated)
   useEffect(() => {
-    if (initialCollectionId && collections.length > 0 && !selectedCollection && !hasUserNavigated) {
-      const targetCollection = collections.find(c => c.id === initialCollectionId);
-      if (targetCollection && !targetCollection.isLocked) {
-        setSelectedCollection(targetCollection);
+    if (collections.length > 0 && !selectedCollection && !hasUserNavigated) {
+      // If we have a card ID, find which collection it belongs to
+      if (initialCardId) {
+        const collectionWithCard = collections.find(c => 
+          c.earnedCards.some(card => card.id === initialCardId)
+        );
+        if (collectionWithCard && !collectionWithCard.isLocked) {
+          setSelectedCollection(collectionWithCard);
+          setCardToFlip(initialCardId);
+        }
+      } 
+      // Otherwise use the collection ID if provided
+      else if (initialCollectionId) {
+        const targetCollection = collections.find(c => c.id === initialCollectionId);
+        if (targetCollection && !targetCollection.isLocked) {
+          setSelectedCollection(targetCollection);
+        }
       }
     }
-  }, [initialCollectionId, collections, selectedCollection, hasUserNavigated]);
+  }, [initialCollectionId, initialCardId, collections, selectedCollection, hasUserNavigated]);
 
   // Don't render until collections are loaded
   if (!collectionsLoaded) {
@@ -272,7 +287,7 @@ export const ImmersiveGallery = ({ onClose, initialCollectionId }: ImmersiveGall
     );
   };
 
-  const DetailedCollectionView = ({ collection }: { collection: Collection }) => {
+  const DetailedCollectionView = ({ collection, cardToFlip }: { collection: Collection; cardToFlip?: string }) => {
     const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
     const [showAllTasks, setShowAllTasks] = useState(false);
 
@@ -281,6 +296,16 @@ export const ImmersiveGallery = ({ onClose, initialCollectionId }: ImmersiveGall
       const cardNumber = index + 1;
       return collection.earnedCards.find(card => card.cardNumber === cardNumber) || null;
     });
+
+    // Auto-flip the specified card when component loads
+    useEffect(() => {
+      if (cardToFlip) {
+        const cardIndex = slots.findIndex(card => card?.id === cardToFlip);
+        if (cardIndex !== -1) {
+          setFlippedCards(new Set([cardIndex]));
+        }
+      }
+    }, [cardToFlip]);
 
     const toggleCard = (index: number) => {
       const newFlipped = new Set(flippedCards);
@@ -500,7 +525,7 @@ export const ImmersiveGallery = ({ onClose, initialCollectionId }: ImmersiveGall
   };
 
   if (selectedCollection) {
-    return <DetailedCollectionView collection={selectedCollection} />;
+    return <DetailedCollectionView collection={selectedCollection} cardToFlip={cardToFlip} />;
   }
 
   return (

@@ -53,11 +53,12 @@ A productivity app that helps users manage tasks through gamification. Users can
 - `index.ts` - Exports all PiP components
 
 ###### =� src/components/tasks/collection/ - Card Collection System
-- `ImmersiveGallery.tsx` - Displays unlocked collectible cards as rewards
+- `ImmersiveGallery.tsx` - Displays unlocked collectible cards as rewards, supports auto-navigation to specific cards
+- `GalleryIcon.tsx` - Fixed bottom-left icon showing collection progress, counts both 'complete' and 'made_progress' tasks
 
 ###### =� src/components/tasks/task-capture/ - Task Input and Organization
 - `TaskTimeline.tsx` - Visual timeline view of tasks 
-- `TaskListItem.tsx` - Individual task in list format
+- `TaskListItem.tsx` - Individual task in list format with time spent display
 - `DroppableZone.tsx` - Drag-and-drop interface for task organization
 
 ##### =� src/components/settings/ - User Preferences
@@ -98,6 +99,11 @@ All the foundational UI elements (buttons, cards, dialogs, etc.) from shadcn/ui 
 #### Database Schema (from current_schema.sql)
 - **profiles** - User account info, preferences, onboarding status
 - **tasks** - Individual tasks with status, timing, categorization
+  - `parent_task_id` - Links child tasks to parent tasks for time aggregation
+  - `time_spent_minutes` - Actual time spent working on the task (stored as string, converted to number in UI)
+  - `collection_card_id` - Links completed/made_progress tasks to earned cards
+  - `list_location` - active, later, collection (collection tasks must be loaded for parent task access)
+  - `task_status` - task_list, complete, made_progress, etc. (both complete and made_progress count as earned cards)
 - **card_collections** - Groups of collectible cards
 - **collection_cards** - Individual cards with images and metadata
 - **user_card_progress** - Which cards each user has unlocked
@@ -123,6 +129,14 @@ All the foundational UI elements (buttons, cards, dialogs, etc.) from shadcn/ui 
 3. **Game Interface**: Tasks appear as cards that can be swiped through
 4. **Completion**: Users work on tasks and track time spent
 5. **Rewards**: Completing tasks unlocks collectible cards
+
+### Parent Task Time Aggregation
+- When tasks are marked as "made progress" and new follow-up tasks are created, they link via `parent_task_id`
+- TaskListItem displays "Time Spent: Xm" under task titles, showing accumulated time from the entire task chain
+- Time calculation follows the parent chain recursively, summing all `time_spent_minutes` from child to original parent
+- Includes clickable link icon (ExternalLink) next to time display that opens ImmersiveGallery and auto-flips to parent's earned card
+- Implementation in `Tasks.tsx` inline TaskListItem component with recursive time calculation
+- Collection tasks must be loaded (not just active/later) to ensure parent task data is available
 
 ### Data Flow
 1. Frontend (React/TypeScript) handles UI and user interactions
