@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, Images } from "lucide-react";
+import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, Images, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { TaskGameController } from "@/components/tasks/game/TaskGameController";
@@ -18,6 +18,7 @@ import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
 import { TaskTimeline } from "@/components/tasks/task-capture/TaskTimeline";
 import { DoLessBetter } from "@/components/tasks/task-capture/DoLessBetter";
+import { TaskListItem as ImportedTaskListItem } from "@/components/tasks/task-capture/TaskListItem";
 import { PiPProvider, usePiP } from "@/components/tasks/game/PictureInPicture";
 import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery";
 import { GalleryIcon } from "@/components/tasks/collection/GalleryIcon";
@@ -64,6 +65,9 @@ interface Task {
   card_position?: number;
   notes?: string;
   estimated_minutes?: number;
+  parent_task_id?: string;
+  time_spent_minutes?: number;
+  collection_card_id?: string;
 }
 
 interface PrioritizedTask {
@@ -105,6 +109,9 @@ interface TaskListItemProps {
   onEditingTextChange?: (text: string) => void;
   showNumber?: boolean;
   taskTitle?: string; // Optional task title for display when task prop is an ID
+  totalTimeSpent?: string | null; // Total time spent on linked tasks
+  tasksById?: Record<string, Task>; // Task lookup for parent task access
+  setShowImmersiveGallery?: (show: boolean) => void; // Function to open gallery
 }
 
 const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
@@ -143,7 +150,10 @@ const TaskListItem = ({
   onTaskCancel,
   onEditingTextChange,
   showNumber = true,
-  taskTitle
+  taskTitle,
+  totalTimeSpent,
+  tasksById,
+  setShowImmersiveGallery
 }: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
@@ -225,12 +235,32 @@ const TaskListItem = ({
                 autoFocus
               />
             ) : (
-              <p 
-                className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
-                onDoubleClick={handleDoubleClick}
-              >
-{taskTitle || 'Untitled Task'}
-              </p>
+              <div>
+                <p 
+                  className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
+                  onDoubleClick={handleDoubleClick}
+                >
+                  {taskTitle || 'Untitled Task'}
+                </p>
+                {totalTimeSpent && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <p className="text-xs text-gray-500">
+                      Time Spent: {totalTimeSpent}
+                    </p>
+                    {true && (
+                      <button
+                        onClick={() => {
+                          setShowImmersiveGallery?.(true);
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        title="View in collection"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -358,12 +388,32 @@ const TaskListItem = ({
               autoFocus
             />
           ) : (
-            <p 
-              className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
-              onDoubleClick={handleDoubleClick}
-            >
-              {taskTitle || 'Untitled Task'}
-            </p>
+            <div>
+              <p 
+                className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
+                onDoubleClick={handleDoubleClick}
+              >
+                {taskTitle || 'Untitled Task'}
+              </p>
+              {totalTimeSpent && (
+                <div className="flex items-center gap-1 mt-1">
+                  <p className="text-xs text-gray-500">
+                    Time Spent: {totalTimeSpent}
+                  </p>
+                  {tasksById && tasksById[task]?.parent_task_id && tasksById[tasksById[task]?.parent_task_id]?.collection_card_id && (
+                    <button
+                      onClick={() => {
+                        setShowImmersiveGallery?.(true);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      title="View in collection"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
         
@@ -1914,12 +1964,11 @@ const TasksContent = () => {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes, notes, created_at, score')
+        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes, notes, created_at, score, parent_task_id, time_spent_minutes, collection_card_id')
         .eq('user_id', user.id)
-        .in('list_location', ['active', 'later']) // Load both active and later tasks
+        .in('list_location', ['active', 'later', 'collection']) // Load active, later, and collection tasks
         .order('created_at', { ascending: true });
 
-      console.log('🔍 All tasks query result:', { data, error, count: data?.length });
 
       if (error) {
         console.error('Error loading tasks:', error);
@@ -1945,7 +1994,10 @@ const TasksContent = () => {
             is_urgent: task.is_urgent || false,
             is_quick: task.is_quick || false,
             notes: task.notes || '',
-            estimated_minutes: task.estimated_minutes
+            estimated_minutes: task.estimated_minutes,
+            parent_task_id: task.parent_task_id,
+            time_spent_minutes: Number(task.time_spent_minutes) || 0,
+            collection_card_id: task.collection_card_id
           };
 
           // Separate active and later tasks
@@ -2512,6 +2564,30 @@ const TasksContent = () => {
                                           isLoadingTime={loadingTimeEstimates.has(taskId)}
                                           isLastInSection={index === filteredTasks.length - 1}
                                       taskTitle={task?.title || 'NO_TITLE_FOUND'}
+                                      totalTimeSpent={(() => {
+                                        // Calculate total time by following parent chain to source
+                                        const calculateTotalTime = (taskId: string, visited = new Set<string>()): number => {
+                                          if (visited.has(taskId)) return 0; // Prevent infinite loops
+                                          visited.add(taskId);
+                                          
+                                          const task = tasksById[taskId];
+                                          if (!task) return 0;
+                                          
+                                          const currentTime = Number(task.time_spent_minutes) || 0;
+                                          
+                                          // If has parent, add parent's time recursively
+                                          if (task.parent_task_id) {
+                                            return currentTime + calculateTotalTime(task.parent_task_id, visited);
+                                          }
+                                          
+                                          return currentTime;
+                                        };
+                                        
+                                        const total = calculateTotalTime(taskId);
+                                        return total > 0 ? `${total}m` : null;
+                                      })()}
+                                      tasksById={tasksById}
+                                      setShowImmersiveGallery={setShowImmersiveGallery}
                                       onTimeUpdate={(newTime) => {
                                         // Update local state immediately for responsive UI
                                         setTaskTimeEstimatesById(prev => ({
@@ -2611,6 +2687,30 @@ const TasksContent = () => {
                                       isLoadingTime={loadingTimeEstimates.has(taskId)}
                                       isLastInSection={index === filteredTasks.length - 1}
                                       taskTitle={task?.title || 'NO_TITLE_FOUND'}
+                                      totalTimeSpent={(() => {
+                                        // Calculate total time by following parent chain to source
+                                        const calculateTotalTime = (taskId: string, visited = new Set<string>()): number => {
+                                          if (visited.has(taskId)) return 0; // Prevent infinite loops
+                                          visited.add(taskId);
+                                          
+                                          const task = tasksById[taskId];
+                                          if (!task) return 0;
+                                          
+                                          const currentTime = Number(task.time_spent_minutes) || 0;
+                                          
+                                          // If has parent, add parent's time recursively
+                                          if (task.parent_task_id) {
+                                            return currentTime + calculateTotalTime(task.parent_task_id, visited);
+                                          }
+                                          
+                                          return currentTime;
+                                        };
+                                        
+                                        const total = calculateTotalTime(taskId);
+                                        return total > 0 ? `${total}m` : null;
+                                      })()}
+                                      tasksById={tasksById}
+                                      setShowImmersiveGallery={setShowImmersiveGallery}
                                       onTimeUpdate={(newTime) => {
                                         // Update local state immediately for responsive UI
                                         setTaskTimeEstimatesById(prev => ({
