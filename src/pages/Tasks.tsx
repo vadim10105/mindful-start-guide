@@ -258,10 +258,10 @@ const TaskListItem = ({
                             handleOpenGallery?.(undefined, parentTask.collection_card_id);
                           }
                         }}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className=""
                         title="View in collection"
                       >
-                        <ExternalLink className="h-3 w-3" />
+                        <ExternalLink className="h-3 w-3 text-gray-600" />
                       </button>
                     )}
                   </div>
@@ -415,10 +415,10 @@ const TaskListItem = ({
                           handleOpenGallery?.(undefined, parentTask.collection_card_id);
                         }
                       }}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      className=""
                       title="View in collection"
                     >
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLink className="h-3 w-3 text-gray-500" />
                     </button>
                   )}
                 </div>

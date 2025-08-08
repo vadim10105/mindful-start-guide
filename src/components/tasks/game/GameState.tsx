@@ -11,6 +11,8 @@ export interface TaskCardData {
   is_quick?: boolean;
   notes?: string;
   estimated_time?: string;
+  time_spent_minutes?: number;
+  task_status?: 'task_list' | 'not_started' | 'incomplete' | 'made_progress' | 'complete';
 }
 
 export interface CompletedTask {

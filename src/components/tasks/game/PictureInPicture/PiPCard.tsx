@@ -7,6 +7,7 @@ import { TaskCardData, CompletedTask, GameStateType } from "../GameState";
 import { useTaskTimer } from "../TaskTimer";
 import { ShuffleAnimation } from "../ShuffleAnimation";
 import { getRewardCardData, RewardCardData } from "@/services/cardService";
+import { supabase } from "@/integrations/supabase/client";
 
 
 interface PiPCardProps {
@@ -66,6 +67,13 @@ export const PiPCard = ({
 
   // Reward card data from Supabase
   const [rewardCards, setRewardCards] = useState<RewardCardData[]>([]);
+  
+  // Session stats
+  const [sessionStats, setSessionStats] = useState({
+    completedCount: 0,
+    progressedCount: 0,
+    totalFocusTime: '0m'
+  });
 
   useEffect(() => {
     const loadRewardCards = async () => {
@@ -307,27 +315,39 @@ export const PiPCard = ({
     }
   };
 
-  const calculateSessionStats = () => {
-    const completedCount = Array.from(gameState.completedTasks).length;
-    const progressedCount = gameState.todaysCompletedTasks.filter(task => 
-      !gameState.completedTasks.has(task.id) && gameState.taskStartTimes[task.id]
-    ).length;
+  const calculateSessionStats = async () => {
+    // We need to fetch the current task_status from Supabase since the tasks prop has stale data
+    let completedCount = 0;
+    let progressedCount = 0;
     
-    // Calculate total focus time from database time_spent_minutes
-    const totalFocusMinutes = tasks.reduce((total, task) => {
-      // Use database stored time if available
-      if (task.time_spent_minutes) {
-        return total + task.time_spent_minutes;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const completedTaskIds = Array.from(gameState.completedTasks);
+        if (completedTaskIds.length > 0) {
+          // Get current task statuses from database
+          const { data: updatedTasks } = await supabase
+            .from('tasks')
+            .select('id, task_status')
+            .eq('user_id', user.id)
+            .in('id', completedTaskIds);
+            
+          if (updatedTasks) {
+            completedCount = updatedTasks.filter(task => task.task_status === 'complete').length;
+            progressedCount = updatedTasks.filter(task => task.task_status === 'made_progress').length;
+          }
+        }
       }
-      
-      // Fallback for active tasks not yet saved to database
-      const startTime = gameState.taskStartTimes[task.id];
-      if (startTime && !gameState.pausedTasks.has(task.id)) {
-        const activeTime = Math.round((Date.now() - startTime) / 60000);
-        return total + activeTime;
-      }
-      
-      return total;
+    } catch (error) {
+      console.error('Error fetching task statuses:', error);
+      // Fallback to counting from completedTasks set
+      completedCount = Array.from(gameState.completedTasks).length;
+      progressedCount = 0;
+    }
+    
+    // Calculate total focus time from todaysCompletedTasks (already includes saved time_spent_minutes)
+    const totalFocusMinutes = gameState.todaysCompletedTasks.reduce((total: number, task: any) => {
+      return total + (task.timeSpent || 0);
     }, 0);
 
     return {
@@ -355,8 +375,16 @@ export const PiPCard = ({
   const showingSummaryCard = currentCardIndex >= tasks.length;
   const currentTask = tasks[currentCardIndex];
   
+  // Load session stats when showing summary card
+  useEffect(() => {
+    if (showingSummaryCard) {
+      calculateSessionStats().then(stats => {
+        setSessionStats(stats);
+      });
+    }
+  }, [showingSummaryCard, gameState.completedTasks]);
+  
   if (showingSummaryCard) {
-    const stats = calculateSessionStats();
     return (
       <div 
         className={`relative w-full h-full flex flex-col transition-all duration-700 ease-out ${
@@ -390,23 +418,22 @@ export const PiPCard = ({
                 : 'transform rotateY(0deg) translateZ(0px)'
             }`}
           >
-            <div className="w-full h-full bg-[hsl(48_20%_97%)] rounded-2xl shadow-xl border-2 border-transparent p-6 flex flex-col justify-center items-center text-center">
-              <h2 className="text-2xl font-bold text-[hsl(220_10%_20%)] mb-6">Session Complete!</h2>
+            <div className="w-full h-full bg-[hsl(48_20%_97%)] rounded-2xl shadow-xl border-2 border-transparent p-8 flex flex-col justify-center items-center text-center">
               
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between items-center px-4 py-2 bg-green-100 rounded-lg">
-                  <span className="text-[hsl(220_10%_30%)] font-medium">Completed Tasks:</span>
-                  <span className="text-green-600 font-bold text-lg">{stats.completedCount}</span>
+              <div className="w-full max-w-xs space-y-4 mb-12">
+                <div className="flex justify-between items-baseline px-3 py-2 bg-yellow-100 rounded-md">
+                  <span className="text-[hsl(220_10%_30%)] font-medium">Completed Tasks</span>
+                  <span className="text-[hsl(220_10%_10%)] font-semibold text-2xl">{sessionStats.completedCount}</span>
                 </div>
                 
-                <div className="flex justify-between items-center px-4 py-2 bg-blue-100 rounded-lg">
-                  <span className="text-[hsl(220_10%_30%)] font-medium">Progressed Tasks:</span>
-                  <span className="text-blue-600 font-bold text-lg">{stats.progressedCount}</span>
+                <div className="flex justify-between items-baseline px-3 py-2 bg-yellow-100 rounded-md">
+                  <span className="text-[hsl(220_10%_30%)] font-medium">Progressed Tasks</span>
+                  <span className="text-[hsl(220_10%_10%)] font-semibold text-2xl">{sessionStats.progressedCount}</span>
                 </div>
                 
-                <div className="flex justify-between items-center px-4 py-2 bg-purple-100 rounded-lg">
-                  <span className="text-[hsl(220_10%_30%)] font-medium">Focus Time:</span>
-                  <span className="text-purple-600 font-bold text-lg">{stats.totalFocusTime}</span>
+                <div className="flex justify-between items-baseline px-3 py-2 bg-yellow-100 rounded-md">
+                  <span className="text-[hsl(220_10%_30%)] font-medium">Focus Time</span>
+                  <span className="text-[hsl(220_10%_10%)] font-semibold text-2xl">{sessionStats.totalFocusTime}</span>
                 </div>
               </div>
               
@@ -419,7 +446,7 @@ export const PiPCard = ({
                   }
                   onComplete();
                 }}
-                className="bg-[hsl(220_10%_20%)] hover:bg-[hsl(220_10%_30%)] text-white px-8 py-3 rounded-lg font-medium transition-colors duration-200"
+                className="w-full max-w-xs bg-[hsl(220_10%_20%)] hover:bg-[hsl(220_10%_30%)] text-white px-8 py-3 rounded-lg font-medium transition-colors duration-200"
               >
                 Finish Session
               </button>
