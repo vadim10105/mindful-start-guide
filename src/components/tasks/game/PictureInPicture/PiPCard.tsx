@@ -126,7 +126,8 @@ export const PiPCard = ({
   }, [currentCardIndex, gameState.setCurrentViewingIndex]);
 
   const goToNextCard = useCallback(() => {
-    if (currentCardIndex < tasks.length - 1) {
+    // Allow going one beyond the last task for summary card
+    if (currentCardIndex < tasks.length) {
       gameState.setCurrentViewingIndex(currentCardIndex + 1);
     }
   }, [currentCardIndex, tasks.length, gameState.setCurrentViewingIndex]);
@@ -244,7 +245,38 @@ export const PiPCard = ({
   };
 
   const handleTaskComplete = async (taskId: string) => {
+    // Expand PiP window back to full size on completion
+    if (pipWindow && !pipWindow.closed) {
+      try {
+        pipWindow.resizeTo(368, 514);
+      } catch (error) {
+        console.warn('Failed to resize PiP window on completion:', error);
+      }
+    }
     await onTaskComplete?.(taskId);
+  };
+
+  const handleMadeProgressWrapper = async (taskId: string) => {
+    // Expand PiP window back to full size on progress
+    if (pipWindow && !pipWindow.closed) {
+      try {
+        pipWindow.resizeTo(368, 514);
+      } catch (error) {
+        console.warn('Failed to resize PiP window on progress:', error);
+      }
+    }
+    await onMadeProgress?.(taskId);
+  };
+
+  const handleBreakdown = (taskId: string) => {
+    // Expand PiP window back to full size on breakdown
+    if (pipWindow && !pipWindow.closed) {
+      try {
+        pipWindow.resizeTo(368, 514);
+      } catch (error) {
+        console.warn('Failed to resize PiP window on breakdown:', error);
+      }
+    }
   };
 
   const handlePauseTask = async (taskId: string) => {
@@ -275,6 +307,37 @@ export const PiPCard = ({
     }
   };
 
+  const calculateSessionStats = () => {
+    const completedCount = Array.from(gameState.completedTasks).length;
+    const progressedCount = gameState.todaysCompletedTasks.filter(task => 
+      !gameState.completedTasks.has(task.id) && gameState.taskStartTimes[task.id]
+    ).length;
+    
+    // Calculate total focus time from database time_spent_minutes
+    const totalFocusMinutes = tasks.reduce((total, task) => {
+      // Use database stored time if available
+      if (task.time_spent_minutes) {
+        return total + task.time_spent_minutes;
+      }
+      
+      // Fallback for active tasks not yet saved to database
+      const startTime = gameState.taskStartTimes[task.id];
+      if (startTime && !gameState.pausedTasks.has(task.id)) {
+        const activeTime = Math.round((Date.now() - startTime) / 60000);
+        return total + activeTime;
+      }
+      
+      return total;
+    }, 0);
+
+    return {
+      completedCount,
+      progressedCount,
+      totalFocusTime: formatTime(totalFocusMinutes)
+    };
+  };
+
+
   if (isLoading) {
     return (
       <div className="h-full w-full flex items-center justify-center">
@@ -288,7 +351,85 @@ export const PiPCard = ({
   }
 
 
+  // Check if we're showing the summary card (beyond last task)
+  const showingSummaryCard = currentCardIndex >= tasks.length;
   const currentTask = tasks[currentCardIndex];
+  
+  if (showingSummaryCard) {
+    const stats = calculateSessionStats();
+    return (
+      <div 
+        className={`relative w-full h-full flex flex-col transition-all duration-700 ease-out ${
+          isTransitioning ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
+        } ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Match the same transition structure as TaskCard */}
+        <div 
+          className={`w-full flex-1 transition-all duration-300 ease-out ${
+            isTransitioning 
+              ? transitionDirection === 'left' 
+                ? 'transform -translate-x-2 scale-95 opacity-80' 
+                : 'transform translate-x-2 scale-95 opacity-80'
+              : 'transform translate-x-0 scale-100 opacity-100'
+          }`}
+          style={{
+            transformStyle: 'preserve-3d',
+            perspective: '1000px'
+          }}
+        >
+          <div 
+            className={`w-full h-full transition-transform duration-300 ease-out ${
+              isTransitioning 
+                ? transitionDirection === 'left'
+                  ? 'transform rotateY(-5deg) translateZ(-20px)'
+                  : 'transform rotateY(5deg) translateZ(-20px)'
+                : 'transform rotateY(0deg) translateZ(0px)'
+            }`}
+          >
+            <div className="w-full h-full bg-[hsl(48_20%_97%)] rounded-2xl shadow-xl border-2 border-transparent p-6 flex flex-col justify-center items-center text-center">
+              <h2 className="text-2xl font-bold text-[hsl(220_10%_20%)] mb-6">Session Complete!</h2>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex justify-between items-center px-4 py-2 bg-green-100 rounded-lg">
+                  <span className="text-[hsl(220_10%_30%)] font-medium">Completed Tasks:</span>
+                  <span className="text-green-600 font-bold text-lg">{stats.completedCount}</span>
+                </div>
+                
+                <div className="flex justify-between items-center px-4 py-2 bg-blue-100 rounded-lg">
+                  <span className="text-[hsl(220_10%_30%)] font-medium">Progressed Tasks:</span>
+                  <span className="text-blue-600 font-bold text-lg">{stats.progressedCount}</span>
+                </div>
+                
+                <div className="flex justify-between items-center px-4 py-2 bg-purple-100 rounded-lg">
+                  <span className="text-[hsl(220_10%_30%)] font-medium">Focus Time:</span>
+                  <span className="text-purple-600 font-bold text-lg">{stats.totalFocusTime}</span>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => {
+                  // Close the Picture-in-Picture window programmatically
+                  // The "pagehide" event will fire normally
+                  if (pipWindow && !pipWindow.closed) {
+                    pipWindow.close();
+                  }
+                  onComplete();
+                }}
+                className="bg-[hsl(220_10%_20%)] hover:bg-[hsl(220_10%_30%)] text-white px-8 py-3 rounded-lg font-medium transition-colors duration-200"
+              >
+                Finish Session
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentTask) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-card text-card-foreground">
@@ -393,45 +534,22 @@ export const PiPCard = ({
           taskStartTimes={gameState.taskStartTimes}
           onCommit={handleCommitToCurrentTask}
           onComplete={handleTaskComplete}
-          onMadeProgress={onMadeProgress}
+          onMadeProgress={handleMadeProgressWrapper}
           onMoveOn={handlePauseTask}
           onCarryOn={handleCarryOn}
           onSkip={handleSkip}
           onBackToActive={handleBackToActiveCard}
           onNotesChange={onNotesChange}
+          onBreakdown={handleBreakdown}
           navigationUnlocked={gameState.navigationUnlocked}
           formatTime={formatTime}
           progressManager={progressManager}
-          hideTaskActions={true}
+          hideTaskActions={false}
+          pipWindow={pipWindow}
         />
         </div>
       </div>
 
-      {/* Fixed Task Actions at PiP level */}
-      {!gameState.completedTasks.has(currentTask.id) && (
-        <div className="absolute bottom-4 left-4 right-4 bg-gradient-to-t from-[hsl(48_20%_97%)] via-[hsl(48_20%_97%)] to-transparent p-4 rounded-lg">
-          <TaskActions
-            task={currentTask}
-            isCompleted={gameState.completedTasks.has(currentTask.id)}
-            isPaused={gameState.pausedTasks.has(currentTask.id)}
-            pausedTime={gameState.pausedTasks.get(currentTask.id) || 0}
-            isActiveCommitted={currentCardIndex === gameState.activeCommittedIndex}
-            hasCommittedToTask={gameState.hasCommittedToTask}
-            isCurrentTask={currentCardIndex === gameState.currentViewingIndex}
-            activeCommittedIndex={gameState.activeCommittedIndex}
-            onCommit={handleCommitToCurrentTask}
-            onComplete={handleTaskComplete}
-            onMadeProgress={onMadeProgress}
-            onMoveOn={handlePauseTask}
-            onCarryOn={handleCarryOn}
-            onSkip={handleSkip}
-            onBackToActive={handleBackToActiveCard}
-            navigationUnlocked={gameState.navigationUnlocked}
-            formatTime={formatTime}
-            onPauseHover={() => {}}
-          />
-        </div>
-      )}
 
     </div>
   );
