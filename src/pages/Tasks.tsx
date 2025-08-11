@@ -915,52 +915,12 @@ const TasksContent = () => {
         } else if (insertedTasks) {
           console.log('✅ Successfully saved extracted tasks to database');
           
-          // Update ID-based state with the newly created tasks
-          const newTasksById: Record<string, Task> = {};
-          const newTaskIds: string[] = [];
-          const newTaskTags: Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }> = {};
-          const newTimeEstimates: Record<string, string> = {};
-
-          insertedTasks.forEach(task => {
-            newTasksById[task.id] = {
-              id: task.id,
-              title: task.title,
-              list_location: task.list_location,
-              task_status: task.task_status,
-              is_liked: task.is_liked || false,
-              is_urgent: task.is_urgent || false,
-              is_quick: task.is_quick || false,
-              notes: task.notes || ''
-            };
-            
-            newTaskIds.push(task.id);
-            
-            newTaskTags[task.id] = {
-              isLiked: task.is_liked || false,
-              isUrgent: task.is_urgent || false,
-              isQuick: task.is_quick || false
-            };
-
-            if (task.estimated_minutes) {
-              const hours = Math.floor(task.estimated_minutes / 60);
-              const minutes = task.estimated_minutes % 60;
-              if (hours > 0) {
-                newTimeEstimates[task.id] = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-              } else {
-                newTimeEstimates[task.id] = `${minutes}m`;
-              }
-            }
-          });
-
-          // Update state with ID-based data
-          setTasksById(prev => ({ ...prev, ...newTasksById }));
-          setActiveTaskIds(newTaskIds); // Brain dump tasks go to active
-          setTaskTagsById(prev => ({ ...prev, ...newTaskTags }));
-          setTaskTimeEstimatesById(prev => ({ ...prev, ...newTimeEstimates }));
-          // Keep legacy state for compatibility
-          setTaskTags(prev => ({ ...prev, ...newTaskTags }));
-          setTaskTimeEstimates(prev => ({ ...prev, ...newTimeEstimates }));
-          setReviewedTasks(newTaskIds); // Store IDs instead of titles
+          // Refresh all tasks from database to include existing + new tasks
+          await loadTasksById();
+          
+          // Store just the new task IDs for the reviewed tasks
+          const newTaskIds = insertedTasks.map(task => task.id);
+          setReviewedTasks(newTaskIds); // Store IDs of newly added tasks
         }
       }
       
@@ -969,9 +929,7 @@ const TasksContent = () => {
         // Switch to list mode - the ID-based state is already set above
         setInputMode('list');
         
-        // Legacy compatibility - keep old state in sync for components that still use it
-        const extractedTaskTitles = data.tasks.map((task: ExtractedTask) => task.title);
-        setListTasks(extractedTaskTitles);
+        // Legacy state is already updated by loadTasksById() above
         
         // End transition earlier so box can expand first, then tasks drop in
         setTimeout(() => {
@@ -2049,6 +2007,12 @@ const TasksContent = () => {
         // Keep legacy state for compatibility
         setTaskTags(taskTagsMap);
         setTaskTimeEstimates(timeEstimatesMap);
+        
+        // Also populate legacy arrays for backward compatibility
+        const activeTaskTitles = activeIds.map(id => taskMap[id].title);
+        const laterTaskTitles = laterIds.map(id => taskMap[id].title);
+        setListTasks(activeTaskTitles);
+        setLaterTasks(laterTaskTitles);
 
         console.log('✅ Loaded all tasks:', { 
           activeCount: activeIds.length,
