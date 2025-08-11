@@ -197,7 +197,7 @@ serve(async (req) => {
     console.log('Fetching tasks for user:', userId);
     const { data: tasks, error } = await supabase
       .from('tasks')
-      .select('id, title, is_liked, is_urgent, is_quick, estimated_minutes, category, score')
+      .select('id, title, is_liked, is_urgent, is_quick, estimated_minutes, category, score, time_spent_minutes')
       .eq('user_id', userId)
       .eq('list_location', 'active');
 

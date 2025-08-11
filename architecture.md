@@ -51,6 +51,11 @@ A productivity app that helps users manage tasks through gamification. Users can
 - `PiPCard.tsx` - Compact task card for PiP view
 - `PiPContext.tsx` - State management for PiP functionality
 - `index.ts` - Exports all PiP components
+- **Dynamic Window Resizing**: PiP window intelligently resizes based on content
+  - Measures actual notes section height using `getBoundingClientRect()`
+  - Adapts to varying task title lengths automatically
+  - Collapses/expands by precise amount rather than fixed pixels
+  - Maintains minimum window size (320px) and smooth transitions
 
 ###### =� src/components/tasks/collection/ - Card Collection System
 - `ImmersiveGallery.tsx` - Displays unlocked collectible cards as rewards, supports auto-navigation to specific cards

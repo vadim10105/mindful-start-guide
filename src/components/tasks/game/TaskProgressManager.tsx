@@ -495,12 +495,12 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
         if (unlockedCard) {
           console.log(`🎴 User earned card #${collectedCard.cardNumber} for made progress:`, collectedCard.card);
           
-          // Mark original task as COMPLETE and move to collection (they earned a card!)
+          // Mark original task as MADE PROGRESS and move to collection (they earned a card!)
           await supabase
             .from('tasks')
             .update({
               list_location: 'collection',
-              task_status: 'complete',
+              task_status: 'made_progress',
               completed_at: new Date().toISOString(),
               time_spent_minutes: timeSpent,
               collection_card_id: collectedCard.cardId,
@@ -516,23 +516,24 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
               user_id: user.id,
               source: 'brain_dump' as const,
               list_location: 'later' as const,
-              task_status: 'task_list' as const, // Fresh task status
+              task_status: 'task_list' as const,
               is_liked: task.is_liked || false,
               is_urgent: task.is_urgent || false,
               is_quick: task.is_quick || false,
               notes: task.notes || null,
               estimated_minutes: originalTaskData?.estimated_minutes || null,
-              category: originalTaskData?.category || null
+              category: originalTaskData?.category || null,
+              parent_task_id: taskId // Link to original task for total time tracking
             });
 
           // Progress is already updated by unlockNextCard()
         } else {
-          // No more cards available - still complete original and create duplicate
+          // No more cards available - still mark original as made progress and create duplicate
           await supabase
             .from('tasks')
             .update({
               list_location: 'collection',
-              task_status: 'complete',
+              task_status: 'made_progress',
               completed_at: new Date().toISOString(),
               time_spent_minutes: timeSpent
             })
@@ -552,7 +553,8 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
               is_quick: task.is_quick || false,
               notes: task.notes || null,
               estimated_minutes: originalTaskData?.estimated_minutes || null,
-              category: originalTaskData?.category || null
+              category: originalTaskData?.category || null,
+              parent_task_id: taskId // Link to original task for total time tracking
             });
         }
 

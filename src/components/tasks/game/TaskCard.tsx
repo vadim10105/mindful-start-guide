@@ -409,22 +409,38 @@ export const TaskCard = ({
               <div 
                 onClick={() => {
                   const newCollapsedState = !isNotesCollapsed;
-                  setIsNotesCollapsed(newCollapsedState);
                   
                   // Resize PiP window if we're in PiP mode
                   if (pipWindow && !pipWindow.closed) {
-                    const heightReduction = 200; // Height saved when notes are collapsed
-                    const defaultHeight = 514; // Default PiP height
-                    const newHeight = newCollapsedState 
-                      ? defaultHeight - heightReduction 
-                      : defaultHeight;
-                    
                     try {
+                      // Get current window height
+                      const currentHeight = pipWindow.innerHeight || 514;
+                      let newHeight;
+                      
+                      if (newCollapsedState) {
+                        // Collapsing: measure the notes container height to subtract
+                        const notesContainer = pipWindow.document.querySelector('[data-notes-container]');
+                        if (notesContainer) {
+                          const notesHeight = notesContainer.getBoundingClientRect().height;
+                          // Only subtract the visible content height, keep some space for the collapsed state
+                          // Reduce the subtraction amount - we were being too aggressive
+                          newHeight = Math.max(320, currentHeight - notesHeight + 60);
+                        } else {
+                          // Fallback to original logic if container not found
+                          newHeight = 314;
+                        }
+                      } else {
+                        // Expanding: restore to default height
+                        newHeight = 514;
+                      }
+                      
                       pipWindow.resizeTo(368, newHeight);
                     } catch (error) {
                       console.warn('Failed to resize PiP window:', error);
                     }
                   }
+                  
+                  setIsNotesCollapsed(newCollapsedState);
                 }}
                 className="cursor-pointer py-2 px-4 flex items-center justify-center group relative"
               >
@@ -442,7 +458,9 @@ export const TaskCard = ({
               </div>
               
               {/* Notes Content */}
-              <div className={`relative transition-all duration-300 ease-out overflow-hidden ${
+              <div 
+                data-notes-container
+                className={`relative transition-all duration-300 ease-out overflow-hidden ${
                 isNotesCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100 flex-1'
               }`}>
                 <Textarea

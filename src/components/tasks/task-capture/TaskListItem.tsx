@@ -27,6 +27,7 @@ interface TaskListItemProps {
   onEditingTextChange?: (text: string) => void;
   showNumber?: boolean;
   taskTitle?: string; // Optional task title for display when task prop is an ID
+  totalTimeSpent?: string | null; // Total time spent on linked tasks
 }
 
 export const TaskListItem = ({ 
@@ -50,7 +51,8 @@ export const TaskListItem = ({
   onTaskCancel,
   onEditingTextChange,
   showNumber = true,
-  taskTitle
+  taskTitle,
+  totalTimeSpent
 }: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
@@ -132,12 +134,19 @@ export const TaskListItem = ({
                 autoFocus
               />
             ) : (
-              <p 
-                className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
-                onDoubleClick={handleDoubleClick}
-              >
-                {taskTitle || 'Untitled Task'}
-              </p>
+              <div>
+                <p 
+                  className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
+                  onDoubleClick={handleDoubleClick}
+                >
+                  {taskTitle || 'Untitled Task'}
+                </p>
+                {totalTimeSpent && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Time Spent: {totalTimeSpent}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -238,6 +247,7 @@ export const TaskListItem = ({
             />
           </div>
         )}
+        
       </div>
 
       {/* Desktop Layout - Original */}
@@ -265,12 +275,19 @@ export const TaskListItem = ({
               autoFocus
             />
           ) : (
-            <p 
-              className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
-              onDoubleClick={handleDoubleClick}
-            >
-              {taskTitle || 'Untitled Task'}
-            </p>
+            <div>
+              <p 
+                className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
+                onDoubleClick={handleDoubleClick}
+              >
+                {taskTitle || 'Untitled Task'}
+              </p>
+              {totalTimeSpent && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Time Spent: {totalTimeSpent}
+                </p>
+              )}
+            </div>
           )}
         </div>
         

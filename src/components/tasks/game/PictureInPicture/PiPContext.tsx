@@ -163,6 +163,7 @@ export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
     pipContentRef.current = null;
   }, [pipWindow]);
 
+
   const setPiPAvailableCallback = useCallback((available: boolean) => {
     // Only set available if the API is actually supported
     const isSupported = 'documentPictureInPicture' in window;

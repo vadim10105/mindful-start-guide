@@ -32,8 +32,9 @@ export const WhatsAheadOverlay = ({
               const isPaused = gameState.pausedTasks.has(task.id);
               const isActive = index === gameState.activeCommittedIndex;
               const isCurrent = index === gameState.currentViewingIndex;
-              const startTime = gameState.taskStartTimes[task.id];
-              const timeSpent = startTime ? Math.round((Date.now() - startTime) / 60000) : 0;
+              // Get time from todaysCompletedTasks (like PiPCard does)
+              const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
+              const timeSpent = completedTask?.timeSpent || 0;
               
               return (
                 <div key={task.id}>
