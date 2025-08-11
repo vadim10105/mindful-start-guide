@@ -831,6 +831,29 @@ const TasksContent = () => {
     }
   }, [user]);
 
+  // Set initial input mode based on available tasks
+  useEffect(() => {
+    const hasActiveTasks = activeTaskIds.length > 0;
+    const hasLaterTasks = laterTaskIds.length > 0;
+    const hasAnyTasks = hasActiveTasks || hasLaterTasks;
+    
+    // Only set initial state if we haven't come from brain dump (to avoid overriding user actions)
+    if (!cameFromBrainDump && !isProcessing && !isTransitioning) {
+      if (hasAnyTasks) {
+        // If there are any tasks, default to list mode
+        setInputMode('list');
+      } else {
+        // If no tasks exist, default to brain dump mode
+        setInputMode('brain-dump');
+      }
+      
+      // Auto-expand later section if no active tasks but later tasks exist (only on initial load)
+      if (!hasActiveTasks && hasLaterTasks && !laterTasksExpanded) {
+        setLaterTasksExpanded(true);
+      }
+    }
+  }, [activeTaskIds, laterTaskIds, cameFromBrainDump, isProcessing, isTransitioning, laterTasksExpanded]);
+
   const handleBrainDumpSubmit = async () => {
     console.log('handleBrainDumpSubmit called with text:', brainDumpText);
     

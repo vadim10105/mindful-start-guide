@@ -5,6 +5,7 @@ import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, ChevronUp, ChevronDow
 import { TaskActions } from "./TaskActions";
 import { TaskProgressManagerHook } from "./TaskProgressManager";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
+import { NotesTypewriterPlaceholder } from "@/components/ui/NotesTypewriterPlaceholder";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -128,6 +129,7 @@ export const TaskCard = ({
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isNotesCollapsed, setIsNotesCollapsed] = useState(false);
+  const [isNotesFocused, setIsNotesFocused] = useState(false);
   
   // Update notes when task prop changes (important for PiP synchronization)
   useEffect(() => {
@@ -471,9 +473,16 @@ export const TaskCard = ({
                   }}
                   onClick={handleNotesClick}
                   onKeyDown={handleNotesKeyDown}
-                  placeholder="Add notes... (Ctrl/Cmd+L for checklist)"
+                  onFocus={() => setIsNotesFocused(true)}
+                  onBlur={() => setIsNotesFocused(false)}
+                  placeholder=""
                   className="resize-none !text-sm leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[hsl(220_10%_30%)] placeholder:text-[hsl(220_10%_60%)] h-full min-h-[80px] cursor-text hover:cursor-pointer"
                   style={{ backgroundColor: 'transparent' }}
+                />
+                {/* Typewriter placeholder */}
+                <NotesTypewriterPlaceholder
+                  isVisible={notes.trim() === '' && !isNotesFocused}
+                  taskStartTime={taskStartTimes[task.id] ? new Date(taskStartTimes[task.id]) : undefined}
                 />
               </div>
             </div>
