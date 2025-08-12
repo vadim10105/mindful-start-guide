@@ -2311,7 +2311,7 @@ const TasksContent = () => {
               
               {inputMode === 'brain-dump' ? (
                 // Brain Dump Mode
-                <div className="min-h-[400px] flex flex-col">
+                <div className="min-h-[400px] flex flex-col relative">
                   <div className={`relative transition-all duration-600 ease-out flex-1 ${
                     isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
                   }`} style={{ marginTop: '12px' }}>
@@ -2378,7 +2378,7 @@ const TasksContent = () => {
                 // List Mode with Full Tagging Interface
                 <div ref={taskListContentRef} className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
                   {/* Loading overlay for brain dump transition */}
-                  {isTransitioning && listTasks.length === 0 && (
+                  {isTransitioning && (
                     <div className="absolute inset-0 bg-card rounded-lg z-50 flex items-center justify-center">
                       <div className="text-center space-y-4">
                         <div className="flex justify-center space-x-3">
@@ -2631,15 +2631,21 @@ const TasksContent = () => {
                           {(activeTaskIds.length + laterTaskIds.length) >= 1 && (
                             <DroppableZone id="later-zone">
                               <div 
-                                className="flex items-center gap-4 py-6 cursor-pointer hover:bg-muted/10 rounded-lg transition-colors group"
-                                onClick={() => setLaterTasksExpanded(!laterTasksExpanded)}
+                                className={`flex items-center gap-4 py-6 rounded-lg transition-colors group ${
+                                  activeTaskIds.length > 0 ? 'cursor-pointer hover:bg-muted/10' : ''
+                                }`}
+                                onClick={() => {
+                                  if (activeTaskIds.length > 0) {
+                                    setLaterTasksExpanded(!laterTasksExpanded);
+                                  }
+                                }}
                               >
                                 <div className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors"></div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-foreground/30 font-medium group-hover:text-foreground transition-colors">
                                     Later ({laterTaskIds.length})
                                   </span>
-                                  {laterTaskIds.length > 0 && (
+                                  {laterTaskIds.length > 0 && activeTaskIds.length > 0 && (
                                     <ChevronDown 
                                       className={`h-4 w-4 text-foreground/30 group-hover:text-foreground transition-all duration-200 ${
                                         laterTasksExpanded ? 'rotate-180' : ''

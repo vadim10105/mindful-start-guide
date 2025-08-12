@@ -51,10 +51,12 @@ export const useNotesTypewriter = (taskStartTime?: Date) => {
           baseMessages = timeIndependentMessages;
         }
         
-        // Only reshuffle if the available messages changed
-        const newShuffled = shuffleArray(baseMessages);
-        setShuffledMessages(newShuffled);
-        setAvailableMessages(baseMessages);
+        // Only update if the available messages actually changed
+        if (JSON.stringify(availableMessages) !== JSON.stringify(baseMessages)) {
+          const newShuffled = shuffleArray(baseMessages);
+          setShuffledMessages(newShuffled);
+          setAvailableMessages(baseMessages);
+        }
       };
 
       // Check immediately and set up interval
