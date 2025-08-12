@@ -5,7 +5,7 @@ import { unlockNextCard } from '@/services/cardService';
 import { parseTimeToMinutes } from '@/utils/timeUtils';
 
 // Global timer state per task ID (from useSimpleTimer)
-const taskTimers = new Map<string, {
+export const taskTimers = new Map<string, {
   baseElapsedMs: number;
   currentSessionStart: number | null;
   sessionStartElapsedMs: number; // Track elapsed time at start of this session

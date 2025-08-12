@@ -3,11 +3,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, ChevronUp, ChevronDown } from "lucide-react";
 import { TaskActions } from "./TaskActions";
-import { TaskProgressManagerHook } from "./TaskProgressManager";
+import { TaskProgressManagerHook, taskTimers } from "./TaskProgressManager";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
 import { NotesTypewriterPlaceholder } from "@/components/ui/NotesTypewriterPlaceholder";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { parseTimeToMinutes } from '@/utils/timeUtils';
 
 // Function to balance text across lines (bottom-heavy preferred)
 const balanceText = (text: string, maxLines: number = 3): string => {
@@ -130,6 +131,7 @@ export const TaskCard = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isNotesCollapsed, setIsNotesCollapsed] = useState(false);
   const [isNotesFocused, setIsNotesFocused] = useState(false);
+  const [isUltraCompact, setIsUltraCompact] = useState(false);
   
   // Update notes when task prop changes (important for PiP synchronization)
   useEffect(() => {
@@ -261,6 +263,16 @@ export const TaskCard = ({
   const generateSubtasks = async () => {
     if (isGenerating) return;
     
+    // Exit ultra-compact mode if in PiP
+    if (isUltraCompact && pipWindow && !pipWindow.closed) {
+      setIsUltraCompact(false);
+      try {
+        pipWindow.resizeTo(368, 514);
+      } catch (error) {
+        console.warn('Failed to resize PiP window:', error);
+      }
+    }
+    
     // Call the onBreakdown callback if provided (for PiP window resize)
     onBreakdown?.(task.id);
     
@@ -314,6 +326,131 @@ export const TaskCard = ({
     }
   };
 
+
+  // Timer state for ultra-compact progress updates
+  const [ultraCompactTime, setUltraCompactTime] = useState(Date.now());
+  
+  // Update timer for ultra-compact view
+  useEffect(() => {
+    if (isUltraCompact && isActiveCommitted && pipWindow) {
+      const interval = setInterval(() => {
+        setUltraCompactTime(Date.now());
+      }, 1000); // Update every second
+      
+      return () => clearInterval(interval);
+    }
+  }, [isUltraCompact, isActiveCommitted, pipWindow]);
+  
+  // Get actual session progress using the same logic as ProgressBar
+  const getUltraCompactProgress = () => {
+    if (!isUltraCompact || !task.estimated_time) {
+      return 0;
+    }
+    
+    // Access the same timer state used by ProgressBar
+    const timerState = taskTimers.get(task.id);
+    
+    if (!timerState) {
+      return 0;
+    }
+    
+    const currentTime = ultraCompactTime;
+    const estimatedMinutes = parseTimeToMinutes(task.estimated_time);
+    if (!estimatedMinutes) return 0;
+    const estimatedSeconds = estimatedMinutes * 60;
+    
+    // Calculate session elapsed time (same logic as ProgressBar)
+    const sessionElapsedMs = timerState.currentSessionStart 
+      ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (currentTime - timerState.currentSessionStart)
+      : (timerState.baseElapsedMs - timerState.sessionStartElapsedMs);
+      
+    const sessionElapsedSeconds = sessionElapsedMs / 1000;
+    
+    // Calculate progress percentage using session time (capped at 100% for visual)
+    return Math.min((sessionElapsedSeconds / estimatedSeconds) * 100, 100);
+  };
+  
+  // Use the same logic as normal TaskTimeDisplay
+  const hasStartTime = taskStartTimes[task.id];
+
+  {/* ========== ULTRA-COMPACT PIP VIEW START ========== */}
+  if (isUltraCompact && pipWindow) {
+    return (
+      <Card className="h-[90px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg">
+        {/* Progress background - fills from left dynamically */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: (() => {
+              const progress = getUltraCompactProgress();
+              return progress > 0
+                ? `linear-gradient(to right, rgb(251 191 36) ${progress}%, rgb(243 244 246) ${progress}%)`
+                : 'rgb(243 244 246)';
+            })()
+          }} 
+        />
+      
+        {/* Content */}
+        <div className="relative flex items-center h-full px-4 gap-2 z-10">
+          {/* Left: Task title in darker rounded container - takes up more space */}
+          <div className="flex-[3] bg-black/20 rounded-xl px-3 py-2 overflow-hidden relative">
+            <div 
+              className="overflow-hidden whitespace-nowrap"
+              style={{
+                maskImage: 'linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)',
+                WebkitMaskImage: 'linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)'
+              }}
+            >
+              <span 
+                className="inline-block text-white font-medium text-base animate-scroll-text" 
+                style={{ 
+                  animationDuration: task.title.length > 20 ? `${Math.max(8, task.title.length * 0.3)}s` : 'none'
+                }}
+              >
+                {task.title}
+              </span>
+            </div>
+          </div>
+          
+          {/* Right: Time display without background - pushed more to the right */}
+          <div className="flex-[1] px-2 py-4 flex items-center justify-end">
+            <div className="text-gray-400 font-medium text-sm whitespace-nowrap">
+              {hasStartTime ? (
+                <TaskTimeDisplay
+                  taskId={task.id}
+                  startTime={taskStartTimes[task.id]}
+                  estimatedTime={task.estimated_time}
+                  isActiveCommitted={isActiveCommitted}
+                />
+              ) : (
+                <span>--:-- → --:--</span>
+              )}
+            </div>
+          </div>
+          
+          {/* Expand chevron */}
+          <Button 
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 p-0 hover:bg-black/10 rounded-lg"
+            onClick={() => {
+              setIsUltraCompact(false);
+              if (pipWindow && !pipWindow.closed) {
+                try {
+                  pipWindow.resizeTo(368, 514);
+                } catch (error) {
+                  console.warn('Failed to resize PiP window:', error);
+                }
+              }
+            }}
+          >
+            <ChevronDown className="w-4 h-4 text-black/70" />
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+  {/* ========== ULTRA-COMPACT PIP VIEW END ========== */}
 
   return (
     <div className={`w-full h-full transition-transform ${
@@ -410,39 +547,19 @@ export const TaskCard = ({
               {/* Collapsible Divider */}
               <div 
                 onClick={() => {
-                  const newCollapsedState = !isNotesCollapsed;
-                  
-                  // Resize PiP window if we're in PiP mode
                   if (pipWindow && !pipWindow.closed) {
+                    // In PiP: toggle ultra-compact mode
+                    const newUltraCompact = !isUltraCompact;
+                    setIsUltraCompact(newUltraCompact);
                     try {
-                      // Get current window height
-                      const currentHeight = pipWindow.innerHeight || 514;
-                      let newHeight;
-                      
-                      if (newCollapsedState) {
-                        // Collapsing: measure the notes container height to subtract
-                        const notesContainer = pipWindow.document.querySelector('[data-notes-container]');
-                        if (notesContainer) {
-                          const notesHeight = notesContainer.getBoundingClientRect().height;
-                          // Only subtract the visible content height, keep some space for the collapsed state
-                          // Reduce the subtraction amount - we were being too aggressive
-                          newHeight = Math.max(320, currentHeight - notesHeight + 60);
-                        } else {
-                          // Fallback to original logic if container not found
-                          newHeight = 314;
-                        }
-                      } else {
-                        // Expanding: restore to default height
-                        newHeight = 514;
-                      }
-                      
-                      pipWindow.resizeTo(368, newHeight);
+                      pipWindow.resizeTo(368, newUltraCompact ? 125 : 514);
                     } catch (error) {
                       console.warn('Failed to resize PiP window:', error);
                     }
+                  } else {
+                    // In main window: normal notes collapse
+                    setIsNotesCollapsed(!isNotesCollapsed);
                   }
-                  
-                  setIsNotesCollapsed(newCollapsedState);
                 }}
                 className="cursor-pointer py-2 px-4 flex items-center justify-center group relative"
               >
@@ -451,10 +568,16 @@ export const TaskCard = ({
                 
                 {/* Chevron overlay */}
                 <div className="absolute opacity-0 group-hover:opacity-100 transition-all duration-700 ease-out transform scale-75 group-hover:scale-100 bg-[hsl(48_20%_97%)] px-1">
-                  {isNotesCollapsed ? (
+                  {pipWindow ? (
+                    // In PiP: always show down arrow (to go ultra-compact)
                     <ChevronDown className="w-4 h-4" style={{ color: 'hsl(220 10% 40%)' }} />
                   ) : (
-                    <ChevronUp className="w-4 h-4" style={{ color: 'hsl(220 10% 40%)' }} />
+                    // In main window: normal collapse behavior
+                    isNotesCollapsed ? (
+                      <ChevronDown className="w-4 h-4" style={{ color: 'hsl(220 10% 40%)' }} />
+                    ) : (
+                      <ChevronUp className="w-4 h-4" style={{ color: 'hsl(220 10% 40%)' }} />
+                    )
                   )}
                 </div>
               </div>
