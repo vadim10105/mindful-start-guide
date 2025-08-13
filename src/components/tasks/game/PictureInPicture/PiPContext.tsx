@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode, use
 declare global {
   interface Window {
     documentPictureInPicture?: {
-      requestWindow(options?: { width?: number; height?: number }): Promise<Window>;
+      requestWindow(options?: { width?: number; height?: number; preferInitialWindowPlacement?: boolean }): Promise<Window>;
       window?: Window;
     };
   }
@@ -26,7 +26,7 @@ interface PiPProviderProps {
   children: ReactNode;
 }
 
-const DEFAULT_PIP_SIZE = { width: 368, height: 514 };
+const DEFAULT_PIP_SIZE = { width: 368, height: 540 };
 
 export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
   const [isPiPActive, setIsPiPActive] = useState(false);
@@ -107,7 +107,8 @@ export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
       // Request a new Picture-in-Picture window
       const pipWindow = await window.documentPictureInPicture.requestWindow({
         width: DEFAULT_PIP_SIZE.width,
-        height: DEFAULT_PIP_SIZE.height
+        height: DEFAULT_PIP_SIZE.height,
+        preferInitialWindowPlacement: true
       });
 
       // Copy styles to the PiP window

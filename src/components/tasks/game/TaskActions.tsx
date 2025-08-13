@@ -72,27 +72,13 @@ export const TaskActions = ({
         <Button
           onClick={onBackToActive}
           size="sm"
-          className="w-full flex items-center gap-2 bg-gray-200 hover:bg-primary hover:text-white transition-all duration-700"
-          style={{ color: 'hsl(220 10% 30%)' }}
+          className="w-full h-10 flex items-center gap-2 bg-primary hover:bg-primary/90 transition-all duration-700"
+          style={{ color: '#434343' }}
         >
           <RotateCcw className="w-4 h-4" />
           Back to Active Card
         </Button>
       </div>
-    );
-  }
-
-  if (isPaused) {
-    return (
-      <Button 
-        onClick={() => onCarryOn(task.id)}
-        size="sm"
-        className="w-full bg-primary hover:bg-primary/90 transition-all duration-700"
-        style={{ color: '#434343' }}
-      >
-        <Play className="w-4 h-4 mr-2" />
-        Play
-      </Button>
     );
   }
 
@@ -104,30 +90,7 @@ export const TaskActions = ({
     );
   }
 
-  if (!hasCommittedToTask || !isActiveCommitted) {
-    // Only show "Play Card" button when navigation is unlocked
-    if (navigationUnlocked) {
-      return (
-        <Button 
-          onClick={onCommit}
-          size="sm"
-          className="w-full bg-primary hover:bg-primary/90 transition-all duration-700"
-          style={{ color: '#434343' }}
-        >
-          <Play className="w-4 h-4 mr-2" />
-          Play
-        </Button>
-      );
-    }
-    // During navigation lock, cards should auto-activate (no button shown)
-    return (
-      <div className="text-sm text-center" style={{ color: 'hsl(220 10% 50%)' }}>
-        Starting task...
-      </div>
-    );
-  }
-
-  // Committed task - show expandable action buttons
+  // Always show expandable action buttons for current task
   return (
     <div className="flex gap-2 justify-center">
       {/* Made Progress Button */}

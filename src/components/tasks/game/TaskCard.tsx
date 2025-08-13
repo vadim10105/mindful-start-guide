@@ -269,7 +269,7 @@ export const TaskCard = ({
     if (isUltraCompact && pipWindow && !pipWindow.closed) {
       setIsUltraCompact(false);
       try {
-        pipWindow.resizeTo(368, 514);
+        pipWindow.resizeTo(368, 575);
       } catch (error) {
         console.warn('Failed to resize PiP window:', error);
       }
@@ -455,7 +455,7 @@ export const TaskCard = ({
               setIsUltraCompact(false);
               if (pipWindow && !pipWindow.closed) {
                 try {
-                  pipWindow.resizeTo(368, 514);
+                  pipWindow.resizeTo(368, 575);
                 } catch (error) {
                   console.warn('Failed to resize PiP window:', error);
                 }
@@ -529,7 +529,7 @@ export const TaskCard = ({
                 </>
               )}
             </div>
-            <CardTitle className="text-xl leading-tight tracking-wide whitespace-pre-line" style={{ color: '#7C7C7C' }}>
+            <CardTitle className="text-2xl leading-tight tracking-wide whitespace-pre-line" style={{ color: '#7C7C7C' }}>
               {balanceText(task.title, 2)}
             </CardTitle>
           </CardHeader>
@@ -545,12 +545,14 @@ export const TaskCard = ({
                 isActiveCommitted={isActiveCommitted}
                 isPauseHovered={isPauseHovered}
                 isPaused={isPaused}
-                showPlayPauseIcon={isActiveCommitted || isPaused}
+                showPlayPauseIcon={isActiveCommitted || isPaused || (isCurrentTask && !hasCommittedToTask)}
                 onPlayPause={() => {
                   if (isPaused) {
                     onCarryOn(task.id);
                   } else if (isActiveCommitted) {
                     onMoveOn(task.id);
+                  } else if (isCurrentTask && !hasCommittedToTask) {
+                    onCommit();
                   }
                 }}
               />
@@ -560,37 +562,20 @@ export const TaskCard = ({
               {/* Collapsible Divider */}
               <div 
                 onClick={() => {
-                  if (pipWindow && !pipWindow.closed) {
-                    // In PiP: toggle ultra-compact mode
-                    const newUltraCompact = !isUltraCompact;
-                    setIsUltraCompact(newUltraCompact);
-                    try {
-                      pipWindow.resizeTo(368, newUltraCompact ? 125 : 514);
-                    } catch (error) {
-                      console.warn('Failed to resize PiP window:', error);
-                    }
-                  } else {
-                    // In main window: normal notes collapse
-                    setIsNotesCollapsed(!isNotesCollapsed);
-                  }
+                  // Always toggle notes collapse/expand
+                  setIsNotesCollapsed(!isNotesCollapsed);
                 }}
                 className="cursor-pointer py-2 px-4 flex items-center justify-center group relative"
               >
                 {/* Full line */}
-                <div className="w-full h-[1px] bg-[hsl(220_10%_60%)] opacity-30 group-hover:opacity-50 transition-all duration-700 ease-out"></div>
+                <div className="w-full h-[1px] bg-[#989898] opacity-20 group-hover:opacity-50 transition-all duration-700 ease-out"></div>
                 
                 {/* Chevron overlay */}
-                <div className="absolute opacity-0 group-hover:opacity-100 transition-all duration-700 ease-out transform scale-75 group-hover:scale-100 bg-[hsl(48_20%_97%)] px-1">
-                  {pipWindow ? (
-                    // In PiP: always show down arrow (to go ultra-compact)
+                <div className="absolute opacity-0 group-hover:opacity-100 transition-all duration-700 ease-out transform scale-75 group-hover:scale-100 px-1" style={{ backgroundColor: '#FFFFF7' }}>
+                  {isNotesCollapsed ? (
                     <ChevronDown className="w-4 h-4" style={{ color: 'hsl(220 10% 40%)' }} />
                   ) : (
-                    // In main window: normal collapse behavior
-                    isNotesCollapsed ? (
-                      <ChevronDown className="w-4 h-4" style={{ color: 'hsl(220 10% 40%)' }} />
-                    ) : (
-                      <ChevronUp className="w-4 h-4" style={{ color: 'hsl(220 10% 40%)' }} />
-                    )
+                    <ChevronUp className="w-4 h-4" style={{ color: 'hsl(220 10% 40%)' }} />
                   )}
                 </div>
               </div>
@@ -612,7 +597,7 @@ export const TaskCard = ({
                   onFocus={() => setIsNotesFocused(true)}
                   onBlur={() => setIsNotesFocused(false)}
                   placeholder=""
-                  className="resize-none !text-sm leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[hsl(220_10%_30%)] placeholder:text-[hsl(220_10%_60%)] h-full min-h-[80px] cursor-text hover:cursor-pointer"
+                  className="resize-none !text-sm leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[#7C7C7C] placeholder:text-[#7C7C7C] h-full min-h-[80px] cursor-text hover:cursor-pointer"
                   style={{ backgroundColor: 'transparent' }}
                 />
                 {/* Typewriter placeholder */}
@@ -650,7 +635,7 @@ export const TaskCard = ({
                     const newUltraCompact = !isUltraCompact;
                     setIsUltraCompact(newUltraCompact);
                     try {
-                      pipWindow.resizeTo(368, newUltraCompact ? 125 : 514);
+                      pipWindow.resizeTo(368, newUltraCompact ? 125 : 575);
                     } catch (error) {
                       console.warn('Failed to resize PiP window:', error);
                     }

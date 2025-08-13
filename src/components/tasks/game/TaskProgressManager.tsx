@@ -242,7 +242,7 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
     const segmentProgress = getSegmentProgress();
 
     return (
-      <div className="mx-4 mb-4">
+      <div className="mx-4 mb-2">
         {/* Progress Bar with Timer Text Inside */}
         {shouldSegment ? (
           // Segmented progress bar for tasks 39+ minutes
@@ -292,7 +292,7 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
                 onClick={onPlayPause}
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded transition-colors z-10"
               >
-                {isPaused ? (
+                {(isPaused || sessionElapsedMs < 1000) ? (
                   <Play className="w-4 h-4 text-white" fill="currentColor" />
                 ) : (
                   <Pause className="w-4 h-4 text-white" fill="currentColor" />
@@ -334,7 +334,7 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
                 onClick={onPlayPause}
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded transition-colors z-20"
               >
-                {isPaused ? (
+                {(isPaused || sessionElapsedMs < 1000) ? (
                   <Play className="w-4 h-4 text-white" fill="currentColor" />
                 ) : (
                   <Pause className="w-4 h-4 text-white" fill="currentColor" />

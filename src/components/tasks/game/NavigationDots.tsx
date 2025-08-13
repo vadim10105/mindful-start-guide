@@ -26,18 +26,28 @@ export const NavigationDots = ({
   pausedTasks
 }: NavigationDotsProps) => {
   return (
-    <div className="flex justify-center gap-2 mb-8">
+    <div className="flex justify-center gap-2">
       {tasks.map((task, index) => (
         <div
           key={index}
           className="w-3 h-3 rounded-full transition-all duration-300 relative"
         >
-          {index === currentViewingIndex ? (
+          {completedTasks.has(task.id) ? (
+            // Completed task - green dot with inner dot if currently viewing
+            <>
+              <div className="w-3 h-3 rounded-full bg-green-500/40" />
+              {index === currentViewingIndex && (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-gray-700/50" />
+              )}
+            </>
+          ) : index === currentViewingIndex ? (
+            // Current viewing task - highlighted
             <>
               <div className="w-3 h-3 rounded-full bg-white/30" />
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-gray-700/50" />
             </>
           ) : (
+            // Other tasks - default
             <div className="w-3 h-3 rounded-full bg-white/20" />
           )}
         </div>

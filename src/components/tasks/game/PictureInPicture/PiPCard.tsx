@@ -6,6 +6,7 @@ import { TaskProgressManagerHook } from "../TaskProgressManager";
 import { TaskCardData, CompletedTask, GameStateType } from "../GameState";
 import { useTaskTimer } from "../TaskTimer";
 import { ShuffleAnimation } from "../ShuffleAnimation";
+import { NavigationDots } from "../NavigationDots";
 import { getRewardCardData, RewardCardData } from "@/services/cardService";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -256,7 +257,7 @@ export const PiPCard = ({
     // Expand PiP window back to full size on completion
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(368, 514);
+        pipWindow.resizeTo(368, 575);
       } catch (error) {
         console.warn('Failed to resize PiP window on completion:', error);
       }
@@ -268,7 +269,7 @@ export const PiPCard = ({
     // Expand PiP window back to full size on progress
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(368, 514);
+        pipWindow.resizeTo(368, 575);
       } catch (error) {
         console.warn('Failed to resize PiP window on progress:', error);
       }
@@ -280,7 +281,7 @@ export const PiPCard = ({
     // Expand PiP window back to full size on breakdown
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(368, 514);
+        pipWindow.resizeTo(368, 575);
       } catch (error) {
         console.warn('Failed to resize PiP window on breakdown:', error);
       }
@@ -453,6 +454,18 @@ export const PiPCard = ({
             </div>
           </div>
         </div>
+
+        {/* Navigation Dots for summary card */}
+        <div className="flex-shrink-0 py-6 flex items-center justify-center">
+          <NavigationDots
+            tasks={tasks}
+            currentViewingIndex={gameState.currentViewingIndex}
+            activeCommittedIndex={gameState.activeCommittedIndex}
+            hasCommittedToTask={gameState.hasCommittedToTask}
+            completedTasks={gameState.completedTasks}
+            pausedTasks={gameState.pausedTasks}
+          />
+        </div>
       </div>
     );
   }
@@ -477,7 +490,7 @@ export const PiPCard = ({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* The actual task card - full height with transition effects */}
+      {/* The actual task card - takes most of the height with transition effects */}
       <div 
         className={`w-full flex-1 transition-all duration-300 ease-out ${
           isTransitioning 
@@ -577,6 +590,17 @@ export const PiPCard = ({
         </div>
       </div>
 
+      {/* Navigation Dots - positioned below the card */}
+      <div className="flex-shrink-0 py-6 flex items-center justify-center">
+        <NavigationDots
+          tasks={tasks}
+          currentViewingIndex={gameState.currentViewingIndex}
+          activeCommittedIndex={gameState.activeCommittedIndex}
+          hasCommittedToTask={gameState.hasCommittedToTask}
+          completedTasks={gameState.completedTasks}
+          pausedTasks={gameState.pausedTasks}
+        />
+      </div>
 
     </div>
   );
