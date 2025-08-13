@@ -393,7 +393,23 @@ export const TaskCard = ({
           style={{
             background: (() => {
               const progress = getUltraCompactProgress();
-              const progressColor = isPaused ? '#6b7280' : 'rgb(251 191 36)';
+              const estimatedMinutes = parseTimeToMinutes(task.estimated_time || '');
+              const timerState = taskTimers.get(task.id);
+              const sessionElapsedMs = timerState?.currentSessionStart 
+                ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+                : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
+              const elapsedMinutes = Math.floor(sessionElapsedMs / 60000);
+              const isOvertime = estimatedMinutes > 0 && elapsedMinutes > estimatedMinutes;
+              
+              let progressColor;
+              if (isPaused) {
+                progressColor = '#6b7280'; // Gray when paused
+              } else if (isOvertime) {
+                progressColor = '#f59e0b'; // Orange when overtime
+              } else {
+                progressColor = 'rgb(251 191 36)'; // Yellow when normal
+              }
+              
               return progress > 0
                 ? `linear-gradient(to right, ${progressColor} ${progress}%, rgba(152, 152, 152, 0.4) ${progress}%)`
                 : 'rgba(152, 152, 152, 0.4)';
