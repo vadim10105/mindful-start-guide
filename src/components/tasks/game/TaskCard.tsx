@@ -556,6 +556,15 @@ export const TaskCard = ({
                 estimatedTime={task.estimated_time}
                 isActiveCommitted={isActiveCommitted}
                 isPauseHovered={isPauseHovered}
+                isPaused={isPaused}
+                showPlayPauseIcon={isActiveCommitted || isPaused}
+                onPlayPause={() => {
+                  if (isPaused) {
+                    onCarryOn(task.id);
+                  } else if (isActiveCommitted) {
+                    onMoveOn(task.id);
+                  }
+                }}
               />
 
               {/* Notes Section */}

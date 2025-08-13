@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TaskCardData, CompletedTask } from './GameState';
 import { unlockNextCard } from '@/services/cardService';
 import { parseTimeToMinutes } from '@/utils/timeUtils';
+import { Play, Pause } from 'lucide-react';
 
 // Global timer state per task ID (from useSimpleTimer)
 export const taskTimers = new Map<string, {
@@ -35,6 +36,9 @@ interface TaskProgressBarProps {
   estimatedTime?: string;
   isActiveCommitted: boolean;
   isPauseHovered?: boolean;
+  isPaused?: boolean;
+  onPlayPause?: () => void;
+  showPlayPauseIcon?: boolean;
 }
 
 interface TaskProgressManagerProps {
@@ -94,7 +98,10 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
     taskId, 
     estimatedTime, 
     isActiveCommitted,
-    isPauseHovered = false
+    isPauseHovered = false,
+    isPaused = false,
+    onPlayPause,
+    showPlayPauseIcon = false
   }) => {
     const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -259,14 +266,14 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
                         background: `linear-gradient(to right, ${
                           isOvertime ? '#f59e0b' : 
                           isActiveCommitted ? 'hsl(48 100% 50%)' : '#9ca3af'
-                        } ${segmentFillPercentage}%, rgba(152, 152, 152, 0.2) ${segmentFillPercentage}%)`
+                        } ${segmentFillPercentage}%, rgba(152, 152, 152, 0.3) ${segmentFillPercentage}%)`
                       }}
                     />
                     {/* Pause hover state background */}
                     <div 
                       className={`absolute inset-0 transition-opacity duration-700 ease-out ${isPauseHovered ? 'opacity-100' : 'opacity-0'}`}
                       style={{
-                        background: `linear-gradient(to right, #6b7280 ${segmentFillPercentage}%, rgba(152, 152, 152, 0.2) ${segmentFillPercentage}%)`
+                        background: `linear-gradient(to right, #6b7280 ${segmentFillPercentage}%, rgba(152, 152, 152, 0.3) ${segmentFillPercentage}%)`
                       }}
                     />
                   </div>
@@ -279,11 +286,23 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
               );
             })}
             
+            {/* Play/Pause icon on the left */}
+            {showPlayPauseIcon && onPlayPause && (
+              <button
+                onClick={onPlayPause}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded transition-colors z-10"
+              >
+                {isPaused ? (
+                  <Play className="w-4 h-4 text-white" fill="currentColor" />
+                ) : (
+                  <Pause className="w-4 h-4 text-white" fill="currentColor" />
+                )}
+              </button>
+            )}
+            
             {/* Timer text inside the bar - positioned on the right */}
-            <div className="absolute inset-0 flex items-center justify-end pr-3 group">
-              <span className={`text-xs font-medium transition-opacity duration-300 ${
-                isOvertime ? 'text-white' : 'text-gray-700'
-              } ${shouldDimText ? 'opacity-30 group-hover:opacity-100' : 'opacity-100'}`}>
+            <div className="absolute inset-0 flex items-center justify-end pr-3">
+              <span className="text-xs font-medium text-white">
                 {elapsedTimeDisplay}
               </span>
             </div>
@@ -298,21 +317,34 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
                 background: `linear-gradient(to right, ${
                   isOvertime ? '#f59e0b' : 
                   isActiveCommitted ? 'hsl(48 100% 50%)' : '#9ca3af'
-                } ${progressPercentage}%, rgba(152, 152, 152, 0.2) ${progressPercentage}%)`
+                } ${progressPercentage}%, rgba(152, 152, 152, 0.3) ${progressPercentage}%)`
               }}
             />
             {/* Pause hover state background */}
             <div 
               className={`absolute inset-0 rounded-sm transition-opacity duration-700 ease-out ${isPauseHovered ? 'opacity-100' : 'opacity-0'}`}
               style={{
-                background: `linear-gradient(to right, #6b7280 ${progressPercentage}%, rgba(152, 152, 152, 0.2) ${progressPercentage}%)`
+                background: `linear-gradient(to right, #6b7280 ${progressPercentage}%, rgba(152, 152, 152, 0.3) ${progressPercentage}%)`
               }}
             />
+            
+            {/* Play/Pause icon on the left */}
+            {showPlayPauseIcon && onPlayPause && (
+              <button
+                onClick={onPlayPause}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded transition-colors z-20"
+              >
+                {isPaused ? (
+                  <Play className="w-4 h-4 text-white" fill="currentColor" />
+                ) : (
+                  <Pause className="w-4 h-4 text-white" fill="currentColor" />
+                )}
+              </button>
+            )}
+            
             {/* Timer text inside the bar - positioned on the right */}
-            <div className="absolute inset-0 flex items-center justify-end pr-3 group">
-              <span className={`text-xs font-medium transition-opacity duration-300 ${
-                isOvertime ? 'text-white' : 'text-gray-700'
-              } ${shouldDimText ? 'opacity-30 group-hover:opacity-100' : 'opacity-100'}`}>
+            <div className="absolute inset-0 flex items-center justify-end pr-3">
+              <span className="text-xs font-medium text-white">
                 {elapsedTimeDisplay}
               </span>
             </div>

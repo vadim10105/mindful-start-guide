@@ -156,27 +156,15 @@ export const TaskActions = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
-        <Button 
-          onClick={() => setShowCompletionOptions(true)}
-          size="sm"
-          className="bg-gray-200 hover:bg-green-600 hover:text-white px-3 transition-all duration-700"
-          style={{ color: 'hsl(220 10% 30%)' }}
-        >
-          <Check className="w-4 h-4" />
-        </Button>
-        <Button 
-          onClick={() => onMoveOn(task.id)}
-          onMouseEnter={() => onPauseHover?.(true)}
-          onMouseLeave={() => onPauseHover?.(false)}
-          size="sm"
-          className="flex-1 bg-gray-200 hover:bg-primary hover:text-white transition-all duration-700"
-          style={{ color: 'hsl(220 10% 30%)' }}
-        >
-          <Pause className="w-4 h-4 mr-1" />
-          Pause
-        </Button>
-      </div>
+      <Button 
+        onClick={() => setShowCompletionOptions(true)}
+        size="sm"
+        className="w-full bg-gray-200 hover:bg-green-600 hover:text-white transition-all duration-700"
+        style={{ color: 'hsl(220 10% 30%)' }}
+      >
+        <Check className="w-4 h-4 mr-2" />
+        Complete
+      </Button>
     </div>
   );
 };
