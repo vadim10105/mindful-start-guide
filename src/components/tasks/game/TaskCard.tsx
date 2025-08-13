@@ -391,9 +391,9 @@ export const TaskCard = ({
         />
       
         {/* Content */}
-        <div className="relative flex items-center h-full px-4 gap-2 z-10">
+        <div className="relative flex items-center h-full px-4 z-10">
           {/* Left: Task title in darker rounded container - takes up more space */}
-          <div className="flex-[3] bg-black/20 rounded-xl px-3 py-2 overflow-hidden relative">
+          <div className="flex-[3] bg-black/20 rounded-xl px-3 py-2 overflow-hidden relative mr-2">
             <div 
               className="overflow-hidden whitespace-nowrap"
               style={{
@@ -401,20 +401,36 @@ export const TaskCard = ({
                 WebkitMaskImage: 'linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)'
               }}
             >
-              <span 
-                className="inline-block text-white font-medium text-base animate-scroll-text" 
-                style={{ 
-                  animationDuration: task.title.length > 20 ? `${Math.max(8, task.title.length * 0.3)}s` : 'none'
-                }}
-              >
-                {task.title}
-              </span>
+              {task.title.length > 20 ? (
+                <div className="inline-flex">
+                  <span 
+                    className="inline-block text-white font-medium text-base animate-scroll-text" 
+                    style={{ 
+                      animationDuration: `${Math.max(10, task.title.length * 0.4)}s`
+                    }}
+                  >
+                    {task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  </span>
+                  <span 
+                    className="inline-block text-white font-medium text-base animate-scroll-text" 
+                    style={{ 
+                      animationDuration: `${Math.max(10, task.title.length * 0.4)}s`
+                    }}
+                  >
+                    {task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  </span>
+                </div>
+              ) : (
+                <span className="inline-block text-white font-medium text-base">
+                  {task.title}
+                </span>
+              )}
             </div>
           </div>
           
           {/* Right: Time display without background - pushed more to the right */}
           <div className="flex-[1] px-2 py-4 flex items-center justify-end">
-            <div className="text-gray-400 font-medium text-sm whitespace-nowrap">
+            <div className="text-gray-400 font-medium whitespace-nowrap [&>span]:!text-xs">
               {hasStartTime ? (
                 <TaskTimeDisplay
                   taskId={task.id}
@@ -466,7 +482,7 @@ export const TaskCard = ({
         isActiveCommitted ? 'shadow-2xl' : 'shadow-xl'
       }`} style={{ 
         backfaceVisibility: 'hidden',
-        backgroundColor: 'hsl(48 20% 97%)',
+        backgroundColor: '#FFFFF7',
         color: 'hsl(220 10% 20%)',
         ...(isActiveCommitted && {
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05)'
@@ -525,7 +541,7 @@ export const TaskCard = ({
                 </>
               )}
             </div>
-            <CardTitle className="text-2xl leading-tight tracking-wide whitespace-pre-line" style={{ color: 'hsl(220 10% 20%)' }}>
+            <CardTitle className="text-xl leading-tight tracking-wide whitespace-pre-line" style={{ color: '#7C7C7C' }}>
               {balanceText(task.title, 2)}
             </CardTitle>
           </CardHeader>

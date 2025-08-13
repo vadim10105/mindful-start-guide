@@ -239,7 +239,7 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
         {/* Progress Bar with Timer Text Inside */}
         {shouldSegment ? (
           // Segmented progress bar for tasks 39+ minutes
-          <div className="w-full h-8 relative flex rounded-full overflow-hidden">
+          <div className="w-full h-10 relative flex rounded-sm overflow-hidden">
             {segments.map((segmentDuration, index) => {
               const segmentWidth = (segmentDuration / estimatedMinutes) * 100;
               const segmentFillPercentage = segmentProgress[index] || 0;
@@ -259,17 +259,14 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
                         background: `linear-gradient(to right, ${
                           isOvertime ? '#f59e0b' : 
                           isActiveCommitted ? 'hsl(48 100% 50%)' : '#9ca3af'
-                        } ${segmentFillPercentage}%, ${
-                          isOvertime ? 'rgba(245, 158, 11, 0.3)' : 
-                          isActiveCommitted ? 'hsl(48 100% 85%)' : 'rgba(107, 114, 128, 0.3)'
-                        } ${segmentFillPercentage}%)`
+                        } ${segmentFillPercentage}%, rgba(152, 152, 152, 0.2) ${segmentFillPercentage}%)`
                       }}
                     />
                     {/* Pause hover state background */}
                     <div 
                       className={`absolute inset-0 transition-opacity duration-700 ease-out ${isPauseHovered ? 'opacity-100' : 'opacity-0'}`}
                       style={{
-                        background: `linear-gradient(to right, #6b7280 ${segmentFillPercentage}%, rgba(107, 114, 128, 0.3) ${segmentFillPercentage}%)`
+                        background: `linear-gradient(to right, #6b7280 ${segmentFillPercentage}%, rgba(152, 152, 152, 0.2) ${segmentFillPercentage}%)`
                       }}
                     />
                   </div>
@@ -293,25 +290,22 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
           </div>
         ) : (
           // Single progress bar for tasks under 39 minutes
-          <div className="w-full rounded-full h-8 relative">
+          <div className="w-full rounded-sm h-10 relative">
             {/* Normal state background */}
             <div 
-              className={`absolute inset-0 rounded-full transition-opacity duration-700 ease-out ${isPauseHovered ? 'opacity-0' : 'opacity-100'}`}
+              className={`absolute inset-0 rounded-sm transition-opacity duration-700 ease-out ${isPauseHovered ? 'opacity-0' : 'opacity-100'}`}
               style={{
                 background: `linear-gradient(to right, ${
                   isOvertime ? '#f59e0b' : 
                   isActiveCommitted ? 'hsl(48 100% 50%)' : '#9ca3af'
-                } ${progressPercentage}%, ${
-                  isOvertime ? 'rgba(245, 158, 11, 0.3)' : 
-                  isActiveCommitted ? 'hsl(48 100% 85%)' : 'rgba(107, 114, 128, 0.3)'
-                } ${progressPercentage}%)`
+                } ${progressPercentage}%, rgba(152, 152, 152, 0.2) ${progressPercentage}%)`
               }}
             />
             {/* Pause hover state background */}
             <div 
-              className={`absolute inset-0 rounded-full transition-opacity duration-700 ease-out ${isPauseHovered ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 rounded-sm transition-opacity duration-700 ease-out ${isPauseHovered ? 'opacity-100' : 'opacity-0'}`}
               style={{
-                background: `linear-gradient(to right, #6b7280 ${progressPercentage}%, rgba(107, 114, 128, 0.3) ${progressPercentage}%)`
+                background: `linear-gradient(to right, #6b7280 ${progressPercentage}%, rgba(152, 152, 152, 0.2) ${progressPercentage}%)`
               }}
             />
             {/* Timer text inside the bar - positioned on the right */}
