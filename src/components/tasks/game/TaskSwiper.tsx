@@ -41,6 +41,7 @@ interface TaskSwiperProps {
   onNotesChange?: (taskId: string, notes: string) => void;
   formatTime: (minutes: number) => string;
   progressManager: TaskProgressManagerHook;
+  onEnterPiP?: () => void;
 }
 
 export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
@@ -59,7 +60,8 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
   onAddToCollection,
   onNotesChange,
   formatTime,
-  progressManager
+  progressManager,
+  onEnterPiP
 }, ref) => {
   const sunsetImages = rewardCards.map(card => card.imageUrl);
   return (
@@ -159,6 +161,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 navigationUnlocked={gameState.navigationUnlocked}
                 formatTime={formatTime}
                 progressManager={progressManager}
+                onEnterPiP={onEnterPiP}
               />
             </SwiperSlide>
           ))}

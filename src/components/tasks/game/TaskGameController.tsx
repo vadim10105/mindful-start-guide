@@ -408,6 +408,7 @@ export const TaskGameController = ({
                   onNotesChange={updateTaskNotes}
                   formatTime={formatTime}
                   progressManager={progressManager}
+                  onEnterPiP={pipManager.enterPiP}
                 />
 
                 {/* Navigation Dots */}

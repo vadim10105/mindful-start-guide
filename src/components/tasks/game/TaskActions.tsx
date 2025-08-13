@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Play, Pause, SkipForward, RotateCcw, ArrowLeft } from "lucide-react";
+import { Check, Play, Pause, SkipForward, RotateCcw, ArrowLeft, TrendingUp, Wand2, Minimize2, Loader2, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 interface TaskCardData {
@@ -28,9 +28,13 @@ interface TaskActionsProps {
   onCarryOn: (taskId: string) => void;
   onSkip: (taskId: string) => void;
   onBackToActive: () => void;
+  onBreakdown?: () => void;
+  onMinify?: () => void;
+  isGenerating?: boolean;
   navigationUnlocked: boolean;
   formatTime: (minutes: number) => string;
   onPauseHover?: (isHovering: boolean) => void;
+  pipWindow?: Window;
 }
 
 export const TaskActions = ({
@@ -49,11 +53,14 @@ export const TaskActions = ({
   onCarryOn,
   onSkip,
   onBackToActive,
+  onBreakdown,
+  onMinify,
+  isGenerating = false,
   navigationUnlocked,
   formatTime,
-  onPauseHover
+  onPauseHover,
+  pipWindow
 }: TaskActionsProps) => {
-  const [showCompletionOptions, setShowCompletionOptions] = useState(false);
   if (isCompleted) {
     return null;
   }
@@ -120,51 +127,65 @@ export const TaskActions = ({
     );
   }
 
-  // Committed task - show either completion flow or normal buttons
-  if (showCompletionOptions) {
-    return (
-      <div className="space-y-2">
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => setShowCompletionOptions(false)}
-            size="sm"
-            className="bg-gray-200 hover:bg-gray-300 px-3 transition-all duration-700"
-            style={{ color: 'hsl(220 10% 30%)' }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <Button 
-            onClick={() => onMadeProgress(task.id)}
-            size="sm"
-            className="flex-1 bg-gray-200 hover:bg-orange-500 hover:text-white transition-all duration-700"
-            style={{ color: 'hsl(220 10% 30%)' }}
-          >
-            Made Progress
-          </Button>
-          <Button 
-            onClick={() => onComplete(task.id)}
-            size="sm"
-            className="flex-1 bg-gray-200 hover:bg-green-600 hover:text-white transition-all duration-700"
-            style={{ color: 'hsl(220 10% 30%)' }}
-          >
-            Complete
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Committed task - show expandable action buttons
   return (
-    <div className="space-y-2">
-      <Button 
-        onClick={() => setShowCompletionOptions(true)}
-        size="sm"
-        className="w-full bg-gray-200 hover:bg-green-600 hover:text-white transition-all duration-700"
-        style={{ color: 'hsl(220 10% 30%)' }}
+    <div className="flex gap-2 justify-center">
+      {/* Made Progress Button */}
+      <button
+        onClick={() => onMadeProgress(task.id)}
+        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-yellow-500 hover:text-white hover:px-2 hover:gap-2"
+        style={{ backgroundColor: 'rgba(152, 152, 152, 0.2)' }}
       >
-        <Check className="w-4 h-4 mr-2" />
-        Complete
-      </Button>
+        <TrendingUp className="w-5 h-5 flex-shrink-0" />
+        <span className="w-0 group-hover:w-auto overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out">
+          Made Progress
+        </span>
+      </button>
+
+      {/* Complete Button */}
+      <button
+        onClick={() => onComplete(task.id)}
+        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-green-600 hover:text-white hover:px-2 hover:gap-2"
+        style={{ backgroundColor: 'rgba(152, 152, 152, 0.2)' }}
+      >
+        <Check className="w-5 h-5 flex-shrink-0" />
+        <span className="w-0 group-hover:w-auto overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out">
+          Complete
+        </span>
+      </button>
+
+      {/* Break it down Button */}
+      <button
+        onClick={() => onBreakdown?.()}
+        disabled={isGenerating}
+        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-purple-500 hover:text-white hover:px-2 hover:gap-2 disabled:opacity-50"
+        style={{ backgroundColor: 'rgba(152, 152, 152, 0.2)' }}
+      >
+        {isGenerating ? (
+          <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin" />
+        ) : (
+          <Wand2 className="w-5 h-5 flex-shrink-0" />
+        )}
+        <span className="w-0 group-hover:w-auto overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out">
+          Break it down
+        </span>
+      </button>
+
+      {/* Focus/Minify Button */}
+      <button
+        onClick={() => onMinify?.()}
+        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-gray-600 hover:text-white hover:px-2 hover:gap-2"
+        style={{ backgroundColor: 'rgba(152, 152, 152, 0.2)' }}
+      >
+        {pipWindow ? (
+          <Minimize2 className="w-5 h-5 flex-shrink-0" />
+        ) : (
+          <ExternalLink className="w-5 h-5 flex-shrink-0" />
+        )}
+        <span className="w-0 group-hover:w-auto overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out">
+          {pipWindow ? 'Minify' : 'Focus'}
+        </span>
+      </button>
     </div>
   );
 };

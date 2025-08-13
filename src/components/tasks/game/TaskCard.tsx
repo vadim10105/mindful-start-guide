@@ -91,6 +91,7 @@ interface TaskCardProps {
   formatTime: (minutes: number) => string;
   hideTaskActions?: boolean;
   pipWindow?: Window;
+  onEnterPiP?: () => void;
 }
 
 export const TaskCard = ({
@@ -125,7 +126,8 @@ export const TaskCard = ({
   navigationUnlocked,
   formatTime,
   hideTaskActions = false,
-  pipWindow
+  pipWindow,
+  onEnterPiP
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -507,20 +509,6 @@ export const TaskCard = ({
               )}
             </div>
             
-            {/* Magic Wand - Top Right */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={generateSubtasks}
-              disabled={isGenerating}
-              className="absolute top-1 right-2 h-6 w-6 p-0 hover:bg-muted/20 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <Loader2 className="w-3 h-3 animate-spin" style={{ color: 'hsl(220 10% 40%)' }} />
-              ) : (
-                <Wand2 className="w-3 h-3" style={{ color: 'hsl(220 10% 40%)' }} />
-              )}
-            </Button>
             
             <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px', color: 'hsl(220 10% 50%)' }}>
               {taskStartTimes[task.id] ? (
@@ -655,9 +643,27 @@ export const TaskCard = ({
                 onCarryOn={onCarryOn}
                 onSkip={onSkip}
                 onBackToActive={onBackToActive}
+                onBreakdown={() => generateSubtasks()}
+                onMinify={() => {
+                  if (pipWindow && !pipWindow.closed) {
+                    // In PiP: toggle ultra-compact mode
+                    const newUltraCompact = !isUltraCompact;
+                    setIsUltraCompact(newUltraCompact);
+                    try {
+                      pipWindow.resizeTo(368, newUltraCompact ? 125 : 514);
+                    } catch (error) {
+                      console.warn('Failed to resize PiP window:', error);
+                    }
+                  } else {
+                    // In main window: open PiP
+                    onEnterPiP?.();
+                  }
+                }}
+                isGenerating={isGenerating}
                 navigationUnlocked={navigationUnlocked}
                 formatTime={formatTime}
                 onPauseHover={setIsPauseHovered}
+                pipWindow={pipWindow}
               />
               </div>
             )}
