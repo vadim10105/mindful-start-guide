@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // Time-based messages (shown after 10+ minutes)
-const timeBasedMessages = [
-  "Made progress? I could never",
+const timeBasedMessages: string[] = [
 ];
 
 // Time-independent messages  
@@ -11,9 +10,7 @@ const timeIndependentMessages = [
   "Stuck? Break it down smaller", 
   "Overwhelmed? Next tiny step only",
   "Cmd/Ctrl+L for quick checklists",
-  "You opened the task? Overachiever...",
   "What a performative professional <3",
-  "Respectfully, you're doing too much",
 ];
 
 // Shuffle array function
