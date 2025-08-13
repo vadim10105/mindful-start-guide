@@ -96,10 +96,10 @@ export const TaskActions = ({
       {/* Made Progress Button */}
       <button
         onClick={() => onMadeProgress(task.id)}
-        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-yellow-500 hover:text-white hover:px-2 hover:gap-2"
-        style={{ backgroundColor: 'rgba(152, 152, 152, 0.2)' }}
+        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-yellow-500 hover:text-white hover:px-2 hover:gap-2 border hover:border-yellow-500"
+        style={{ backgroundColor: 'transparent', borderColor: 'rgba(152, 152, 152, 0.2)' }}
       >
-        <TrendingUp className="w-5 h-5 flex-shrink-0" />
+        <TrendingUp className="w-5 h-5 flex-shrink-0 text-[#989898] group-hover:text-white" />
         <span className="w-0 group-hover:w-auto overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out">
           Made Progress
         </span>
@@ -108,10 +108,10 @@ export const TaskActions = ({
       {/* Complete Button */}
       <button
         onClick={() => onComplete(task.id)}
-        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-green-600 hover:text-white hover:px-2 hover:gap-2"
-        style={{ backgroundColor: 'rgba(152, 152, 152, 0.2)' }}
+        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-green-600 hover:text-white hover:px-2 hover:gap-2 border hover:border-green-600"
+        style={{ backgroundColor: 'transparent', borderColor: 'rgba(152, 152, 152, 0.2)' }}
       >
-        <Check className="w-5 h-5 flex-shrink-0" />
+        <Check className="w-5 h-5 flex-shrink-0 text-[#989898] group-hover:text-white" />
         <span className="w-0 group-hover:w-auto overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out">
           Complete
         </span>
@@ -121,13 +121,13 @@ export const TaskActions = ({
       <button
         onClick={() => onBreakdown?.()}
         disabled={isGenerating}
-        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-purple-500 hover:text-white hover:px-2 hover:gap-2 disabled:opacity-50"
-        style={{ backgroundColor: 'rgba(152, 152, 152, 0.2)' }}
+        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-purple-500 hover:text-white hover:px-2 hover:gap-2 disabled:opacity-50 border hover:border-purple-500"
+        style={{ backgroundColor: 'transparent', borderColor: 'rgba(152, 152, 152, 0.2)' }}
       >
         {isGenerating ? (
-          <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin" />
+          <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin text-[#989898] group-hover:text-white" />
         ) : (
-          <Wand2 className="w-5 h-5 flex-shrink-0" />
+          <Wand2 className="w-5 h-5 flex-shrink-0 text-[#989898] group-hover:text-white" />
         )}
         <span className="w-0 group-hover:w-auto overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out">
           Break it down
@@ -137,13 +137,13 @@ export const TaskActions = ({
       {/* Focus/Minify Button */}
       <button
         onClick={() => onMinify?.()}
-        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-gray-600 hover:text-white hover:px-2 hover:gap-2"
-        style={{ backgroundColor: 'rgba(152, 152, 152, 0.2)' }}
+        className="group w-10 h-10 hover:w-auto rounded-lg transition-all duration-700 ease-in-out flex items-center justify-center hover:justify-start hover:!bg-gray-600 hover:text-white hover:px-2 hover:gap-2 border hover:border-gray-600"
+        style={{ backgroundColor: 'transparent', borderColor: 'rgba(152, 152, 152, 0.2)' }}
       >
         {pipWindow ? (
-          <Minimize2 className="w-5 h-5 flex-shrink-0" />
+          <Minimize2 className="w-5 h-5 flex-shrink-0 text-[#989898] group-hover:text-white" />
         ) : (
-          <ExternalLink className="w-5 h-5 flex-shrink-0" />
+          <ExternalLink className="w-5 h-5 flex-shrink-0 text-[#989898] group-hover:text-white" />
         )}
         <span className="w-0 group-hover:w-auto overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out">
           {pipWindow ? 'Minify' : 'Focus'}
