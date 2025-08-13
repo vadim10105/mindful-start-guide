@@ -6,13 +6,15 @@ interface TaskTimeDisplayProps {
   startTime: number;
   estimatedTime?: string;
   isActiveCommitted: boolean;
+  isUltraCompact?: boolean;
 }
 
 export const TaskTimeDisplay = ({ 
   taskId, 
   startTime, 
   estimatedTime, 
-  isActiveCommitted 
+  isActiveCommitted,
+  isUltraCompact = false
 }: TaskTimeDisplayProps) => {
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -78,19 +80,50 @@ export const TaskTimeDisplay = ({
     );
   }
 
-  // Overtime state: show start → current ~~original estimated~~
+  // Overtime state: show start → original estimated +overtime
+  const overtimeMs = currentTime - originalEstimatedFinishTime;
+  const overtimeMinutes = Math.floor(overtimeMs / 60000);
+  const overtimeHours = Math.floor(overtimeMinutes / 60);
+  const remainingMinutes = overtimeMinutes % 60;
+  
+  let overtimeDisplay = '';
+  if (overtimeHours > 0) {
+    overtimeDisplay = `+${overtimeHours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
+  } else {
+    overtimeDisplay = `+${overtimeMinutes}m`;
+  }
+  
+  if (isUltraCompact) {
+    // Ultra-compact: stack overtime above the main time
+    return (
+      <div className="flex flex-col items-end text-xs">
+        <span 
+          style={{ 
+            color: 'rgba(255, 255, 255, 0.5)',
+            fontSize: '10px'
+          }}
+        >
+          {overtimeDisplay}
+        </span>
+        <span style={{ color: 'white' }}>
+          {startTimeFormatted} → {originalEstimatedFinishTimeFormatted}
+        </span>
+      </div>
+    );
+  }
+
+  // Normal view: inline overtime
   return (
-    <span className="text-sm" style={{ color: '#7C7C7C' }}>
-      {startTimeFormatted} → {currentTimeFormatted}
+    <span className="text-xs" style={{ color: '#7C7C7C' }}>
+      {startTimeFormatted} → {originalEstimatedFinishTimeFormatted}
       <span style={{ color: 'hsl(220 10% 50%)' }}>  </span>
       <span 
         style={{ 
           color: 'hsl(220 10% 45%)', 
-          textDecoration: 'line-through',
           opacity: 0.6
         }}
       >
-        ({originalEstimatedFinishTimeFormatted})
+        {overtimeDisplay}
       </span>
     </span>
   );

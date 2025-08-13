@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, ChevronUp, ChevronDown, Play, Pause } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 import { TaskProgressManagerHook, taskTimers } from "./TaskProgressManager";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
@@ -331,6 +331,7 @@ export const TaskCard = ({
 
   // Timer state for ultra-compact progress updates
   const [ultraCompactTime, setUltraCompactTime] = useState(Date.now());
+  const [isUltraCompactHovered, setIsUltraCompactHovered] = useState(false);
   
   // Update timer for ultra-compact view
   useEffect(() => {
@@ -378,16 +379,24 @@ export const TaskCard = ({
   {/* ========== ULTRA-COMPACT PIP VIEW START ========== */}
   if (isUltraCompact && pipWindow) {
     return (
-      <Card className="h-[90px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg">
+      <Card 
+        className="h-[90px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg"
+        onMouseEnter={() => setIsUltraCompactHovered(true)}
+        onMouseLeave={() => setIsUltraCompactHovered(false)}
+      >
+        {/* White background layer */}
+        <div className="absolute inset-0 bg-white" />
+        
         {/* Progress background - fills from left dynamically */}
         <div 
           className="absolute inset-0"
           style={{
             background: (() => {
               const progress = getUltraCompactProgress();
+              const progressColor = isPaused ? '#6b7280' : 'rgb(251 191 36)';
               return progress > 0
-                ? `linear-gradient(to right, rgb(251 191 36) ${progress}%, rgb(243 244 246) ${progress}%)`
-                : 'rgb(243 244 246)';
+                ? `linear-gradient(to right, ${progressColor} ${progress}%, rgba(152, 152, 152, 0.4) ${progress}%)`
+                : 'rgba(152, 152, 152, 0.4)';
             })()
           }} 
         />
@@ -395,7 +404,7 @@ export const TaskCard = ({
         {/* Content */}
         <div className="relative flex items-center h-full px-4 z-10">
           {/* Left: Task title in darker rounded container - takes up more space */}
-          <div className="flex-[3] bg-black/20 rounded-xl px-3 py-2 overflow-hidden relative mr-2">
+          <div className="flex-[4] bg-black/20 rounded-xl px-3 py-2 overflow-hidden relative mr-2">
             <div 
               className="overflow-hidden whitespace-nowrap"
               style={{
@@ -403,67 +412,116 @@ export const TaskCard = ({
                 WebkitMaskImage: 'linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)'
               }}
             >
-              {task.title.length > 20 ? (
-                <div className="inline-flex">
-                  <span 
-                    className="inline-block text-white font-medium text-base animate-scroll-text" 
-                    style={{ 
-                      animationDuration: `${Math.max(10, task.title.length * 0.4)}s`
-                    }}
-                  >
-                    {task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                  </span>
-                  <span 
-                    className="inline-block text-white font-medium text-base animate-scroll-text" 
-                    style={{ 
-                      animationDuration: `${Math.max(10, task.title.length * 0.4)}s`
-                    }}
-                  >
-                    {task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                  </span>
-                </div>
-              ) : (
-                <span className="inline-block text-white font-medium text-base">
-                  {task.title}
+              <div className="inline-flex">
+                <span 
+                  className="inline-block text-white font-medium text-base animate-scroll-text" 
+                  style={{ 
+                    animationDuration: `${Math.max(10, task.title.length * 0.4)}s`
+                  }}
+                >
+                  {isPaused ? 'Paused' : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{isPaused ? 'Paused' : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 </span>
-              )}
+                <span 
+                  className="inline-block text-white font-medium text-base animate-scroll-text" 
+                  style={{ 
+                    animationDuration: `${Math.max(10, task.title.length * 0.4)}s`
+                  }}
+                >
+                  {isPaused ? 'Paused' : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{isPaused ? 'Paused' : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </span>
+              </div>
             </div>
           </div>
           
-          {/* Right: Time display without background - pushed more to the right */}
-          <div className="flex-[1] px-2 py-4 flex items-center justify-end">
-            <div className="text-gray-400 font-medium whitespace-nowrap [&>span]:!text-xs">
-              {hasStartTime ? (
-                <TaskTimeDisplay
-                  taskId={task.id}
-                  startTime={taskStartTimes[task.id]}
-                  estimatedTime={task.estimated_time}
-                  isActiveCommitted={isActiveCommitted}
-                />
-              ) : (
-                <span>--:-- → --:--</span>
-              )}
+          {/* Right side container for time and chevron - fixed width */}
+          <div className="w-[110px] flex items-center justify-end relative">
+            {/* Time display - visible when not hovering */}
+            <div className={`absolute right-0 flex items-center justify-end w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-0' : 'opacity-100'}`}>
+              <div className="text-white font-medium whitespace-nowrap [&>span]:!text-xs [&>span]:!text-white">
+                {hasStartTime ? (
+                  <TaskTimeDisplay
+                    taskId={task.id}
+                    startTime={taskStartTimes[task.id]}
+                    estimatedTime={task.estimated_time}
+                    isActiveCommitted={isActiveCommitted}
+                    isUltraCompact={true}
+                  />
+                ) : (
+                  <span className="!text-white">--:-- → --:--</span>
+                )}
+              </div>
+            </div>
+            
+            {/* Timer + Play/Pause + Chevron container - visible on hover */}
+            <div className={`absolute right-0 flex items-center justify-end gap-0.5 w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-100' : 'opacity-0'}`}>
+              {/* Timer */}
+              <div className="text-white font-medium whitespace-nowrap text-xs mr-2">
+                {(() => {
+                  const timerState = taskTimers.get(task.id);
+                  if (!timerState) return '0:00';
+                  
+                  const sessionElapsedMs = timerState.currentSessionStart 
+                    ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+                    : (timerState.baseElapsedMs - timerState.sessionStartElapsedMs);
+                  
+                  const totalSeconds = Math.floor(sessionElapsedMs / 1000);
+                  const minutes = Math.floor(totalSeconds / 60);
+                  const seconds = totalSeconds % 60;
+                  
+                  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                })()}
+              </div>
+              
+              {/* Play/Pause button */}
+              <Button 
+                variant="ghost"
+                size="sm"
+                className="w-6 h-6 p-0 hover:bg-black/10 rounded-lg flex-shrink-0"
+                onClick={() => {
+                  // Same logic as progress bar play/pause
+                  if (isPaused) {
+                    onCarryOn(task.id);
+                  } else if (isActiveCommitted) {
+                    onMoveOn(task.id);
+                  } else if (isCurrentTask && !hasCommittedToTask) {
+                    onCommit();
+                  }
+                }}
+              >
+                {(() => {
+                  const timerState = taskTimers.get(task.id);
+                  const sessionElapsedMs = timerState?.currentSessionStart 
+                    ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+                    : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
+                  
+                  return (isPaused || sessionElapsedMs < 1000) ? (
+                    <Play className="w-3 h-3 text-white" fill="currentColor" />
+                  ) : (
+                    <Pause className="w-3 h-3 text-white" fill="currentColor" />
+                  );
+                })()}
+              </Button>
+              
+              {/* Expand chevron */}
+              <Button 
+                variant="ghost"
+                size="sm"
+                className="w-6 h-6 p-0 hover:bg-black/10 rounded-lg flex-shrink-0"
+                onClick={() => {
+                  setIsUltraCompact(false);
+                  if (pipWindow && !pipWindow.closed) {
+                    try {
+                      pipWindow.resizeTo(368, 575);
+                    } catch (error) {
+                      console.warn('Failed to resize PiP window:', error);
+                    }
+                  }
+                }}
+              >
+                <ChevronDown className="w-3 h-3 text-white" strokeWidth={4} />
+              </Button>
             </div>
           </div>
-          
-          {/* Expand chevron */}
-          <Button 
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 hover:bg-black/10 rounded-lg"
-            onClick={() => {
-              setIsUltraCompact(false);
-              if (pipWindow && !pipWindow.closed) {
-                try {
-                  pipWindow.resizeTo(368, 575);
-                } catch (error) {
-                  console.warn('Failed to resize PiP window:', error);
-                }
-              }
-            }}
-          >
-            <ChevronDown className="w-4 h-4 text-black/70" />
-          </Button>
         </div>
       </Card>
     );

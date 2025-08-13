@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TaskCardData, CompletedTask } from './GameState';
 import { unlockNextCard } from '@/services/cardService';
 import { parseTimeToMinutes } from '@/utils/timeUtils';
+import { playPingSound } from '@/utils/soundUtils';
 import { Play, Pause } from 'lucide-react';
 
 // Global timer state per task ID (from useSimpleTimer)
@@ -15,6 +16,9 @@ export const taskTimers = new Map<string, {
 // Track which tasks have been reset this session
 const resetTasksThisSession = new Set<string>();
 let hasGameSessionStarted = false;
+
+// Track which tasks have already played the ping sound
+const tasksWithPingPlayed = new Set<string>();
 
 export interface TaskProgressManagerHook {
   // Visual component
@@ -182,6 +186,14 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
     
     // Check if we're overtime
     const isOvertime = elapsedMinutes > estimatedMinutes;
+    
+    // Play ping sound when reaching estimated time (only once per task)
+    useEffect(() => {
+      if (isActiveCommitted && estimatedMinutes > 0 && sessionElapsedSeconds >= estimatedSeconds && !tasksWithPingPlayed.has(taskId)) {
+        playPingSound();
+        tasksWithPingPlayed.add(taskId);
+      }
+    }, [sessionElapsedSeconds, estimatedSeconds, isActiveCommitted, taskId, estimatedMinutes]);
 
     // Format elapsed time for timer display in MM:SS
     const formatElapsedTime = (elapsedMs: number): string => {
@@ -290,19 +302,19 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
             {showPlayPauseIcon && onPlayPause && (
               <button
                 onClick={onPlayPause}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded transition-colors z-10"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded transition-colors z-10 group"
               >
                 {(isPaused || sessionElapsedMs < 1000) ? (
-                  <Play className="w-4 h-4 text-white" fill="currentColor" />
+                  <Play className="w-4 h-4 text-white/50 group-hover:text-white transition-colors" fill="currentColor" />
                 ) : (
-                  <Pause className="w-4 h-4 text-white" fill="currentColor" />
+                  <Pause className="w-4 h-4 text-white/50 group-hover:text-white transition-colors" fill="currentColor" />
                 )}
               </button>
             )}
             
             {/* Timer text inside the bar - positioned on the right */}
-            <div className="absolute inset-0 flex items-center justify-end pr-3">
-              <span className="text-xs font-medium text-white">
+            <div className="absolute inset-0 flex items-center justify-end pr-3 group">
+              <span className="text-xs font-medium text-white/50 group-hover:text-white transition-colors">
                 {elapsedTimeDisplay}
               </span>
             </div>
@@ -332,19 +344,19 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
             {showPlayPauseIcon && onPlayPause && (
               <button
                 onClick={onPlayPause}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded transition-colors z-20"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-black/10 rounded transition-colors z-20 group"
               >
                 {(isPaused || sessionElapsedMs < 1000) ? (
-                  <Play className="w-4 h-4 text-white" fill="currentColor" />
+                  <Play className="w-4 h-4 text-white/50 group-hover:text-white transition-colors" fill="currentColor" />
                 ) : (
-                  <Pause className="w-4 h-4 text-white" fill="currentColor" />
+                  <Pause className="w-4 h-4 text-white/50 group-hover:text-white transition-colors" fill="currentColor" />
                 )}
               </button>
             )}
             
             {/* Timer text inside the bar - positioned on the right */}
-            <div className="absolute inset-0 flex items-center justify-end pr-3">
-              <span className="text-xs font-medium text-white">
+            <div className="absolute inset-0 flex items-center justify-end pr-3 group">
+              <span className="text-xs font-medium text-white/50 group-hover:text-white transition-colors">
                 {elapsedTimeDisplay}
               </span>
             </div>
@@ -724,6 +736,7 @@ export const useTaskProgressManager = (props: TaskProgressManagerProps): TaskPro
   const resetGameSession = () => {
     // Clear the tracking so next game session will reset all timers
     resetTasksThisSession.clear();
+    tasksWithPingPlayed.clear(); // Clear ping sound tracking
     hasGameSessionStarted = false;
     
     // Force reset all existing timers' session start times AND base elapsed times for visual reset
