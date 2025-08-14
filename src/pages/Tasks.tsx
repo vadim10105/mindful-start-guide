@@ -22,6 +22,7 @@ import { TaskListItem as ImportedTaskListItem } from "@/components/tasks/task-ca
 import { PiPProvider, usePiP } from "@/components/tasks/game/PictureInPicture";
 import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery";
 import { GalleryIcon } from "@/components/tasks/collection/GalleryIcon";
+import { CloudIframeBackground } from "@/components/background/CloudIframeBackground";
 import {
   DndContext,
   closestCenter,
@@ -2225,7 +2226,9 @@ const TasksContent = () => {
   };
 
   return (
-      <div className="h-screen bg-background p-2 sm:p-4 overflow-hidden">
+    <>
+      <CloudIframeBackground />
+      <div className="h-screen bg-transparent p-2 sm:p-4 overflow-hidden relative">
       {/* Settings - Fixed Top Right */}
       {currentStep === 'input' && (
         <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
@@ -2273,6 +2276,7 @@ const TasksContent = () => {
                 isTransitioning ? 'shadow-2xl' : ''
               }`} 
               style={{ 
+                backgroundColor: 'rgba(224, 224, 224, 0.4)',
                 transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
                 zIndex: 2 // Main container in middle layer
               }}>
@@ -3185,6 +3189,7 @@ const TasksContent = () => {
         onOpenChange={setIsSettingsOpen}
       />
       </div>
+    </>
   );
 };
 
