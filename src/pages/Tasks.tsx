@@ -8,18 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, Images } from "lucide-react";
+import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, Images, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
-import { GameTaskCards } from "@/components/tasks/GameTaskCards";
+import { TaskGameController } from "@/components/tasks/game/TaskGameController";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categorizeTasks, getCurrentEnergyState } from "@/utils/taskCategorization";
 import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
-import { TaskTimeline } from "@/components/tasks/TaskTimeline";
-import { PiPProvider, usePiP } from "@/components/tasks/PictureInPicture";
-import { ImmersiveGallery } from "@/components/tasks/ImmersiveGallery";
-import { SkyBackground } from "@/components/ui/SkyBackground";
+import { TaskTimeline } from "@/components/tasks/task-capture/TaskTimeline";
+import { DoLessBetter } from "@/components/tasks/task-capture/DoLessBetter";
+import { TaskListItem as ImportedTaskListItem } from "@/components/tasks/task-capture/TaskListItem";
+import { PiPProvider, usePiP } from "@/components/tasks/game/PictureInPicture";
+import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery";
+import { GalleryIcon } from "@/components/tasks/collection/GalleryIcon";
+import { CloudIframeBackground } from "@/components/background/CloudIframeBackground";
 import {
   DndContext,
   closestCenter,
@@ -63,6 +66,9 @@ interface Task {
   card_position?: number;
   notes?: string;
   estimated_minutes?: number;
+  parent_task_id?: string;
+  time_spent_minutes?: number;
+  collection_card_id?: string;
 }
 
 interface PrioritizedTask {
@@ -104,13 +110,17 @@ interface TaskListItemProps {
   onEditingTextChange?: (text: string) => void;
   showNumber?: boolean;
   taskTitle?: string; // Optional task title for display when task prop is an ID
+  totalTimeSpent?: string | null; // Total time spent on linked tasks
+  tasksById?: Record<string, Task>; // Task lookup for parent task access
+  setShowImmersiveGallery?: (show: boolean) => void; // Function to open gallery
+  handleOpenGallery?: (collectionId?: string, cardId?: string) => void; // Function to open gallery with specific card
 }
 
 const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   const { text, showCursor } = useTypewriter();
   
   return (
-    <div className={`absolute top-0 left-0 w-full h-full p-3 text-white/70 pointer-events-none flex items-start transition-all duration-300 ease-out ${
+    <div className={`absolute top-0 left-0 w-full h-full p-3 text-muted-foreground pointer-events-none flex items-start transition-all duration-300 ease-out ${
       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
     }`}>
       <span className="text-base leading-relaxed">
@@ -142,7 +152,11 @@ const TaskListItem = ({
   onTaskCancel,
   onEditingTextChange,
   showNumber = true,
-  taskTitle
+  taskTitle,
+  totalTimeSpent,
+  tasksById,
+  setShowImmersiveGallery,
+  handleOpenGallery
 }: TaskListItemProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const {
@@ -224,12 +238,36 @@ const TaskListItem = ({
                 autoFocus
               />
             ) : (
-              <p 
-                className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
-                onDoubleClick={handleDoubleClick}
-              >
-{taskTitle || 'Untitled Task'}
-              </p>
+              <div>
+                <p 
+                  className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
+                  onDoubleClick={handleDoubleClick}
+                >
+                  {taskTitle || 'Untitled Task'}
+                </p>
+                {totalTimeSpent && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <p className="text-xs text-gray-500">
+                      Time Spent: {totalTimeSpent}
+                    </p>
+                    {tasksById && task && tasksById[task]?.parent_task_id && tasksById[tasksById[task]?.parent_task_id]?.collection_card_id && (
+                      <button
+                        onClick={() => {
+                          const parentTaskId = tasksById[task]?.parent_task_id;
+                          const parentTask = parentTaskId ? tasksById[parentTaskId] : null;
+                          if (parentTask?.collection_card_id) {
+                            handleOpenGallery?.(undefined, parentTask.collection_card_id);
+                          }
+                        }}
+                        className=""
+                        title="View in collection"
+                      >
+                        <ExternalLink className="h-3 w-3 text-gray-600" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -357,12 +395,36 @@ const TaskListItem = ({
               autoFocus
             />
           ) : (
-            <p 
-              className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
-              onDoubleClick={handleDoubleClick}
-            >
-              {taskTitle || 'Untitled Task'}
-            </p>
+            <div>
+              <p 
+                className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
+                onDoubleClick={handleDoubleClick}
+              >
+                {taskTitle || 'Untitled Task'}
+              </p>
+              {totalTimeSpent && (
+                <div className="flex items-center gap-1 mt-1">
+                  <p className="text-xs text-gray-500">
+                    Time Spent: {totalTimeSpent}
+                  </p>
+                  {tasksById && tasksById[task]?.parent_task_id && tasksById[tasksById[task]?.parent_task_id]?.collection_card_id && (
+                    <button
+                      onClick={() => {
+                        const parentTaskId = tasksById[task]?.parent_task_id;
+                        const parentTask = parentTaskId ? tasksById[parentTaskId] : null;
+                        if (parentTask?.collection_card_id) {
+                          handleOpenGallery?.(undefined, parentTask.collection_card_id);
+                        }
+                      }}
+                      className=""
+                      title="View in collection"
+                    >
+                      <ExternalLink className="h-3 w-3 text-gray-500" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
         
@@ -490,6 +552,7 @@ const customCollisionDetection: CollisionDetection = (args) => {
   return collisions;
 };
 
+
 const TasksContent = () => {
   const { enterPiP } = usePiP();
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
@@ -501,6 +564,8 @@ const TasksContent = () => {
   const [taskTimeEstimates, setTaskTimeEstimates] = useState<Record<string, string>>({});
   // Add task lookup maps for ID-based system
   const [tasksById, setTasksById] = useState<Record<string, Task>>({});
+  // Gallery refresh trigger for when tasks are completed
+  const [galleryRefreshTrigger, setGalleryRefreshTrigger] = useState(0);
   const [activeTaskIds, setActiveTaskIds] = useState<string[]>([]);
   const [laterTaskIds, setLaterTaskIds] = useState<string[]>([]);
   const [taskTagsById, setTaskTagsById] = useState<Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }>>({});
@@ -508,6 +573,14 @@ const TasksContent = () => {
   const [prioritizedTasks, setPrioritizedTasks] = useState<PrioritizedTask[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showImmersiveGallery, setShowImmersiveGallery] = useState(false);
+  const [initialCollectionId, setInitialCollectionId] = useState<string | undefined>(undefined);
+  const [initialCardId, setInitialCardId] = useState<string | undefined>(undefined);
+
+  const handleOpenGallery = (collectionId?: string, cardId?: string) => {
+    setInitialCollectionId(collectionId);
+    setInitialCardId(cardId);
+    setShowImmersiveGallery(true);
+  };
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   // Loading messages
@@ -759,6 +832,29 @@ const TasksContent = () => {
     }
   }, [user]);
 
+  // Set initial input mode based on available tasks
+  useEffect(() => {
+    const hasActiveTasks = activeTaskIds.length > 0;
+    const hasLaterTasks = laterTaskIds.length > 0;
+    const hasAnyTasks = hasActiveTasks || hasLaterTasks;
+    
+    // Only set initial state if we haven't come from brain dump (to avoid overriding user actions)
+    if (!cameFromBrainDump && !isProcessing && !isTransitioning) {
+      if (hasAnyTasks) {
+        // If there are any tasks, default to list mode
+        setInputMode('list');
+      } else {
+        // If no tasks exist, default to brain dump mode
+        setInputMode('brain-dump');
+      }
+      
+      // Auto-expand later section if no active tasks but later tasks exist (only on initial load)
+      if (!hasActiveTasks && hasLaterTasks && !laterTasksExpanded) {
+        setLaterTasksExpanded(true);
+      }
+    }
+  }, [activeTaskIds, laterTaskIds, cameFromBrainDump, isProcessing, isTransitioning, laterTasksExpanded]);
+
   const handleBrainDumpSubmit = async () => {
     console.log('handleBrainDumpSubmit called with text:', brainDumpText);
     
@@ -817,7 +913,7 @@ const TasksContent = () => {
       if (user) {
         const tasksToSave = data.tasks.map((task: ExtractedTask, index: number) => {
           const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
-          const category = taskCategories[task.title] || 'Routine';
+          const category = taskCategories[task.title] || 'Admin Work';
           const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
           
           return {
@@ -843,52 +939,12 @@ const TasksContent = () => {
         } else if (insertedTasks) {
           console.log('✅ Successfully saved extracted tasks to database');
           
-          // Update ID-based state with the newly created tasks
-          const newTasksById: Record<string, Task> = {};
-          const newTaskIds: string[] = [];
-          const newTaskTags: Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }> = {};
-          const newTimeEstimates: Record<string, string> = {};
-
-          insertedTasks.forEach(task => {
-            newTasksById[task.id] = {
-              id: task.id,
-              title: task.title,
-              list_location: task.list_location,
-              task_status: task.task_status,
-              is_liked: task.is_liked || false,
-              is_urgent: task.is_urgent || false,
-              is_quick: task.is_quick || false,
-              notes: task.notes || ''
-            };
-            
-            newTaskIds.push(task.id);
-            
-            newTaskTags[task.id] = {
-              isLiked: task.is_liked || false,
-              isUrgent: task.is_urgent || false,
-              isQuick: task.is_quick || false
-            };
-
-            if (task.estimated_minutes) {
-              const hours = Math.floor(task.estimated_minutes / 60);
-              const minutes = task.estimated_minutes % 60;
-              if (hours > 0) {
-                newTimeEstimates[task.id] = minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-              } else {
-                newTimeEstimates[task.id] = `${minutes}m`;
-              }
-            }
-          });
-
-          // Update state with ID-based data
-          setTasksById(prev => ({ ...prev, ...newTasksById }));
-          setActiveTaskIds(newTaskIds); // Brain dump tasks go to active
-          setTaskTagsById(prev => ({ ...prev, ...newTaskTags }));
-          setTaskTimeEstimatesById(prev => ({ ...prev, ...newTimeEstimates }));
-          // Keep legacy state for compatibility
-          setTaskTags(prev => ({ ...prev, ...newTaskTags }));
-          setTaskTimeEstimates(prev => ({ ...prev, ...newTimeEstimates }));
-          setReviewedTasks(newTaskIds); // Store IDs instead of titles
+          // Refresh all tasks from database to include existing + new tasks
+          await loadTasksById();
+          
+          // Store just the new task IDs for the reviewed tasks
+          const newTaskIds = insertedTasks.map(task => task.id);
+          setReviewedTasks(newTaskIds); // Store IDs of newly added tasks
         }
       }
       
@@ -897,9 +953,7 @@ const TasksContent = () => {
         // Switch to list mode - the ID-based state is already set above
         setInputMode('list');
         
-        // Legacy compatibility - keep old state in sync for components that still use it
-        const extractedTaskTitles = data.tasks.map((task: ExtractedTask) => task.title);
-        setListTasks(extractedTaskTitles);
+        // Legacy state is already updated by loadTasksById() above
         
         // End transition earlier so box can expand first, then tasks drop in
         setTimeout(() => {
@@ -932,6 +986,150 @@ const TasksContent = () => {
     } finally {
       setIsProcessing(false);
       console.log('Processing finished, set isProcessing to false');
+    }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Follow exact same pattern as handleBrainDumpSubmit
+    setIsProcessing(true);
+    setIsTransitioning(true);
+    setCameFromBrainDump(true); // Track that we came from brain dump
+    setInputMode('list'); // Toggle immediately transitions to list position
+    console.log('Starting image upload transition...');
+
+    try {
+      // Upload image to Supabase storage
+      const fileName = `public/${user.id}_${Date.now()}_${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('brain-dumps-images')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw new Error(`Failed to upload image: ${uploadError.message}`);
+      }
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('brain-dumps-images')
+        .getPublicUrl(uploadData.path);
+
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to get image URL');
+      }
+
+      console.log('Calling edge function with image URL...');
+      
+      const { data, error } = await supabase.functions.invoke('process-image-brain-dump', {
+        body: { imageUrl: urlData.publicUrl }
+      });
+
+      console.log('Edge function response:', { data, error });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error('Failed to process image');
+      }
+
+      if (!data?.tasks) {
+        console.error('No tasks in response:', data);
+        throw new Error('No tasks extracted from image');
+      }
+
+      console.log('Successfully extracted tasks:', data.tasks);
+      
+      // Categorize extracted tasks
+      const taskTitles = data.tasks.map((task: ExtractedTask) => task.title);
+      const categorizedTasks = await categorizeTasks(taskTitles);
+      console.log('Categorized tasks:', categorizedTasks);
+      
+      // Prepare tasks for database insertion
+      const tasksToInsert = data.tasks.map((task: ExtractedTask) => {
+        const formattedTime = validateAndFormatTimeInput(task.estimated_time) || task.estimated_time;
+        const estimatedMinutes = parseTimeToMinutes(formattedTime);
+        const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
+        
+        return {
+          title: task.title,
+          user_id: user.id,
+          list_location: 'active',
+          task_status: 'task_list',
+          is_liked: false,
+          is_urgent: false,
+          is_quick: isQuick, // Auto-apply quick tag if <= 20 minutes
+          category: categorizedTasks[task.title] || 'Technical Work',
+          estimated_minutes: estimatedMinutes
+        };
+      });
+      
+      // Save to database
+      const { data: insertedTasks, error: saveError } = await supabase
+        .from('tasks')
+        .insert(tasksToInsert)
+        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes');
+        
+      if (saveError) {
+        console.error('Error saving extracted tasks:', saveError);
+        throw new Error('Failed to save tasks to database');
+      }
+      
+      console.log('✅ Successfully saved extracted tasks to database:', insertedTasks);
+      
+      // Refresh tasks from database to show in UI
+      await loadTasksById();
+      
+      // Also add task titles to listTasks to ensure buttons show correctly
+      const newTaskTitles = insertedTasks.map(task => task.title);
+      setListTasks(prev => [...prev, ...newTaskTitles]);
+      
+      setBrainDumpText('');
+
+      // Just switch to Plan mode - same as text brain dump
+      setTimeout(() => {
+        setInputMode('list'); // Switch toggle to Plan
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 100);
+      }, 600);
+
+    } catch (error) {
+      console.error('Error processing image:', error);
+      
+      let errorMessage = "Failed to process image. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("quota") || error.message.includes("billing")) {
+          errorMessage = "OpenAI API quota exceeded. Please check your OpenAI billing at platform.openai.com/usage.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // Reset transition states on error (same as brain dump)
+      setIsTransitioning(false);
+    } finally {
+      setIsProcessing(false);
+      console.log('Processing finished, set isProcessing to false');
+      // Reset file input
+      event.target.value = '';
     }
   };
 
@@ -1196,7 +1394,7 @@ const TasksContent = () => {
     // Create task input format for the edge function with AI categorization
     const taskInputs = tasks.map((taskTitle, index) => {
       const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-      const category = taskCategories[taskTitle] || 'Routine'; // Fallback to Routine if categorization failed
+      const category = taskCategories[taskTitle] || 'Admin Work'; // Fallback to Routine if categorization failed
       
       console.log(`🔍 Task "${taskTitle}":`, {
         category: category,
@@ -1397,6 +1595,13 @@ const TasksContent = () => {
         description: data.message || "Tasks have been reordered using your preferences.",
       });
       
+      // Let shuffle animation control processing state
+      // Safety timeout in case shuffle animation fails to complete
+      setTimeout(() => {
+        console.log('Safety timeout: forcing processing to false after 3 seconds');
+        setIsProcessing(false);
+      }, 3000);
+      
     } catch (error) {
       console.error('Error during shuffling:', error);
       toast({
@@ -1406,8 +1611,7 @@ const TasksContent = () => {
       });
       // Go back to review step on error
       setCurrentStep('review');
-    } finally {
-      setIsProcessing(false);
+      setIsProcessing(false); // Keep this for error case
     }
   };
 
@@ -1453,6 +1657,12 @@ const TasksContent = () => {
       enterPiP();
     }, 100);
     
+    // Safety timeout to stop processing state (same as shuffle function)
+    setTimeout(() => {
+      console.log('Safety timeout: forcing processing to false after 3 seconds');
+      setIsProcessing(false);
+    }, 3000);
+    
     // Run AI categorization in background for logging (optional)
     setTimeout(async () => {
       try {
@@ -1465,7 +1675,7 @@ const TasksContent = () => {
         taskIds.forEach((taskId, index) => {
           const task = tasksById[taskId];
           const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
-          const category = taskCategories[task?.title] || 'Routine';
+          const category = taskCategories[task?.title] || 'Admin Work';
           
           console.log(`📝 Task #${index + 1}: "${task?.title}"`, {
             position: index + 1,
@@ -1480,9 +1690,8 @@ const TasksContent = () => {
         });
       } catch (error) {
         console.log('AI categorization failed (non-critical):', error);
-      } finally {
-        setIsProcessing(false);
       }
+      // Removed finally block - this background task shouldn't control processing state
     }, 100);
   };
 
@@ -1500,7 +1709,7 @@ const TasksContent = () => {
       // Create tasks based on the current order in reviewedTasks
       const tasksToSave = reviewedTasks.map((taskTitle, index) => {
         const tags = taskTags[taskTitle] || { isLiked: false, isUrgent: false, isQuick: false };
-        const category = taskCategories[taskTitle] || 'Routine'; // Get AI category or fallback
+        const category = taskCategories[taskTitle] || 'Admin Work'; // Get AI category or fallback
         const estimatedTime = taskTimeEstimates[taskTitle];
         const estimatedMinutes = estimatedTime ? parseTimeToMinutes(estimatedTime) : null;
         
@@ -1535,8 +1744,14 @@ const TasksContent = () => {
         description: `${tasksToSave.length} tasks saved in order`,
       });
 
-      // Already on game-cards step, just stop processing
-      setIsProcessing(false);
+      // Already on game-cards step, let shuffle animation control processing state
+      // setIsProcessing(false); // Removed - let shuffle animation handle this
+      
+      // Safety timeout in case shuffle animation fails to complete
+      setTimeout(() => {
+        console.log('Safety timeout: forcing processing to false after 10 seconds');
+        setIsProcessing(false);
+      }, 10000);
     } catch (error) {
       console.error('Error saving tasks:', error);
       
@@ -1583,8 +1798,14 @@ const TasksContent = () => {
         description: `${tasksToSave.length} prioritized tasks saved`,
       });
 
-      // Already on game-cards step, just stop processing
-      setIsProcessing(false);
+      // Already on game-cards step, let shuffle animation control processing state
+      // setIsProcessing(false); // Removed - let shuffle animation handle this
+      
+      // Safety timeout in case shuffle animation fails to complete
+      setTimeout(() => {
+        console.log('Safety timeout: forcing processing to false after 10 seconds');
+        setIsProcessing(false);
+      }, 10000);
     } catch (error) {
       console.error('Error saving prioritized tasks:', error);
       
@@ -1627,16 +1848,19 @@ const TasksContent = () => {
         const taskTitle = tasksById[taskId]?.title || taskId;
         console.log(`✅ Updated estimated time for "${taskTitle}" to ${estimatedMinutes} minutes`);
         
-        // Update local state to reflect auto-applied quick tag
+        // Update local state to reflect auto-applied/removed quick tag
+        setTaskTagsById(prev => ({
+          ...prev,
+          [taskId]: {
+            ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
+            isQuick: isQuick
+          }
+        }));
+        
         if (isQuick) {
-          setTaskTagsById(prev => ({
-            ...prev,
-            [taskId]: {
-              ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
-              isQuick: true
-            }
-          }));
-          console.log(`✅ Auto-applied quick tag to "${taskTitle}"`);
+          console.log(`✅ Auto-applied quick tag to "${taskTitle}" (${estimatedMinutes} minutes)`);
+        } else if (estimatedMinutes !== null && estimatedMinutes > 20) {
+          console.log(`✅ Auto-removed quick tag from "${taskTitle}" (${estimatedMinutes} minutes)`);
         }
       }
     } catch (error) {
@@ -1734,12 +1958,11 @@ const TasksContent = () => {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes, notes, created_at, score')
+        .select('id, title, list_location, task_status, is_liked, is_urgent, is_quick, category, estimated_minutes, notes, created_at, score, parent_task_id, time_spent_minutes, collection_card_id')
         .eq('user_id', user.id)
-        .in('list_location', ['active', 'later']) // Load both active and later tasks
+        .in('list_location', ['active', 'later', 'collection']) // Load active, later, and collection tasks
         .order('created_at', { ascending: true });
 
-      console.log('🔍 All tasks query result:', { data, error, count: data?.length });
 
       if (error) {
         console.error('Error loading tasks:', error);
@@ -1765,7 +1988,10 @@ const TasksContent = () => {
             is_urgent: task.is_urgent || false,
             is_quick: task.is_quick || false,
             notes: task.notes || '',
-            estimated_minutes: task.estimated_minutes
+            estimated_minutes: task.estimated_minutes,
+            parent_task_id: task.parent_task_id,
+            time_spent_minutes: Number(task.time_spent_minutes) || 0,
+            collection_card_id: task.collection_card_id
           };
 
           // Separate active and later tasks
@@ -1805,6 +2031,12 @@ const TasksContent = () => {
         // Keep legacy state for compatibility
         setTaskTags(taskTagsMap);
         setTaskTimeEstimates(timeEstimatesMap);
+        
+        // Also populate legacy arrays for backward compatibility
+        const activeTaskTitles = activeIds.map(id => taskMap[id].title);
+        const laterTaskTitles = laterIds.map(id => taskMap[id].title);
+        setListTasks(activeTaskTitles);
+        setLaterTasks(laterTaskTitles);
 
         console.log('✅ Loaded all tasks:', { 
           activeCount: activeIds.length,
@@ -1994,13 +2226,9 @@ const TasksContent = () => {
   };
 
   return (
-      <div className="h-screen p-2 sm:p-4 overflow-hidden relative">
-      {/* Fractal Brownian Motion Sky Background */}
-      <SkyBackground 
-        intensity={0.3} 
-        speed={2.0} 
-        className="opacity-85" 
-      />
+    <>
+      <CloudIframeBackground />
+      <div className="h-screen bg-transparent p-2 sm:p-4 overflow-hidden relative">
       {/* Settings - Fixed Top Right */}
       {currentStep === 'input' && (
         <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
@@ -2040,43 +2268,24 @@ const TasksContent = () => {
         {currentStep === 'input' && (
           <div className="relative w-full h-full max-h-[700px] flex items-center justify-center">
             {/* Card Gallery Icon */}
-            <div className="fixed bottom-6 left-6 z-50">
-              <div
-                onClick={() => setShowImmersiveGallery(true)}
-                className="h-16 w-16 rounded-full cursor-pointer hover:scale-105 transition-all duration-300 flex flex-col items-center justify-center p-2 relative"
-              >
-                <div className="relative">
-                  {/* Stack of cards effect - vertical */}
-                  <div className="absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform rotate-12"></div>
-                  <div className="absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform rotate-6"></div>
-                  <div className="w-6 h-8 bg-white/40 rounded border border-white/50 transform rotate-0"></div>
-                </div>
-              </div>
-            </div>
+            <GalleryIcon onOpenGallery={handleOpenGallery} refreshTrigger={galleryRefreshTrigger} />
             <Card 
               ref={cardRef}
               id="main-task-container"
-              className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out ${
-                isTransitioning ? 'shadow-2xl' : 'shadow-xl'
+              className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out shadow-xl ${
+                isTransitioning ? 'shadow-2xl' : ''
               }`} 
               style={{ 
+                backgroundColor: 'rgba(224, 224, 224, 0.4)',
                 transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-                zIndex: 2, // Main container in middle layer
-                backgroundColor: 'rgba(255, 255, 255, 0.18)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
-                borderRadius: '16px',
-                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.2)',
-                // Enhanced text readability
-                color: 'rgba(255, 255, 255, 0.95)',
-                textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+                zIndex: 2 // Main container in middle layer
               }}>
             <CardHeader className="text-center px-4 sm:px-6 pb-2">
               {/* Mode Toggle with Magical Transition */}
               <div className="flex items-center justify-center gap-4 mb-2">
                 <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
-                  isTransitioning ? 'text-white/40' : 
-                  inputMode === 'brain-dump' ? 'text-white' : 'text-white/40'
+                  isTransitioning ? 'text-muted-foreground' : 
+                  inputMode === 'brain-dump' ? 'text-foreground' : 'text-foreground/30'
                 }`}>
                   Capture
                 </Label>
@@ -2087,30 +2296,30 @@ const TasksContent = () => {
                   checked={inputMode === 'list'}
                   onCheckedChange={(checked) => !isTransitioning && setInputMode(checked ? 'list' : 'brain-dump')}
                   disabled={isTransitioning}
-                  className="transition-all duration-300 ease-out data-[state=checked]:bg-white/20 data-[state=unchecked]:bg-white/10 border-white/30 [&>span]:bg-white/90 [&>span]:shadow-lg [&>span]:backdrop-blur-sm"
+                  className="transition-all duration-300 ease-out data-[state=checked]:bg-input data-[state=unchecked]:bg-input"
                 />
                 
                 <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
-                  isTransitioning ? 'text-white/40' : 
-                  inputMode === 'list' ? 'text-white' : 'text-white/40'
+                  isTransitioning ? 'text-muted-foreground' : 
+                  inputMode === 'list' ? 'text-foreground' : 'text-foreground/30'
                 }`}>
                   Plan
                 </Label>
               </div>
               
               {/* Separator Line - aligned with content */}
-              <div className="h-px bg-white/20 mt-4 mx-4 sm:mx-6"></div>
+              <div className="h-px bg-border mt-4 mx-4 sm:mx-6"></div>
               
             </CardHeader>
             <CardContent ref={cardContentRef} className="flex-1 sm:flex-none flex flex-col px-4 sm:px-6 transition-all duration-500 ease-out">
               
               {inputMode === 'brain-dump' ? (
                 // Brain Dump Mode
-                <div className="min-h-[400px] flex flex-col">
+                <div className="min-h-[400px] flex flex-col relative">
                   <div className={`relative transition-all duration-600 ease-out flex-1 ${
                     isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
                   }`} style={{ marginTop: '12px' }}>
-                    <div className="bg-black/10 focus-within:bg-black/20 transition-all duration-300 rounded-md relative backdrop-blur-sm border border-white/10">
+                    <div className="bg-card focus-within:bg-muted/50 transition-all duration-300 rounded-md relative">
                       <Textarea
                         ref={textareaRef}
                         value={brainDumpText}
@@ -2118,29 +2327,44 @@ const TasksContent = () => {
                         onFocus={() => setIsTextareaFocused(true)}
                         onBlur={() => setIsTextareaFocused(false)}
                         disabled={isTransitioning}
-                        className={`h-full min-h-[320px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder-white/70 ${
-                          isTransitioning ? 'text-white/60' : ''
+                        className={`h-full min-h-[320px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 pb-12 ${
+                          isTransitioning ? 'text-muted-foreground' : ''
                         }`}
                         rows={8}
                       />
                       <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
+                      
+                      {/* Image Upload Icon - Bottom Left Corner */}
+                      <label className="absolute bottom-3 left-3 z-50 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={isProcessing || isTransitioning}
+                          className="sr-only"
+                          aria-label="Upload image"
+                        />
+                        <div className={`p-2 rounded-md transition-all duration-200 ${
+                          isProcessing || isTransitioning 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : 'hover:bg-muted/30 cursor-pointer'
+                        }`}>
+                          <Images className={`w-5 h-5 transition-colors duration-200 ${
+                            isProcessing || isTransitioning 
+                              ? 'text-gray-400' 
+                              : 'text-gray-500 hover:text-gray-300'
+                          }`} />
+                        </div>
+                      </label>
                     </div>
                   </div>
                   <Button 
                     onClick={handleBrainDumpSubmit}
                     disabled={!brainDumpText.trim() || isProcessing || isTransitioning}
-                    className={`w-full h-12 sm:h-11 transition-all duration-300 mt-3 font-semibold ${
+                    className={`w-full h-12 sm:h-11 transition-all duration-300 mt-3 ${
                       isTransitioning ? 'scale-95 shadow-sm' : ''
                     }`}
                     size="lg"
-                    style={{
-                      backgroundColor: 'rgba(255, 193, 7, 0.9)',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 193, 7, 0.3)',
-                      color: 'rgba(0, 0, 0, 0.8)',
-                      textShadow: '0 1px 2px rgba(255, 255, 255, 0.3)',
-                      boxShadow: '0 4px 16px 0 rgba(255, 193, 7, 0.3)',
-                    }}
                   >
                     {isProcessing || isTransitioning ? (
                       <>
@@ -2158,7 +2382,7 @@ const TasksContent = () => {
                 // List Mode with Full Tagging Interface
                 <div ref={taskListContentRef} className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
                   {/* Loading overlay for brain dump transition */}
-                  {isTransitioning && listTasks.length === 0 && (
+                  {isTransitioning && (
                     <div className="absolute inset-0 bg-card rounded-lg z-50 flex items-center justify-center">
                       <div className="text-center space-y-4">
                         <div className="flex justify-center space-x-3">
@@ -2186,10 +2410,10 @@ const TasksContent = () => {
                         onChange={(e) => setNewTaskInput(e.target.value)}
                         onKeyDown={handleAddTaskKeyPress}
                         placeholder="Share your Intention..."
-                        className={`flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent text-white ${
+                        className={`flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent ${
                           (activeTaskIds.length + laterTaskIds.length) > 0 
-                            ? 'placeholder:text-white/50' 
-                            : 'placeholder:text-white/70'
+                            ? 'placeholder:text-muted-foreground/40' 
+                            : 'placeholder:text-muted-foreground'
                         }`}
                         style={{ backgroundColor: 'transparent !important' }}
                       />
@@ -2198,7 +2422,7 @@ const TasksContent = () => {
                         disabled={!newTaskInput.trim()}
                         size="sm"
                         variant="ghost"
-                        className="border-0 rounded-l-none hover:bg-transparent"
+                        className="border-0 rounded-l-none hover:bg-transparent flex items-center justify-center p-2 h-auto aspect-square"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -2294,132 +2518,17 @@ const TasksContent = () => {
                               }, 0);
                             };
 
-                            // Smart shortening function
-                            const shortenActiveList = async () => {
-                              if (!user) return;
-
-                              // Calculate shortening score (separate from shuffle-tasks)
-                              const calculateShorteningScore = (taskId: string, userPreferences: any = {}) => {
-                                const task = tasksById[taskId];
-                                const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
-                                
-                                let categoryScore = 0;
-                                let tagScore = 0;
-                                
-                                // Category score based on user preferences
-                                if (task?.category && userPreferences) {
-                                  const preference = userPreferences[task.category];
-                                  if (preference === 'Loved') categoryScore = 3;
-                                  else if (preference === 'Neutral') categoryScore = 0;  
-                                  else if (preference === 'Disliked') categoryScore = -2;
-                                }
-                                
-                                // Tag scores
-                                if (tags.isLiked) tagScore += 3;
-                                if (tags.isQuick) tagScore += 2;
-                                if (tags.isUrgent) tagScore += 1;
-                                
-                                return categoryScore + tagScore;
-                              };
-
-                              const tasksWithScores = activeTaskIds.map(taskId => ({
-                                taskId,
-                                score: calculateShorteningScore(taskId),
-                                timeMinutes: parseTimeToMinutes(taskTimeEstimatesById[taskId] || '') || 0,
-                                tags: taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false }
-                              }));
-
-                              // Selection strategy: keep 1+ liked, 1+ quick, 1+ urgent, then fill to 2 hours
-                              const mustKeep: string[] = [];
-                              const available = [...tasksWithScores];
-
-                              // Keep 1+ liked task (highest scoring)
-                              const likedTasks = available.filter(t => t.tags.isLiked).sort((a, b) => b.score - a.score);
-                              if (likedTasks.length > 0) {
-                                mustKeep.push(likedTasks[0].taskId);
-                                const index = available.findIndex(t => t.taskId === likedTasks[0].taskId);
-                                available.splice(index, 1);
-                              }
-
-                              // Keep 1+ quick task (highest scoring)
-                              const quickTasks = available.filter(t => t.tags.isQuick).sort((a, b) => b.score - a.score);
-                              if (quickTasks.length > 0) {
-                                mustKeep.push(quickTasks[0].taskId);
-                                const index = available.findIndex(t => t.taskId === quickTasks[0].taskId);
-                                available.splice(index, 1);
-                              }
-
-                              // Keep 1+ urgent task (highest scoring)
-                              const urgentTasks = available.filter(t => t.tags.isUrgent).sort((a, b) => b.score - a.score);
-                              if (urgentTasks.length > 0) {
-                                mustKeep.push(urgentTasks[0].taskId);
-                                const index = available.findIndex(t => t.taskId === urgentTasks[0].taskId);
-                                available.splice(index, 1);
-                              }
-
-                              // Fill remaining time with highest-scoring tasks until ≤ 2 hours
-                              const sorted = available.sort((a, b) => b.score - a.score);
-                              let currentTime = mustKeep.reduce((total, taskId) => {
-                                const timeEstimate = taskTimeEstimatesById[taskId];
-                                return total + (parseTimeToMinutes(timeEstimate || '') || 0);
-                              }, 0);
-
-                              const toKeep = [...mustKeep];
-                              for (const task of sorted) {
-                                if (currentTime + task.timeMinutes <= 120) { // 2 hours = 120 minutes
-                                  toKeep.push(task.taskId);
-                                  currentTime += task.timeMinutes;
-                                }
-                              }
-
-                              // Move remaining tasks to later
-                              const toMoveToLater = activeTaskIds.filter(taskId => !toKeep.includes(taskId));
-                              
-                              if (toMoveToLater.length > 0) {
-                                // Update local state
-                                setActiveTaskIds(toKeep);
-                                setLaterTaskIds(prev => [...prev, ...toMoveToLater]);
-
-                                // Update database
-                                for (const taskId of toMoveToLater) {
-                                  await saveTaskAsLater(taskId);
-                                }
-
-                                toast({
-                                  title: "List shortened",
-                                  description: `Moved ${toMoveToLater.length} tasks to later to keep under 2 hours`,
-                                });
-                              }
-                            };
-
-                            const totalMinutes = calculateTotalActiveTime();
-                            const totalTimeDisplay = formatMinutesToDisplay(totalMinutes);
-                            const shouldShowShortenSuggestion = totalMinutes > 120; // 2 hours
-
-                            if (activeTaskIds.length === 0) return null;
-
                             return (
-                              <div className="flex items-center gap-4 py-4 mb-4">
-                                <div className="flex-1 h-px bg-border"></div>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-sm text-foreground/70 font-medium flex items-center gap-2">
-                                    <Clock className="w-4 h-4" />
-                                    {totalTimeDisplay}
-                                  </span>
-                                  {shouldShowShortenSuggestion && (
-                                    <>
-                                      <span className="text-foreground/40">•</span>
-                                      <button
-                                        onClick={shortenActiveList}
-                                        className="text-sm text-yellow-500 hover:text-yellow-600 font-medium transition-colors"
-                                      >
-                                        Do less, better
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                                <div className="flex-1 h-px bg-border"></div>
-                              </div>
+                              <DoLessBetter
+                                user={user}
+                                activeTaskIds={activeTaskIds}
+                                tasksById={tasksById}
+                                taskTagsById={taskTagsById}
+                                taskTimeEstimatesById={taskTimeEstimatesById}
+                                setActiveTaskIds={setActiveTaskIds}
+                                setLaterTaskIds={setLaterTaskIds}
+                                saveTaskAsLater={saveTaskAsLater}
+                              />
                             );
                           })()}
 
@@ -2458,6 +2567,31 @@ const TasksContent = () => {
                                           isLoadingTime={loadingTimeEstimates.has(taskId)}
                                           isLastInSection={index === filteredTasks.length - 1}
                                       taskTitle={task?.title || 'NO_TITLE_FOUND'}
+                                      totalTimeSpent={(() => {
+                                        // Calculate total time by following parent chain to source
+                                        const calculateTotalTime = (taskId: string, visited = new Set<string>()): number => {
+                                          if (visited.has(taskId)) return 0; // Prevent infinite loops
+                                          visited.add(taskId);
+                                          
+                                          const task = tasksById[taskId];
+                                          if (!task) return 0;
+                                          
+                                          const currentTime = Number(task.time_spent_minutes) || 0;
+                                          
+                                          // If has parent, add parent's time recursively
+                                          if (task.parent_task_id) {
+                                            return currentTime + calculateTotalTime(task.parent_task_id, visited);
+                                          }
+                                          
+                                          return currentTime;
+                                        };
+                                        
+                                        const total = calculateTotalTime(taskId);
+                                        return total > 0 ? `${total}m` : null;
+                                      })()}
+                                      tasksById={tasksById}
+                                      setShowImmersiveGallery={setShowImmersiveGallery}
+                                      handleOpenGallery={handleOpenGallery}
                                       onTimeUpdate={(newTime) => {
                                         // Update local state immediately for responsive UI
                                         setTaskTimeEstimatesById(prev => ({
@@ -2501,15 +2635,21 @@ const TasksContent = () => {
                           {(activeTaskIds.length + laterTaskIds.length) >= 1 && (
                             <DroppableZone id="later-zone">
                               <div 
-                                className="flex items-center gap-4 py-6 cursor-pointer hover:bg-muted/10 rounded-lg transition-colors group"
-                                onClick={() => setLaterTasksExpanded(!laterTasksExpanded)}
+                                className={`flex items-center gap-4 py-6 rounded-lg transition-colors group ${
+                                  activeTaskIds.length > 0 ? 'cursor-pointer hover:bg-muted/10' : ''
+                                }`}
+                                onClick={() => {
+                                  if (activeTaskIds.length > 0) {
+                                    setLaterTasksExpanded(!laterTasksExpanded);
+                                  }
+                                }}
                               >
                                 <div className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors"></div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-foreground/30 font-medium group-hover:text-foreground transition-colors">
                                     Later ({laterTaskIds.length})
                                   </span>
-                                  {laterTaskIds.length > 0 && (
+                                  {laterTaskIds.length > 0 && activeTaskIds.length > 0 && (
                                     <ChevronDown 
                                       className={`h-4 w-4 text-foreground/30 group-hover:text-foreground transition-all duration-200 ${
                                         laterTasksExpanded ? 'rotate-180' : ''
@@ -2557,6 +2697,31 @@ const TasksContent = () => {
                                       isLoadingTime={loadingTimeEstimates.has(taskId)}
                                       isLastInSection={index === filteredTasks.length - 1}
                                       taskTitle={task?.title || 'NO_TITLE_FOUND'}
+                                      totalTimeSpent={(() => {
+                                        // Calculate total time by following parent chain to source
+                                        const calculateTotalTime = (taskId: string, visited = new Set<string>()): number => {
+                                          if (visited.has(taskId)) return 0; // Prevent infinite loops
+                                          visited.add(taskId);
+                                          
+                                          const task = tasksById[taskId];
+                                          if (!task) return 0;
+                                          
+                                          const currentTime = Number(task.time_spent_minutes) || 0;
+                                          
+                                          // If has parent, add parent's time recursively
+                                          if (task.parent_task_id) {
+                                            return currentTime + calculateTotalTime(task.parent_task_id, visited);
+                                          }
+                                          
+                                          return currentTime;
+                                        };
+                                        
+                                        const total = calculateTotalTime(taskId);
+                                        return total > 0 ? `${total}m` : null;
+                                      })()}
+                                      tasksById={tasksById}
+                                      setShowImmersiveGallery={setShowImmersiveGallery}
+                                      handleOpenGallery={handleOpenGallery}
                                       onTimeUpdate={(newTime) => {
                                         // Update local state immediately for responsive UI
                                         setTaskTimeEstimatesById(prev => ({
@@ -2626,8 +2791,7 @@ const TasksContent = () => {
                       className="w-full h-12 sm:h-11"
                       size="lg"
                     >
-                      <ArrowRight className="w-4 h-4 mr-2" />
-                      Share for AI Processing
+                      Shuffle
                     </Button>
                   ) : (listTasks.length > 0 || laterTasks.length > 0 || !isTransitioning) ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-12">
@@ -2636,7 +2800,7 @@ const TasksContent = () => {
                           // Pass only active tasks to shuffle (later tasks stay in later list)
                           handleShuffle(listTasks);
                         }}
-                        disabled={(activeTaskIds.length === 0 && laterTaskIds.length === 0) || isProcessing || isTransitioning}
+                        disabled={activeTaskIds.length <= 1 || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
@@ -2649,7 +2813,7 @@ const TasksContent = () => {
                           handleManualOrder(activeTaskIds);
                         }}
                         variant="outline"
-                        disabled={(activeTaskIds.length === 0 && laterTaskIds.length === 0) || isProcessing || isTransitioning}
+                        disabled={activeTaskIds.length === 0 || isProcessing || isTransitioning}
                         className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
                         size="lg"
                       >
@@ -2786,7 +2950,7 @@ const TasksContent = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pt-4 md:pt-6">
                 <Button
                   onClick={() => handleShuffle()}
-                  disabled={isProcessing}
+                  disabled={activeTaskIds.length <= 1 || isProcessing}
                   className="w-full h-12 sm:h-11"
                   size="lg"
                 >
@@ -2796,6 +2960,7 @@ const TasksContent = () => {
                 <Button
                   onClick={() => handleManualOrder()}
                   variant="outline"
+                  disabled={activeTaskIds.length === 0 || isProcessing}
                   className="w-full h-12 sm:h-11"
                   size="lg"
                 >
@@ -2881,7 +3046,7 @@ const TasksContent = () => {
                         source: 'brain_dump' as const,
                         list_location: 'active' as const, // Prioritized tasks go to active list
                         task_status: 'task_list' as const, // New tasks start in task list
-                        category: task.category || 'Routine', // Save AI category
+                        category: task.category || 'Admin Work', // Save AI category
                         is_liked: task.is_liked,
                         is_urgent: task.is_urgent,
                         is_quick: task.is_quick,
@@ -2912,10 +3077,13 @@ const TasksContent = () => {
 
         {/* Game Cards Step */}
         {currentStep === 'game-cards' && (
-          <GameTaskCards
+          <>
+            <GalleryIcon onOpenGallery={handleOpenGallery} refreshTrigger={galleryRefreshTrigger} />
+            
+            <TaskGameController
             tasks={prioritizedTasks.length > 0 ? prioritizedTasks.map((task) => ({
               ...task,
-              estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(task.estimated_minutes)
+              estimated_time: taskTimeEstimatesById[task.id] || taskTimeEstimates[task.title] || formatEstimatedTime(task.estimated_minutes)
             })) : taggedTasks.map((task) => ({
               id: task.id,
               title: task.title,
@@ -2924,7 +3092,7 @@ const TasksContent = () => {
               is_liked: task.is_liked,
               is_urgent: task.is_urgent,
               is_quick: task.is_quick,
-              estimated_time: taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes),
+              estimated_time: taskTimeEstimatesById[task.id] || taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes),
               notes: task.notes // Include notes for game cards
             }))}
             isLoading={isProcessing}
@@ -2994,15 +3162,24 @@ const TasksContent = () => {
             }}
             onTaskComplete={(taskId) => {
               console.log('Task completed:', taskId);
+              // Refresh gallery progress counter
+              setGalleryRefreshTrigger(prev => prev + 1);
             }}
           />
+          </>
         )}
       </div>
       
       {/* Immersive Gallery */}
       {showImmersiveGallery && (
         <ImmersiveGallery
-          onClose={() => setShowImmersiveGallery(false)}
+          onClose={() => {
+            setShowImmersiveGallery(false);
+            setInitialCollectionId(undefined);
+            setInitialCardId(undefined);
+          }}
+          initialCollectionId={initialCollectionId}
+          initialCardId={initialCardId}
         />
       )}
 
@@ -3012,6 +3189,7 @@ const TasksContent = () => {
         onOpenChange={setIsSettingsOpen}
       />
       </div>
+    </>
   );
 };
 

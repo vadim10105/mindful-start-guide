@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Drei-style Cloud</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB 0%, #4682B4 100%);
+        }
+        canvas {
+            display: block;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Simplified Volumetric Cloud</div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Sky background
+        scene.background = new THREE.Color(0x87CEEB);
+
+        // Create cloud using instanced spheres (Drei-style approach)
+        const cloudGroup = new THREE.Group();
+        
+        // Cloud material
+        const cloudMaterial = new THREE.MeshLambertMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.6,
+            fog: false
+        });
+
+        // Create cloud segments (similar to Drei's approach)
+        const segmentCount = 50;
+        const cloudBounds = { x: 20, y: 8, z: 20 };
+        
+        for (let i = 0; i < segmentCount; i++) {
+            const radius = Math.random() * 3 + 1;
+            const geometry = new THREE.SphereGeometry(radius, 8, 8);
+            const mesh = new THREE.Mesh(geometry, cloudMaterial);
+            
+            // Random position within bounds
+            mesh.position.set(
+                (Math.random() - 0.5) * cloudBounds.x,
+                (Math.random() - 0.5) * cloudBounds.y,
+                (Math.random() - 0.5) * cloudBounds.z
+            );
+            
+            // Random scale for variation
+            const scale = Math.random() * 0.8 + 0.6;
+            mesh.scale.setScalar(scale);
+            
+            // Store original position for animation
+            mesh.userData.originalPosition = mesh.position.clone();
+            mesh.userData.animSpeed = Math.random() * 0.5 + 0.5;
+            
+            cloudGroup.add(mesh);
+        }
+
+        cloudGroup.position.set(0, 0, -30);
+        scene.add(cloudGroup);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(100, 100, 50);
+        scene.add(directionalLight);
+
+        // Camera position
+        camera.position.set(0, 0, 20);
+        camera.lookAt(0, 0, 0);
+
+        // Animation
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Animate cloud segments
+            cloudGroup.children.forEach((segment, index) => {
+                const originalPos = segment.userData.originalPosition;
+                const speed = segment.userData.animSpeed;
+                
+                segment.position.x = originalPos.x + Math.sin(time * speed + index) * 0.5;
+                segment.position.y = originalPos.y + Math.cos(time * speed * 0.7 + index) * 0.3;
+                segment.position.z = originalPos.z + Math.sin(time * speed * 0.5 + index) * 0.2;
+            });
+            
+            // Gentle cloud group movement
+            cloudGroup.rotation.y += 0.002;
+            cloudGroup.position.x = Math.sin(time * 0.3) * 2;
+            cloudGroup.position.y = Math.cos(time * 0.2) * 1;
+            
+            // Subtle camera movement
+            camera.position.x = Math.sin(time * 0.1) * 1;
+            camera.position.y = Math.cos(time * 0.08) * 0.5;
+            camera.lookAt(cloudGroup.position);
+            
+            renderer.render(scene, camera);
+        }
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

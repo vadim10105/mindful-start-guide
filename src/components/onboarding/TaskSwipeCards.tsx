@@ -46,6 +46,12 @@ const taskCategories = [
     title: "Project Planning",
     description: "Strategy, planning, organizing, goal setting",
     examples: ["Plan project timeline", "Set goals", "Create roadmap"]
+  },
+  {
+    id: "technical_work",
+    title: "Technical Work",
+    description: "CAD work, engineering, software development, system configuration",
+    examples: ["Design CAD model", "Write code", "Configure systems"]
   }
 ];
 

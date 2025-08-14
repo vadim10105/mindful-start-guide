@@ -215,3 +215,20 @@ export function calculateTimelineBlocks(
   
   return blocks;
 }
+
+/**
+ * Format time in minutes to readable format (e.g., "5m", "1h 30m")
+ */
+export function formatTime(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+}
+
+/**
+ * Calculate time spent from start timestamp to now in minutes
+ */
+export function calculateTimeSpent(startTime: number): number {
+  return Math.round((Date.now() - startTime) / 60000);
+}

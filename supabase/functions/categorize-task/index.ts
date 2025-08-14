@@ -13,7 +13,7 @@ interface TaskCategorizationRequest {
 
 interface CategoryResult {
   task: string;
-  category: 'Creative' | 'Analytical' | 'Social' | 'Physical' | 'Routine' | 'Learning' | 'Planning';
+  category: 'Creative Work' | 'Data Analysis' | 'Team Meetings' | 'Physical Tasks' | 'Admin Work' | 'Learning New Skills' | 'Project Planning' | 'Technical Work';
   confidence: number;
   reasoning: string;
 }
@@ -33,16 +33,17 @@ serve(async (req) => {
 
     console.log('Categorizing tasks:', tasks);
 
-    const prompt = `You are a task categorization expert. Analyze each task and assign it to ONE of these 7 categories:
+    const prompt = `You are a task categorization expert. Analyze each task and assign it to ONE of these 8 categories:
 
 **Categories:**
-1. **Creative** - Design, writing, art, brainstorming, content creation, visual work, UI/UX
-2. **Analytical** - Research, data analysis, problem-solving, debugging, technical work, calculations
-3. **Social** - Meetings, communication, collaboration, networking, presentations, client work
-4. **Physical** - Exercise, manual work, hands-on tasks, building, repairs, movement-based activities
-5. **Routine** - Administrative tasks, paperwork, filing, maintenance, recurring processes, cleanup
-6. **Learning** - Study, training, skill development, reading, courses, practice, knowledge acquisition
-7. **Planning** - Strategy, organizing, scheduling, project management, goal setting, roadmapping
+1. **Creative Work** - Designing, writing, brainstorming, creating content, visual work, UI/UX, artistic projects
+2. **Data Analysis** - Research, analysis, problem-solving, debugging, data processing, calculations, investigation
+3. **Team Meetings** - Meetings, calls, collaboration, communication, networking, presentations, client work
+4. **Physical Tasks** - Hands-on work, exercise, manual activities, building, repairs, movement-based activities, organizing spaces
+5. **Admin Work** - Documentation, filing, routine administrative tasks, paperwork, maintenance, recurring processes
+6. **Learning New Skills** - Training, courses, skill development, reading, practice, knowledge acquisition, studying
+7. **Project Planning** - Strategy, planning, organizing, goal setting, scheduling, project management, roadmapping
+8. **Technical Work** - CAD work, engineering, software development, system configuration, technical implementation, coding
 
 **Instructions:**
 - Assign each task to the MOST appropriate category
@@ -108,11 +109,11 @@ ${tasks.map((task, i) => `${i + 1}. "${task}"`).join('\n')}
     console.log('Categorization results:', results);
 
     // Validate results
-    const validCategories = ['Creative', 'Analytical', 'Social', 'Physical', 'Routine', 'Learning', 'Planning'];
+    const validCategories = ['Creative Work', 'Data Analysis', 'Team Meetings', 'Physical Tasks', 'Admin Work', 'Learning New Skills', 'Project Planning', 'Technical Work'];
     const validatedResults = results.map(result => {
       if (!validCategories.includes(result.category)) {
-        console.warn(`Invalid category ${result.category} for task "${result.task}", defaulting to Routine`);
-        result.category = 'Routine' as any;
+        console.warn(`Invalid category ${result.category} for task "${result.task}", defaulting to Admin Work`);
+        result.category = 'Admin Work' as any;
       }
       return result;
     });

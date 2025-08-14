@@ -251,4 +251,19 @@ All colors MUST be HSL.
   background: rgba(156, 163, 175, 0.6);
 }
 
+/* Ultra-compact PiP text scrolling animation - infinite loop */
+@keyframes scroll-text {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-text {
+  animation: scroll-text infinite linear;
+  animation-play-state: running;
+}
+
 
