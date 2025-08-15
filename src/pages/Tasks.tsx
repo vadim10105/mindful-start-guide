@@ -14,6 +14,7 @@ import { useTypewriter } from "@/hooks/use-typewriter";
 import { TaskGameController } from "@/components/tasks/game/TaskGameController";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { convertOnboardingPreferencesToCategoryRatings, categorizeTask, categorizeTasks, getCurrentEnergyState } from "@/utils/taskCategorization";
+import { createPortal } from 'react-dom';
 import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { validateAndFormatTimeInput } from "@/utils/timeUtils";
 import { TaskTimeline } from "@/components/tasks/task-capture/TaskTimeline";
@@ -79,6 +80,8 @@ interface PrioritizedTask {
   is_liked?: boolean;
   is_urgent?: boolean;
   is_quick?: boolean;
+  category?: string;
+  estimated_minutes?: number;
 }
 
 interface UserProfile {
@@ -120,10 +123,10 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   const { text, showCursor } = useTypewriter();
   
   return (
-    <div className={`absolute top-0 left-0 w-full h-full p-3 text-muted-foreground pointer-events-none flex items-start transition-all duration-300 ease-out ${
+    <div className={`absolute top-0 left-0 w-full h-full px-6 py-4 pointer-events-none flex items-start transition-all duration-300 ease-out ${
       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
-    }`}>
-      <span className="text-base leading-relaxed">
+    }`} style={{ color: '#AAAAAA' }}>
+      <span className="text-lg leading-relaxed">
         {text}
         {showCursor && <span className="animate-pulse">|</span>}
       </span>
@@ -200,8 +203,8 @@ const TaskListItem = ({
     <div 
       ref={setNodeRef}
       style={style}
-      className={`${!isLastInSection ? 'border-b border-border/30' : ''} hover:bg-muted/20 transition-colors ${
-        isDragging ? 'bg-card border border-border rounded-lg shadow-sm opacity-80' : ''
+      className={`${!isLastInSection ? 'border-b border-[#AAAAAA]/20' : ''} hover:bg-[#AAAAAA]/30 hover:rounded-lg transition-all ${
+        isDragging ? 'bg-[#4C4C4C] border border-white/30 rounded-lg shadow-sm opacity-80 cursor-grabbing' : ''
       }`}
       onMouseEnter={() => {
         setIsHovering(true);
@@ -214,16 +217,11 @@ const TaskListItem = ({
     >
       {/* Mobile Layout */}
       <div className="block sm:hidden">
-        <div className="flex items-center gap-3 p-3">
-          {/* Draggable Task Number */}
-          <div 
-            {...attributes}
-            {...listeners}
-            className="flex-shrink-0 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
-            aria-label="Drag to reorder"
-          >
-            {showNumber ? index + 1 : ''}
-          </div>
+        <div 
+          className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors cursor-grab hover:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+        >
           
           {/* Task Title - Full width, no truncation */}
           <div className="flex-1 min-w-0">
@@ -234,13 +232,14 @@ const TaskListItem = ({
                 onChange={(e) => onEditingTextChange?.(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
-                className="text-sm font-medium leading-5 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                className="text-base font-medium leading-6 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                style={{ pointerEvents: 'auto' }}
                 autoFocus
               />
             ) : (
               <div>
                 <p 
-                  className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
+                  className="text-base font-medium leading-6 text-white break-words cursor-text"
                   onDoubleClick={handleDoubleClick}
                 >
                   {taskTitle || 'Untitled Task'}
@@ -283,7 +282,7 @@ const TaskListItem = ({
             {/* Heart - always in first position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isLiked ? 'border-border text-red-500' : 'border-border text-gray-400'
+                isLiked ? 'border-white text-red-500' : 'border-white/60 text-white/60'
               }`}
               onClick={() => onTagUpdate('liked', !isLiked)}
               aria-label={isLiked ? "Remove loved" : "Mark as loved"}
@@ -294,7 +293,7 @@ const TaskListItem = ({
             {/* Warning Triangle - always in second position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isUrgent ? 'border-border text-yellow-500' : 'border-border text-gray-400'
+                isUrgent ? 'border-white text-yellow-500' : 'border-white/60 text-white/60'
               }`}
               onClick={() => onTagUpdate('urgent', !isUrgent)}
               aria-label={isUrgent ? "Remove urgent" : "Mark as urgent"}
@@ -305,7 +304,7 @@ const TaskListItem = ({
             {/* Lightning Bolt - always in third position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isQuick ? 'border-border text-green-500' : 'border-border text-gray-400'
+                isQuick ? 'border-white text-green-500' : 'border-white/60 text-white/60'
               }`}
               onClick={() => onTagUpdate('quick', !isQuick)}
               aria-label={isQuick ? "Remove quick" : "Mark as quick"}
@@ -322,7 +321,7 @@ const TaskListItem = ({
           }`}>
             {isLiked && (
               <button
-                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border text-red-500"
+                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-white text-red-500"
                 onClick={() => onTagUpdate('liked', false)}
                 aria-label="Remove loved"
               >
@@ -332,7 +331,7 @@ const TaskListItem = ({
             
             {isUrgent && (
               <button
-                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border text-yellow-500"
+                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-white text-yellow-500"
                 onClick={() => onTagUpdate('urgent', false)}
                 aria-label="Remove urgent"
               >
@@ -342,7 +341,7 @@ const TaskListItem = ({
             
             {isQuick && (
               <button
-                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border text-green-500"
+                className="p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-white text-green-500"
                 onClick={() => onTagUpdate('quick', false)}
                 aria-label="Remove quick"
               >
@@ -371,16 +370,12 @@ const TaskListItem = ({
       </div>
 
       {/* Desktop Layout - Original */}
-      <div className="hidden sm:flex items-center gap-4 p-4">
-        {/* Draggable Task Number */}
+      <div className="hidden sm:block">
         <div 
+          className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors cursor-grab hover:cursor-grabbing"
           {...attributes}
           {...listeners}
-          className="flex-shrink-0 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
-          aria-label="Drag to reorder"
         >
-          {showNumber ? index + 1 : ''}
-        </div>
         
         {/* Task Title */}
         <div className="flex-1 min-w-0">
@@ -391,13 +386,15 @@ const TaskListItem = ({
               onChange={(e) => onEditingTextChange?.(e.target.value)}
               onKeyDown={handleEditKeyDown}
               onBlur={handleEditBlur}
-              className="text-sm font-medium leading-6 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+              className="text-base font-medium leading-6 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+              style={{ pointerEvents: 'auto', color: '#AAAAAA' }}
               autoFocus
             />
           ) : (
             <div>
               <p 
-                className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
+                className="text-base font-medium leading-6 truncate cursor-text"
+                style={{ color: '#AAAAAA' }}
                 onDoubleClick={handleDoubleClick}
               >
                 {taskTitle || 'Untitled Task'}
@@ -440,7 +437,7 @@ const TaskListItem = ({
               {/* Heart - always in first position */}
               <Heart
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isLiked ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-400'
+                  isLiked ? 'text-red-500 fill-red-500' : 'text-white/60 hover:text-red-400'
                 }`}
                 onClick={() => onTagUpdate('liked', !isLiked)}
               />
@@ -448,7 +445,7 @@ const TaskListItem = ({
               {/* Warning Triangle - always in second position */}
               <AlertTriangle
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400 hover:text-yellow-400'
+                  isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-white/60 hover:text-yellow-400'
                 }`}
                 onClick={() => onTagUpdate('urgent', !isUrgent)}
               />
@@ -456,7 +453,7 @@ const TaskListItem = ({
               {/* Lightning Bolt - always in third position */}
               <Zap
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isQuick ? 'text-green-500 fill-green-500' : 'text-gray-400 hover:text-green-400'
+                  isQuick ? 'text-green-500 fill-green-500' : 'text-white/60 hover:text-green-400'
                 }`}
                 onClick={() => onTagUpdate('quick', !isQuick)}
               />
@@ -501,6 +498,7 @@ const TaskListItem = ({
               className="ml-3"
             />
           )}
+        </div>
         </div>
       </div>
     </div>
@@ -630,7 +628,11 @@ const TasksContent = () => {
   const taskListContentRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -2266,27 +2268,34 @@ const TasksContent = () => {
 
         {/* Input Step */}
         {currentStep === 'input' && (
-          <div className="relative w-full h-full max-h-[700px] flex items-center justify-center">
+          <div className="relative w-full h-full max-h-[700px] flex flex-col items-center justify-center">
+            {/* Title */}
+            <h1 className="text-white text-3xl sm:text-4xl lg:text-5xl mb-8 text-center" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Shape dreams with Intention
+            </h1>
+            
             {/* Card Gallery Icon */}
             <GalleryIcon onOpenGallery={handleOpenGallery} refreshTrigger={galleryRefreshTrigger} />
             <Card 
               ref={cardRef}
               id="main-task-container"
-              className={`border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out shadow-xl ${
-                isTransitioning ? 'shadow-2xl' : ''
-              }`} 
+              className="border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out backdrop-blur-md"
               style={{ 
-                backgroundColor: 'rgba(224, 224, 224, 0.4)',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-                zIndex: 2 // Main container in middle layer
+                zIndex: 2, // Main container in middle layer
+                boxShadow: '0 0 80px 40px rgba(224, 224, 224, 0.6), 0 0 120px 60px rgba(224, 224, 224, 0.3)',
+                borderRadius: '20px',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)'
               }}>
-            <CardHeader className="text-center px-4 sm:px-6 pb-2">
+            <CardHeader className="text-center px-8 sm:px-10 pb-2">
               {/* Mode Toggle with Magical Transition */}
               <div className="flex items-center justify-center gap-4 mb-2">
-                <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
+                <Label htmlFor="input-mode" className={`text-lg transition-colors duration-300 ${
                   isTransitioning ? 'text-muted-foreground' : 
-                  inputMode === 'brain-dump' ? 'text-foreground' : 'text-foreground/30'
-                }`}>
+                  inputMode === 'brain-dump' ? 'text-[#777777]' : 'text-[#777777]/40'
+                }`} style={{ fontFamily: 'Playfair Display, serif' }}>
                   Capture
                 </Label>
                 
@@ -2296,22 +2305,19 @@ const TasksContent = () => {
                   checked={inputMode === 'list'}
                   onCheckedChange={(checked) => !isTransitioning && setInputMode(checked ? 'list' : 'brain-dump')}
                   disabled={isTransitioning}
-                  className="transition-all duration-300 ease-out data-[state=checked]:bg-input data-[state=unchecked]:bg-input"
+                  className="transition-all duration-300 ease-out data-[state=checked]:bg-[#7F7F7F]/70 data-[state=unchecked]:bg-[#7F7F7F]/70 [&>span]:bg-white"
                 />
                 
-                <Label htmlFor="input-mode" className={`text-sm transition-colors duration-300 ${
+                <Label htmlFor="input-mode" className={`text-lg transition-colors duration-300 ${
                   isTransitioning ? 'text-muted-foreground' : 
-                  inputMode === 'list' ? 'text-foreground' : 'text-foreground/30'
-                }`}>
-                  Plan
+                  inputMode === 'list' ? 'text-[#777777]' : 'text-[#777777]/40'
+                }`} style={{ fontFamily: 'Playfair Display, serif' }}>
+                  Flow
                 </Label>
               </div>
               
-              {/* Separator Line - aligned with content */}
-              <div className="h-px bg-border mt-4 mx-4 sm:mx-6"></div>
-              
             </CardHeader>
-            <CardContent ref={cardContentRef} className="flex-1 sm:flex-none flex flex-col px-4 sm:px-6 transition-all duration-500 ease-out">
+            <CardContent ref={cardContentRef} className="flex-1 sm:flex-none flex flex-col px-8 sm:px-10 pb-8 sm:pb-10 transition-all duration-500 ease-out">
               
               {inputMode === 'brain-dump' ? (
                 // Brain Dump Mode
@@ -2319,17 +2325,24 @@ const TasksContent = () => {
                   <div className={`relative transition-all duration-600 ease-out flex-1 ${
                     isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
                   }`} style={{ marginTop: '12px' }}>
-                    <div className="bg-card focus-within:bg-muted/50 transition-all duration-300 rounded-md relative">
+                    <div className="bg-transparent focus-within:bg-transparent border border-transparent focus-within:border-[#AAAAAA]/50 transition-all duration-300 rounded-[20px] relative">
                       <Textarea
                         ref={textareaRef}
                         value={brainDumpText}
                         onChange={(e) => setBrainDumpText(e.target.value)}
                         onFocus={() => setIsTextareaFocused(true)}
                         onBlur={() => setIsTextareaFocused(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleBrainDumpSubmit();
+                          }
+                        }}
                         disabled={isTransitioning}
-                        className={`h-full min-h-[320px] resize-none !text-base leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 pb-12 ${
+                        className={`h-full min-h-[400px] resize-none text-lg leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-6 py-4 pb-12 placeholder:text-[#AAAAAA] ${
                           isTransitioning ? 'text-muted-foreground' : ''
                         }`}
+                        style={{ color: '#AAAAAA' }}
                         rows={8}
                       />
                       <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
@@ -2358,43 +2371,24 @@ const TasksContent = () => {
                       </label>
                     </div>
                   </div>
-                  <Button 
-                    onClick={handleBrainDumpSubmit}
-                    disabled={!brainDumpText.trim() || isProcessing || isTransitioning}
-                    className={`w-full h-12 sm:h-11 transition-all duration-300 mt-3 ${
-                      isTransitioning ? 'scale-95 shadow-sm' : ''
-                    }`}
-                    size="lg"
-                  >
-                    {isProcessing || isTransitioning ? (
-                      <>
-                        <div className="w-4 h-4 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                        {loadingMessages[currentMessageIndex]}
-                      </>
-                    ) : (
-                      <>
-                        Organise my Thoughts
-                      </>
-                    )}
-                  </Button>
                 </div>
               ) : (
                 // List Mode with Full Tagging Interface
                 <div ref={taskListContentRef} className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
                   {/* Loading overlay for brain dump transition */}
                   {isTransitioning && (
-                    <div className="absolute inset-0 bg-card rounded-lg z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-lg z-50 flex items-center justify-center">
                       <div className="text-center space-y-4">
                         <div className="flex justify-center space-x-3">
                           {[...Array(5)].map((_, i) => (
                             <div
                               key={i}
-                              className="w-3 h-3 bg-primary rounded-full animate-bounce"
-                              style={{ animationDelay: `${i * 0.15}s` }}
+                              className="w-3 h-3 rounded-full animate-bounce"
+                              style={{ backgroundColor: '#AAAAAA', animationDelay: `${i * 0.15}s` }}
                             />
                           ))}
                         </div>
-                        <div className="text-base font-medium text-foreground">
+                        <div className="text-base font-medium" style={{ color: '#AAAAAA' }}>
                           {loadingMessages[currentMessageIndex]}
                         </div>
                       </div>
@@ -2403,28 +2397,26 @@ const TasksContent = () => {
                   
                   {/* Fixed input at top */}
                   <div className="flex-shrink-0 pb-3" style={{ marginTop: '12px' }}>
-                    <div className="flex rounded-md bg-card focus-within:bg-muted/50 transition-all duration-300">
+                    <div className={`flex bg-transparent focus-within:bg-transparent transition-all duration-300 rounded-[20px] border border-transparent focus-within:border-[#AAAAAA]/50 ${
+                      activeTaskIds.length > 0 || laterTaskIds.length > 0 ? 'opacity-40 focus-within:opacity-100' : 'opacity-100'
+                    }`}>
                       <Input
                         ref={taskInputRef}
                         value={newTaskInput}
                         onChange={(e) => setNewTaskInput(e.target.value)}
                         onKeyDown={handleAddTaskKeyPress}
                         placeholder="Share your Intention..."
-                        className={`flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 !text-base leading-relaxed focus:bg-transparent ${
-                          (activeTaskIds.length + laterTaskIds.length) > 0 
-                            ? 'placeholder:text-muted-foreground/40' 
-                            : 'placeholder:text-muted-foreground'
-                        }`}
-                        style={{ backgroundColor: 'transparent !important' }}
+                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-lg font-medium leading-relaxed focus:bg-transparent placeholder:text-[#AAAAAA] px-6 py-4"
+                        style={{ color: '#AAAAAA', fontSize: '1.125rem' }}
                       />
                       <Button 
                         onClick={handleAddTask}
                         disabled={!newTaskInput.trim()}
                         size="sm"
                         variant="ghost"
-                        className="border-0 rounded-l-none hover:bg-transparent flex items-center justify-center p-2 h-auto aspect-square"
+                        className="border-0 rounded-l-none hover:bg-transparent flex items-center justify-center p-2 pr-4 h-auto aspect-square"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4" style={{ color: '#AAAAAA' }} />
                       </Button>
                     </div>
                   </div>
@@ -2635,29 +2627,28 @@ const TasksContent = () => {
                           {(activeTaskIds.length + laterTaskIds.length) >= 1 && (
                             <DroppableZone id="later-zone">
                               <div 
-                                className={`flex items-center gap-4 py-6 rounded-lg transition-colors group ${
-                                  activeTaskIds.length > 0 ? 'cursor-pointer hover:bg-muted/10' : ''
-                                }`}
+                                className="flex items-center gap-4 py-6 rounded-lg transition-colors group cursor-pointer hover:bg-muted/10"
                                 onClick={() => {
                                   if (activeTaskIds.length > 0) {
                                     setLaterTasksExpanded(!laterTasksExpanded);
                                   }
                                 }}
                               >
-                                <div className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors"></div>
+                                <div className="flex-1 h-px bg-[#AAAAAA]/20 group-hover:bg-[#AAAAAA]/60 transition-colors"></div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm text-foreground/30 font-medium group-hover:text-foreground transition-colors">
+                                  <span className="text-sm font-medium transition-all group-hover:opacity-100" style={{ color: '#AAAAAA', opacity: 0.4 }}>
                                     Later ({laterTaskIds.length})
                                   </span>
                                   {laterTaskIds.length > 0 && activeTaskIds.length > 0 && (
                                     <ChevronDown 
-                                      className={`h-4 w-4 text-foreground/30 group-hover:text-foreground transition-all duration-200 ${
+                                      className={`h-4 w-4 transition-all duration-200 group-hover:opacity-100 ${
                                         laterTasksExpanded ? 'rotate-180' : ''
-                                      }`} 
+                                      }`}
+                                      style={{ color: '#AAAAAA', opacity: 0.4 }} 
                                     />
                                   )}
                                 </div>
-                                <div className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors"></div>
+                                <div className="flex-1 h-px bg-[#AAAAAA]/20 group-hover:bg-[#AAAAAA]/60 transition-colors"></div>
                               </div>
                             </DroppableZone>
                           )}
@@ -2764,19 +2755,18 @@ const TasksContent = () => {
 
                         </div>
                         
-                        <DragOverlay>
-                          {activeId ? (
-                            <div className="bg-card border border-border rounded-lg shadow-lg p-3 opacity-95">
-                              <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium">
-                                </div>
-                                <span className="text-sm font-medium">
+{createPortal(
+                          <DragOverlay>
+                            {activeId ? (
+                              <div className="bg-[#4C4C4C] border border-white/30 rounded-lg shadow-xl p-3 opacity-95 max-w-xs transform rotate-3">
+                                <span className="text-sm font-medium text-white">
                                   {tasksById[activeId]?.title || 'Untitled Task'}
                                 </span>
                               </div>
-                            </div>
-                          ) : null}
-                        </DragOverlay>
+                            ) : null}
+                          </DragOverlay>,
+                          document.body
+                        )}
                       </DndContext>
                     </div>
                   </div>
@@ -2801,7 +2791,11 @@ const TasksContent = () => {
                           handleShuffle(listTasks);
                         }}
                         disabled={activeTaskIds.length <= 1 || isProcessing || isTransitioning}
-                        className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
+                        className={`w-full h-16 sm:h-14 transition-all duration-300 ${
+                          activeTaskIds.length <= 1 || isProcessing || isTransitioning
+                            ? 'bg-transparent border-2 border-[#AAAAAA]/40 text-[#AAAAAA]/40' 
+                            : 'bg-[#FFCC00] border-2 border-[#FFCC00] hover:bg-[#FFCC00]/90 text-[#777777]'
+                        } rounded-[20px] text-lg font-medium`}
                         size="lg"
                       >
                         Shuffle
@@ -2812,12 +2806,15 @@ const TasksContent = () => {
                           // Pass only active tasks to manual order (later tasks stay in later list)
                           handleManualOrder(activeTaskIds);
                         }}
-                        variant="outline"
                         disabled={activeTaskIds.length === 0 || isProcessing || isTransitioning}
-                        className="w-full h-12 sm:h-11 transition-all duration-300 hover:scale-105"
+                        className={`w-full h-16 sm:h-14 transition-all duration-300 ${
+                          activeTaskIds.length === 0 || isProcessing || isTransitioning
+                            ? 'bg-transparent border-2 border-[#AAAAAA]/40 text-[#AAAAAA]/40' 
+                            : 'bg-[#4C4C4C] border-2 border-[#4C4C4C] text-white hover:bg-[#4C4C4C]/90'
+                        } rounded-[20px] text-lg font-medium`}
                         size="lg"
                       >
-                        Play in Order
+                        In Order
                       </Button>
                     </div>
                   ) : null}
@@ -2828,7 +2825,7 @@ const TasksContent = () => {
             
             </Card>
             
-            {/* Timeline - Positioned relative to wrapper, height matches Card */}
+            {/* Timeline - Temporarily hidden
             {inputMode === 'list' && (listTasks.length > 0 || activeTaskIds.length > 0) && (
               <div 
                 className="hidden lg:block absolute w-80 overflow-y-auto transition-all duration-500 ease-in-out cursor-pointer group"
@@ -2870,7 +2867,7 @@ const TasksContent = () => {
                   className={timelineExpanded ? 'bg-transparent' : ''}
                 />
               </div>
-            )}
+            )} */}
           </div>
         )}
 
@@ -2887,7 +2884,13 @@ const TasksContent = () => {
               <DndContext 
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
+                onDragStart={(event: DragStartEvent) => {
+                  setActiveId(event.active.id as string);
+                }}
+                onDragEnd={(event) => {
+                  setActiveId(null);
+                  handleDragEnd(event);
+                }}
               >
                 <SortableContext 
                   items={reviewedTasks}
@@ -2914,23 +2917,23 @@ const TasksContent = () => {
                              // Update local state immediately for responsive UI
                              setTaskTimeEstimates(prev => ({
                                ...prev,
-                               [task]: newTime
+                               [taskId]: newTime
                              }));
                              // Update database to maintain single source of truth
-                             updateTaskEstimatedTime(task, newTime);
+                             updateTaskEstimatedTime(taskId, newTime);
                            }}
                            onReorder={handleReorder}
                            onTagUpdate={(tag, value) => {
                              // Update local state immediately for responsive UI
                              setTaskTags(prev => ({
                                ...prev,
-                               [task]: {
-                                 ...prev[task] || { isLiked: false, isUrgent: false, isQuick: false },
+                               [taskId]: {
+                                 ...prev[taskId] || { isLiked: false, isUrgent: false, isQuick: false },
                                  [tag === 'liked' ? 'isLiked' : tag === 'urgent' ? 'isUrgent' : 'isQuick']: value
                                }
                              }));
                              // Update database to maintain single source of truth
-                             updateTaskTags(task, tag, value);
+                             updateTaskTags(taskId, tag, value);
                            }}
                            isEditing={editingTaskId === taskId}
                            editingText={editingTaskText}
@@ -2944,6 +2947,18 @@ const TasksContent = () => {
                     })}
                   </div>
                 </SortableContext>
+{createPortal(
+                  <DragOverlay>
+                    {activeId ? (
+                      <div className="bg-[#4C4C4C] border border-white/30 rounded-lg shadow-xl p-3 opacity-95 max-w-xs transform rotate-3">
+                        <span className="text-sm font-medium text-white">
+                          {tasksById[activeId]?.title || 'Untitled Task'}
+                        </span>
+                      </div>
+                    ) : null}
+                  </DragOverlay>,
+                  document.body
+                )}
               </DndContext>
               
               {/* Direct Action Buttons */}
@@ -2951,7 +2966,11 @@ const TasksContent = () => {
                 <Button
                   onClick={() => handleShuffle()}
                   disabled={activeTaskIds.length <= 1 || isProcessing}
-                  className="w-full h-12 sm:h-11"
+                  className={`w-full h-16 sm:h-14 transition-all duration-300 ${
+                    activeTaskIds.length <= 1 || isProcessing
+                      ? 'bg-transparent border-2 border-[#AAAAAA]/40 text-[#AAAAAA]/40' 
+                      : 'bg-[#FFCC00] border-2 border-white hover:bg-[#FFCC00]/90 text-[#777777]'
+                  } rounded-[20px] text-lg font-medium`}
                   size="lg"
                 >
                   Shuffle the Deck
@@ -2959,9 +2978,12 @@ const TasksContent = () => {
 
                 <Button
                   onClick={() => handleManualOrder()}
-                  variant="outline"
                   disabled={activeTaskIds.length === 0 || isProcessing}
-                  className="w-full h-12 sm:h-11"
+                  className={`w-full h-16 sm:h-14 transition-all duration-300 ${
+                    activeTaskIds.length === 0 || isProcessing
+                      ? 'bg-transparent border-2 border-[#AAAAAA]/40 text-[#AAAAAA]/40' 
+                      : 'bg-[#E2DBCF] border-2 border-white text-white hover:bg-[#E2DBCF]/90'
+                  } rounded-[20px] text-lg font-medium`}
                   size="lg"
                 >
                   Play in Order

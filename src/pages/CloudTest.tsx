@@ -1,22 +1,118 @@
-import React, { useMemo, useRef } from 'react'
+import React, { useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Cloud, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 
-function SunsetBackground() {
+type TimeOfDay = 'sunrise' | 'day' | 'sunset' | 'night'
+
+// Ease in-out function for smooth transitions
+function easeInOut(t: number): number {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+
+const gradientPresets = {
+  sunrise: [
+    { stop: 0, color: '#2A3A4A' },    // Dark blue at top
+    { stop: 0.3, color: '#3A3F45' },  // Blue-grey transition
+    { stop: 0.5, color: '#4A453C' },  // Brown-grey blend
+    { stop: 0.7, color: '#5A4F35' },  // Yellowish brown
+    { stop: 0.85, color: '#6A593C' }, // Golden brown
+    { stop: 1, color: '#7A6343' }     // Rich golden brown at bottom
+  ],
+  day: [
+    { stop: 0, color: '#2C4A6B' },    // Much darker blue at top
+    { stop: 0.2, color: '#3C5A7B' },  // Dark blue
+    { stop: 0.4, color: '#4C6A8B' },  // Medium dark blue
+    { stop: 0.6, color: '#5C7A9B' },  // Medium blue
+    { stop: 0.8, color: '#5C7A9B' },  // Keep it darker
+    { stop: 1, color: '#4C6A8B' }     // Darker blue at bottom
+  ],
+  sunset: [
+    { stop: 0, color: '#3A4A55' },    // Much darker blue-grey at top
+    { stop: 0.2, color: '#5D524F' },  // Dark warm grey
+    { stop: 0.4, color: '#6B5A47' },  // Dark taupe
+    { stop: 0.6, color: '#7A5A35' },  // Dark golden brown
+    { stop: 0.8, color: '#8B4E1C' },  // Dark orange
+    { stop: 1, color: '#5A3222' }     // Very dark brown at bottom
+  ],
+  night: [
+    { stop: 0, color: '#050A15' },    // Nearly black at top
+    { stop: 0.2, color: '#0A1018' },  // Very dark grey-blue
+    { stop: 0.4, color: '#0F1520' },  // Dark grey
+    { stop: 0.6, color: '#0D0D1A' },  // Very dark purple-blue
+    { stop: 0.8, color: '#0B1025' },  // Very dark blue
+    { stop: 1, color: '#070712' }     // Almost pure black
+  ]
+}
+
+function interpolateColor(color1: string, color2: string, factor: number): string {
+  const hex1 = color1.replace('#', '');
+  const hex2 = color2.replace('#', '');
+  
+  const r1 = parseInt(hex1.substring(0, 2), 16);
+  const g1 = parseInt(hex1.substring(2, 4), 16);
+  const b1 = parseInt(hex1.substring(4, 6), 16);
+  
+  const r2 = parseInt(hex2.substring(0, 2), 16);
+  const g2 = parseInt(hex2.substring(2, 4), 16);
+  const b2 = parseInt(hex2.substring(4, 6), 16);
+  
+  const r = Math.round(r1 + (r2 - r1) * factor);
+  const g = Math.round(g1 + (g2 - g1) * factor);
+  const b = Math.round(b1 + (b2 - b1) * factor);
+  
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+function SkyBackground({ timeOfDay }: { timeOfDay: TimeOfDay }) {
   const { scene } = useThree();
+  const [currentColors, setCurrentColors] = React.useState(gradientPresets['sunset']);
+  const animationRef = React.useRef<number>();
   
   React.useEffect(() => {
-    // Create gradient texture
+    const startColors = currentColors;
+    const endColors = gradientPresets[timeOfDay];
+    
+    const startTime = Date.now();
+    const duration = 1500; // 1.5 seconds to match cloud transition
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      const interpolatedColors = startColors.map((start, index) => ({
+        stop: start.stop,
+        color: interpolateColor(start.color, endColors[index].color, progress)
+      }));
+      
+      setCurrentColors(interpolatedColors);
+      
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+    
+    animationRef.current = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [timeOfDay]);
+  
+  React.useEffect(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
     const context = canvas.getContext('2d')!;
     
     const gradient = context.createLinearGradient(0, 0, 0, 256);
-    gradient.addColorStop(0, '#ffd89b');    // Light golden at top
-    gradient.addColorStop(0.7, '#ff8c69');  // Salmon
-    gradient.addColorStop(1, '#d2691e');    // Chocolate orange at bottom
+    
+    currentColors.forEach(({ stop, color }) => {
+      gradient.addColorStop(stop, color);
+    });
     
     context.fillStyle = gradient;
     context.fillRect(0, 0, 256, 256);
@@ -27,7 +123,7 @@ function SunsetBackground() {
     return () => {
       scene.background = null;
     };
-  }, [scene]);
+  }, [scene, currentColors]);
   
   return null;
 }
@@ -82,27 +178,19 @@ function generateHighClouds(count: number, width: number, depth: number, heightV
   return clouds;
 }
 
+// Generate static cloud data outside component to prevent regeneration
+const staticCloudData1 = generateCloudData(15, 200, 100, 5);
+const staticCloudData2 = generateCloudData(15, 200, 100, 5);
+const staticCloudData3 = generateCloudData(15, 200, 100, 5);
+
 function InfiniteCloudPlane() {
   const group1Ref = useRef<THREE.Group>(null);
   const group2Ref = useRef<THREE.Group>(null);
   const group3Ref = useRef<THREE.Group>(null);
-  const highGroup1Ref = useRef<THREE.Group>(null);
-  const highGroup2Ref = useRef<THREE.Group>(null);
-  const highGroup3Ref = useRef<THREE.Group>(null);
-  
-  const cloudData1 = useMemo(() => generateCloudData(15, 200, 100, 5), []);
-  const cloudData2 = useMemo(() => generateCloudData(15, 200, 100, 5), []);
-  const cloudData3 = useMemo(() => generateCloudData(15, 200, 100, 5), []);
-  
-  // High wispy clouds
-  const highCloudData1 = useMemo(() => generateHighClouds(8, 250, 120, 3), []);
-  const highCloudData2 = useMemo(() => generateHighClouds(8, 250, 120, 3), []);
-  const highCloudData3 = useMemo(() => generateHighClouds(8, 250, 120, 3), []);
 
   // Create seamless infinite loop with 3 overlapping cloud sections
   useFrame(() => {
-    const speed = 0.05;
-    const highSpeed = 0.03; // Slower for high clouds
+    const speed = 0.05; // Keep constant speed - no changes during transitions
     const sectionLength = 80;
 
     // Main clouds
@@ -126,35 +214,13 @@ function InfiniteCloudPlane() {
         group3Ref.current.position.z = -sectionLength * 2;
       }
     }
-
-    // High wispy clouds (slower movement)
-    if (highGroup1Ref.current) {
-      highGroup1Ref.current.position.z += highSpeed;
-      if (highGroup1Ref.current.position.z > sectionLength) {
-        highGroup1Ref.current.position.z = -sectionLength * 2;
-      }
-    }
-    
-    if (highGroup2Ref.current) {
-      highGroup2Ref.current.position.z += highSpeed;
-      if (highGroup2Ref.current.position.z > sectionLength) {
-        highGroup2Ref.current.position.z = -sectionLength * 2;
-      }
-    }
-    
-    if (highGroup3Ref.current) {
-      highGroup3Ref.current.position.z += highSpeed;
-      if (highGroup3Ref.current.position.z > sectionLength) {
-        highGroup3Ref.current.position.z = -sectionLength * 2;
-      }
-    }
   });
 
   return (
     <>
       {/* First cloud section */}
       <group ref={group1Ref} position={[0, 0, -80]}>
-        {cloudData1.map((cloud, i) => (
+        {staticCloudData1.map((cloud, i) => (
           <Cloud
             key={`section1-${i}`}
             position={[cloud.position.x, cloud.position.y, cloud.position.z]}
@@ -172,7 +238,7 @@ function InfiniteCloudPlane() {
 
       {/* Second cloud section */}
       <group ref={group2Ref} position={[0, 0, 0]}>
-        {cloudData2.map((cloud, i) => (
+        {staticCloudData2.map((cloud, i) => (
           <Cloud
             key={`section2-${i}`}
             position={[cloud.position.x, cloud.position.y, cloud.position.z]}
@@ -190,7 +256,7 @@ function InfiniteCloudPlane() {
 
       {/* Third cloud section */}
       <group ref={group3Ref} position={[0, 0, 80]}>
-        {cloudData3.map((cloud, i) => (
+        {staticCloudData3.map((cloud, i) => (
           <Cloud
             key={`section3-${i}`}
             position={[cloud.position.x, cloud.position.y, cloud.position.z]}
@@ -206,8 +272,8 @@ function InfiniteCloudPlane() {
         ))}
       </group>
 
-      {/* High wispy clouds - First section */}
-      <group ref={highGroup1Ref} position={[0, 0, -80]}>
+      {/* High wispy clouds - DISABLED */}
+      {/* <group ref={highGroup1Ref} position={[0, 0, -80]}>
         {highCloudData1.map((cloud, i) => (
           <Cloud
             key={`high1-${i}`}
@@ -224,7 +290,6 @@ function InfiniteCloudPlane() {
         ))}
       </group>
 
-      {/* High wispy clouds - Second section */}
       <group ref={highGroup2Ref} position={[0, 0, 0]}>
         {highCloudData2.map((cloud, i) => (
           <Cloud
@@ -242,7 +307,6 @@ function InfiniteCloudPlane() {
         ))}
       </group>
 
-      {/* High wispy clouds - Third section */}
       <group ref={highGroup3Ref} position={[0, 0, 80]}>
         {highCloudData3.map((cloud, i) => (
           <Cloud
@@ -258,26 +322,49 @@ function InfiniteCloudPlane() {
             concentrate="outside"
           />
         ))}
-      </group>
+      </group> */}
     </>
   );
 }
 
 
+function getCurrentTimeOfDay(): TimeOfDay {
+  const hour = new Date().getHours()
+  
+  if (hour >= 5 && hour < 10) return 'sunrise'  // 5am - 10am
+  if (hour >= 10 && hour < 17) return 'day'     // 10am - 5pm  
+  if (hour >= 17 && hour < 21) return 'sunset'  // 5pm - 9pm
+  return 'night'                                 // 9pm - 5am
+}
+
 export default function CloudTest() {
+  const [timeOfDay, setTimeOfDay] = React.useState<TimeOfDay>(() => getCurrentTimeOfDay())
+
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'TIME_CHANGE') {
+        const newTime = event.data.timeOfDay as TimeOfDay
+        setTimeOfDay(newTime)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+  
   return (
     <div style={{ 
       width: '100vw', 
       height: '100vh', 
-      background: '#f7d794'
+      background: '#5E6979'
     }}>
       
       <Canvas
         camera={{ position: [0, 35, 40], fov: 75 }}
         gl={{ antialias: true }}
       >
-        <SunsetBackground />
-        <InfiniteCloudPlane />
+        <SkyBackground timeOfDay={timeOfDay} />
+        <InfiniteCloudPlane key="static-clouds" />
         
         <ambientLight intensity={2.0} color="#ffffff" />
         <directionalLight position={[30, 8, 15]} intensity={1.5} color="#ffffff" castShadow />

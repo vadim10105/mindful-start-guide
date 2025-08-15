@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Heart, AlertTriangle, Zap } from "lucide-react";
 import { InlineTimeEditor } from "@/components/ui/InlineTimeEditor";
 import { useSortable } from "@dnd-kit/sortable";
@@ -62,7 +61,10 @@ export const TaskListItem = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task });
+    setActivatorNodeRef,
+  } = useSortable({ 
+    id: task
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -96,7 +98,7 @@ export const TaskListItem = ({
     <div 
       ref={setNodeRef}
       style={style}
-      className={`${!isLastInSection ? 'border-b border-border/30' : ''} hover:bg-muted/20 transition-colors ${
+      className={`group ${!isLastInSection ? 'border-b border-[#AAAAAA]/20' : ''} hover:bg-red-500 rounded-lg overflow-hidden transition-all ${
         isDragging ? 'bg-card border border-border rounded-lg shadow-sm opacity-80' : ''
       }`}
       onMouseEnter={() => {
@@ -109,34 +111,46 @@ export const TaskListItem = ({
       }}
     >
       {/* Mobile Layout */}
-      <div className="block sm:hidden">
-        <div className="flex items-center gap-3 p-3">
-          {/* Draggable Task Number */}
+      <div className="block sm:hidden group-hover:rounded-lg">
+        <div className="flex items-center gap-3 p-3 relative group">
+          {/* Hover-only Drag Handle */}
           <div 
             {...attributes}
             {...listeners}
-            className="flex-shrink-0 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform touch-manipulation"
+            className="absolute left-1 top-1/2 -translate-y-1/2 w-3 h-8 bg-white/40 rounded-sm cursor-grab hover:cursor-grabbing hover:bg-white/60 opacity-100 transition-all duration-200 touch-manipulation"
             aria-label="Drag to reorder"
           >
+            <div className="w-full h-full flex flex-col justify-center items-center gap-1">
+              <div className="w-1 h-1 bg-current rounded-full"></div>
+              <div className="w-1 h-1 bg-current rounded-full"></div>
+              <div className="w-1 h-1 bg-current rounded-full"></div>
+              <div className="w-1 h-1 bg-current rounded-full"></div>
+            </div>
+          </div>
+          
+          {/* Task Number (no longer draggable) */}
+          <div className="flex-shrink-0 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium">
             {showNumber ? index + 1 : ''}
           </div>
           
           {/* Task Title - Full width, no truncation */}
           <div className="flex-1 min-w-0">
             {isEditing ? (
-              <Input
+              <input
                 ref={editInputRef}
                 value={editingText || ''}
                 onChange={(e) => onEditingTextChange?.(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
-                className="text-sm font-medium leading-5 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                className="text-base font-medium bg-transparent border-none outline-none p-0 w-full"
+                style={{ color: '#AAAAAA' }}
                 autoFocus
               />
             ) : (
               <div>
                 <p 
-                  className="text-sm font-medium leading-5 text-foreground break-words cursor-text"
+                  className="text-base font-medium break-words cursor-text"
+                  style={{ color: '#AAAAAA' }}
                   onDoubleClick={handleDoubleClick}
                 >
                   {taskTitle || 'Untitled Task'}
@@ -162,7 +176,7 @@ export const TaskListItem = ({
             {/* Heart - always in first position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isLiked ? 'border-border text-red-500' : 'border-border text-gray-400'
+                isLiked ? 'border-border text-red-500' : 'border-border text-white/60'
               }`}
               onClick={() => onTagUpdate('liked', !isLiked)}
               aria-label={isLiked ? "Remove loved" : "Mark as loved"}
@@ -173,7 +187,7 @@ export const TaskListItem = ({
             {/* Warning Triangle - always in second position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isUrgent ? 'border-border text-yellow-500' : 'border-border text-gray-400'
+                isUrgent ? 'border-border text-yellow-500' : 'border-border text-white/60'
               }`}
               onClick={() => onTagUpdate('urgent', !isUrgent)}
               aria-label={isUrgent ? "Remove urgent" : "Mark as urgent"}
@@ -184,7 +198,7 @@ export const TaskListItem = ({
             {/* Lightning Bolt - always in third position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isQuick ? 'border-border text-green-500' : 'border-border text-gray-400'
+                isQuick ? 'border-border text-green-500' : 'border-border text-white/60'
               }`}
               onClick={() => onTagUpdate('quick', !isQuick)}
               aria-label={isQuick ? "Remove quick" : "Mark as quick"}
@@ -251,33 +265,46 @@ export const TaskListItem = ({
       </div>
 
       {/* Desktop Layout - Original */}
-      <div className="hidden sm:flex items-center gap-4 p-4">
-        {/* Draggable Task Number */}
+      <div className="hidden sm:flex items-center gap-4 p-4 relative group group-hover:rounded-lg">
+        {/* Hover-only Drag Handle */}
         <div 
+          ref={setActivatorNodeRef}
           {...attributes}
           {...listeners}
-          className="flex-shrink-0 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium cursor-grab hover:cursor-grabbing hover:scale-110 transition-transform"
+          className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-6 bg-white/40 rounded-sm cursor-grab hover:cursor-grabbing hover:bg-white/60 opacity-100 transition-all duration-200"
           aria-label="Drag to reorder"
         >
+          <div className="w-full h-full flex flex-col justify-center items-center gap-0.5">
+            <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+            <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+            <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+            <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+          </div>
+        </div>
+        
+        {/* Task Number (no longer draggable) */}
+        <div className="flex-shrink-0 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs font-medium">
           {showNumber ? index + 1 : ''}
         </div>
         
         {/* Task Title */}
         <div className="flex-1 min-w-0">
           {isEditing ? (
-            <Input
+            <input
               ref={editInputRef}
               value={editingText || ''}
               onChange={(e) => onEditingTextChange?.(e.target.value)}
               onKeyDown={handleEditKeyDown}
               onBlur={handleEditBlur}
-              className="text-sm font-medium leading-6 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+              className="text-base font-medium bg-transparent border-none outline-none p-0 w-full"
+              style={{ color: '#AAAAAA' }}
               autoFocus
             />
           ) : (
             <div>
               <p 
-                className="text-sm font-medium leading-6 text-foreground truncate cursor-text"
+                className="text-base font-medium truncate cursor-text"
+                style={{ color: '#AAAAAA' }}
                 onDoubleClick={handleDoubleClick}
               >
                 {taskTitle || 'Untitled Task'}

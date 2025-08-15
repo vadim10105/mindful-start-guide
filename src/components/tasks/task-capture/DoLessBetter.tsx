@@ -153,15 +153,15 @@ export const DoLessBetter = ({
 
   return (
     <div className="flex items-center gap-4 py-4 mb-4">
-      <div className="flex-1 h-px bg-border"></div>
+      <div className="flex-1 h-px bg-[#AAAAAA]/40"></div>
       <div className="flex items-center gap-3">
-        <span className="text-sm text-foreground/70 font-medium flex items-center gap-2">
-          <Clock className="w-4 h-4" />
+        <span className="text-sm font-medium flex items-center gap-2" style={{ color: '#AAAAAA' }}>
+          <Clock className="w-4 h-4" style={{ color: '#AAAAAA' }} />
           {totalTimeDisplay}
         </span>
         {shouldShowShortenSuggestion && (
           <>
-            <span className="text-foreground/40">•</span>
+            <span style={{ color: '#AAAAAA', opacity: 0.6 }}>•</span>
             <button
               onClick={shortenActiveList}
               className="text-sm text-yellow-500 hover:text-yellow-600 font-medium transition-colors"
@@ -171,7 +171,7 @@ export const DoLessBetter = ({
           </>
         )}
       </div>
-      <div className="flex-1 h-px bg-border"></div>
+      <div className="flex-1 h-px bg-[#AAAAAA]/40"></div>
     </div>
   );
 };
