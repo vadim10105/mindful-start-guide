@@ -232,14 +232,14 @@ const TaskListItem = ({
                 onChange={(e) => onEditingTextChange?.(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
-                className="text-base font-medium leading-6 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
+                className="text-lg font-medium leading-5 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
                 style={{ pointerEvents: 'auto' }}
                 autoFocus
               />
             ) : (
               <div>
                 <p 
-                  className="text-base font-medium leading-6 text-white break-words cursor-text"
+                  className="text-lg font-medium leading-5 text-white break-words cursor-text"
                   onDoubleClick={handleDoubleClick}
                 >
                   {taskTitle || 'Untitled Task'}
@@ -393,8 +393,8 @@ const TaskListItem = ({
           ) : (
             <div>
               <p 
-                className="text-base font-medium leading-6 truncate cursor-text"
-                style={{ color: '#AAAAAA' }}
+                className="text-base font-normal leading-6 truncate cursor-text"
+                style={{ color: '#6B7280' }}
                 onDoubleClick={handleDoubleClick}
               >
                 {taskTitle || 'Untitled Task'}
@@ -2271,7 +2271,7 @@ const TasksContent = () => {
           <div className="relative w-full h-full max-h-[700px] flex flex-col items-center justify-center">
             {/* Title */}
             <h1 className="text-white text-3xl sm:text-4xl lg:text-5xl mb-8 text-center" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Shape dreams with Intention
+              Shape Dreams with Intentions
             </h1>
             
             {/* Card Gallery Icon */}
@@ -2299,7 +2299,8 @@ const TasksContent = () => {
                   Capture
                 </Label>
                 
-                {/* Clean Toggle Transition */}
+                {/* 
+                Clean Toggle Transition */}
                 <Switch
                   id="input-mode"
                   checked={inputMode === 'list'}

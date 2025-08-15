@@ -74,12 +74,12 @@ const usePictureInPictureManager = ({
     if (!isPiPAvailable) return null;
     
     return (
-      <div className="fixed top-4 right-4 z-40">
+      <div className="fixed top-4 right-4 z-40" style={{ position: 'fixed', top: '1rem', right: '1rem' }}>
         <Button
           variant="outline"
           size="sm"
           onClick={enterPiP}
-          className="bg-background/80 backdrop-blur-sm border border-border hover:bg-muted/50 transition-all duration-200 shadow-lg p-2 h-8 w-8"
+          className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 transition-all duration-300 shadow-lg p-2 h-8 w-8"
           title="Open in Picture-in-Picture window"
         >
           <ExternalLink className="h-4 w-4" />

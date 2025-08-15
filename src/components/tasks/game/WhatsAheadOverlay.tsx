@@ -19,9 +19,10 @@ export const WhatsAheadOverlay = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in-0 duration-200"
+      className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in-0 duration-200"
       onMouseUp={onClose}
       onTouchEnd={onClose}
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
     >
       <div className="shadow-xl rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" style={{ backgroundColor: '#1a1a1a' }}>
         {/* Scrollable Content */}

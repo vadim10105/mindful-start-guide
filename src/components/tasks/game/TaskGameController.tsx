@@ -329,7 +329,7 @@ export const TaskGameController = ({
   // Show loading state if tasks are being processed
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="w-full px-4">
           <ShuffleAnimation
             isProcessing={isProcessing}
@@ -377,7 +377,7 @@ export const TaskGameController = ({
       />
 
       {/* Main Interface */}
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         {pipManager.isPiPActive ? (
           /* Show What's Ahead when PiP is active */
           <WhatsAheadMainWindow 
@@ -438,7 +438,7 @@ export const TaskGameController = ({
             onMouseUp={() => setShowWhatsAhead(false)}
             onTouchStart={() => setShowWhatsAhead(true)}
             onTouchEnd={() => setShowWhatsAhead(false)}
-            className="bg-transparent hover:bg-blue-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300 px-4"
+            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 transition-all duration-300 px-4 shadow-lg"
           >
             <Eye className="h-5 w-5" />
           </Button>
@@ -460,7 +460,7 @@ export const TaskGameController = ({
               onComplete(gameState.completedTasks);
             }} 
             size="lg" 
-            className="bg-transparent hover:bg-yellow-500 hover:text-white text-gray-400 border border-gray-600 transition-all duration-300 px-8"
+            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 transition-all duration-300 px-8 shadow-lg"
           >
             Finish Session
           </Button>

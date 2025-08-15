@@ -131,8 +131,9 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
           <div 
             className="absolute w-full h-full rounded-2xl border-2 shadow-lg overflow-hidden"
             style={{
-              backgroundColor: 'hsl(202 10% 14%)',
-              borderColor: 'white',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(10px)',
+              borderColor: 'rgba(255, 255, 255, 0.2)',
               transform: 'translateY(2px)',
               zIndex: 1
             }}
@@ -152,8 +153,9 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
           <div 
             className="absolute w-full h-full rounded-2xl border-2 shadow-lg overflow-hidden"
             style={{
-              backgroundColor: 'hsl(202 10% 16%)',
-              borderColor: 'white',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(10px)',
+              borderColor: 'rgba(255, 255, 255, 0.25)',
               transform: 'translateY(1px)',
               zIndex: 2
             }}
@@ -177,8 +179,9 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               isSettling ? 'animate-none' : 'animate-shuffle-card-top'
             }`}
             style={{
-              backgroundColor: 'hsl(202 10% 18%)',
-              borderColor: 'white',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              borderColor: 'rgba(255, 255, 255, 0.3)',
               transform: isSettling ? 'translateX(0px) translateY(0px) rotate(0deg)' : undefined,
               zIndex: 6
             }}
@@ -203,8 +206,9 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               isSettling ? 'animate-none' : 'animate-shuffle-card-middle'
             }`}
             style={{
-              backgroundColor: 'hsl(202 10% 20%)',
-              borderColor: 'white',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              borderColor: 'rgba(255, 255, 255, 0.3)',
               transform: isSettling ? 'translateX(0px) translateY(0px) rotate(0deg)' : undefined,
               zIndex: 5
             }}
@@ -229,8 +233,9 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               isSettling ? 'animate-none' : 'animate-shuffle-card-bottom'
             }`}
             style={{
-              backgroundColor: 'hsl(202 10% 22%)',
-              borderColor: 'white',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              borderColor: 'rgba(255, 255, 255, 0.3)',
               transform: isSettling ? 'translateX(0px) translateY(0px) rotate(0deg)' : undefined,
               zIndex: 4
             }}
@@ -254,8 +259,9 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
           <div 
             className="absolute w-full h-full rounded-2xl border-2 shadow-lg overflow-hidden"
             style={{
-              backgroundColor: 'hsl(202 10% 18%)',
-              borderColor: 'hsl(202 10% 32%)',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              borderColor: 'rgba(255, 255, 255, 0.3)',
               zIndex: 3
             }}
           >

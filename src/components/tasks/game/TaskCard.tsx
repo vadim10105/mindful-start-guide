@@ -567,8 +567,8 @@ export const TaskCard = ({
         <div className="h-full flex flex-col">
           <CardHeader className="text-center pb-4 flex-shrink-0 relative overflow-visible px-8 py-6">
             
-            {/* Task Tags - Top Left */}
-            <div className="absolute top-3 left-2 flex gap-1">
+            {/* Task Tags - Top Center */}
+            <div className="absolute top-3 left-1/2 transform -translate-x-1/2 flex gap-1 hidden">
               {/* Show liked tag if tagged */}
               {task.is_liked && (
                 <Heart className="w-4 h-4 fill-red-500 text-red-500 transition-colors" />

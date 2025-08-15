@@ -142,15 +142,15 @@ export const TaskListItem = ({
                 onChange={(e) => onEditingTextChange?.(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
-                className="text-base font-medium bg-transparent border-none outline-none p-0 w-full"
-                style={{ color: '#AAAAAA' }}
+                className="text-base font-normal bg-transparent border-none outline-none p-0 w-full"
+                style={{ color: '#6B7280', fontSize: '16px', lineHeight: '1.5', fontFamily: 'inherit' }}
                 autoFocus
               />
             ) : (
               <div>
                 <p 
-                  className="text-base font-medium break-words cursor-text"
-                  style={{ color: '#AAAAAA' }}
+                  className="text-base font-normal break-words cursor-text"
+                  style={{ color: '#6B7280' }}
                   onDoubleClick={handleDoubleClick}
                 >
                   {taskTitle || 'Untitled Task'}
@@ -296,15 +296,15 @@ export const TaskListItem = ({
               onChange={(e) => onEditingTextChange?.(e.target.value)}
               onKeyDown={handleEditKeyDown}
               onBlur={handleEditBlur}
-              className="text-base font-medium bg-transparent border-none outline-none p-0 w-full"
-              style={{ color: '#AAAAAA' }}
+              className="text-base font-normal bg-transparent border-none outline-none p-0 w-full"
+              style={{ color: '#6B7280', fontSize: '16px', lineHeight: '1.5', fontFamily: 'inherit' }}
               autoFocus
             />
           ) : (
             <div>
               <p 
-                className="text-base font-medium truncate cursor-text"
-                style={{ color: '#AAAAAA' }}
+                className="text-base font-normal truncate cursor-text"
+                style={{ color: '#6B7280' }}
                 onDoubleClick={handleDoubleClick}
               >
                 {taskTitle || 'Untitled Task'}
