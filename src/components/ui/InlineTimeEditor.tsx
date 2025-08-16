@@ -87,12 +87,12 @@ export function InlineTimeEditor({
     setInputValue(e.target.value);
   };
 
-  const baseClassName = `px-2 py-1 bg-[#AAAAAA]/40 rounded text-sm text-white w-20 h-7 text-center flex items-center justify-center ${className}`;
+  const baseClassName = `px-2 py-1 rounded text-sm w-20 h-7 text-center flex items-center justify-center ${className}`;
 
   // Loading state
   if (isLoading) {
     return (
-      <div className={baseClassName}>
+      <div className={baseClassName} style={{ color: 'var(--text-primary)', backgroundColor: 'var(--task-hover-bg)' }}>
         <div className="w-4 h-4 border border-white/30 border-t-white rounded-full animate-spin mx-auto" />
       </div>
     );
@@ -108,7 +108,8 @@ export function InlineTimeEditor({
         onChange={handleInputChange}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
-        className={`px-2 py-1 bg-[#AAAAAA]/50 border border-transparent rounded text-sm text-white w-20 h-7 text-center focus:outline-none focus:ring-0 ${className}`}
+        className={`px-2 py-1 border border-transparent rounded text-sm w-20 h-7 text-center focus:outline-none focus:ring-0 ${className}`}
+        style={{ color: 'var(--text-primary)', backgroundColor: 'var(--task-hover-bg)' }}
         placeholder={placeholder}
       />
     );
@@ -118,7 +119,8 @@ export function InlineTimeEditor({
   return (
     <button
       onClick={handleStartEdit}
-      className={`${baseClassName} hover:bg-[#AAAAAA]/70 transition-colors cursor-pointer border border-transparent hover:border-white/50`}
+      className={`${baseClassName} transition-colors cursor-pointer border border-transparent hover:border-white/50`}
+      style={{ color: 'var(--text-primary)', backgroundColor: 'var(--task-hover-bg)' }}
       title="Click to edit time estimate"
     >
       {value || placeholder}

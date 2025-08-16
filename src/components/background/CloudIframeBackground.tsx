@@ -1,17 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { TimeToggle, TimeOfDay } from './TimeToggle'
-
-function getCurrentTimeOfDay(): TimeOfDay {
-  const hour = new Date().getHours()
-  
-  if (hour >= 5 && hour < 10) return 'sunrise'  // 5am - 10am
-  if (hour >= 10 && hour < 17) return 'day'     // 10am - 5pm  
-  if (hour >= 17 && hour < 21) return 'sunset'  // 5pm - 9pm
-  return 'night'                                 // 9pm - 5am
-}
+import React, { useRef, useEffect } from 'react'
+import { TimeToggle } from './TimeToggle'
+import { useTime, TimeOfDay } from '@/contexts/TimeContext'
 
 export function CloudIframeBackground() {
-  const [currentTime, setCurrentTime] = useState<TimeOfDay>(() => getCurrentTimeOfDay())
+  const { currentTime, setCurrentTime } = useTime()
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const handleTimeChange = (newTime: TimeOfDay) => {
@@ -25,6 +17,24 @@ export function CloudIframeBackground() {
       }, '*')
     }
   }
+
+  // Send initial time to iframe when it loads
+  useEffect(() => {
+    const handleLoad = () => {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage({
+          type: 'TIME_CHANGE',
+          timeOfDay: currentTime
+        }, '*')
+      }
+    }
+
+    const iframe = iframeRef.current
+    if (iframe) {
+      iframe.addEventListener('load', handleLoad)
+      return () => iframe.removeEventListener('load', handleLoad)
+    }
+  }, [currentTime])
 
   return (
     <>

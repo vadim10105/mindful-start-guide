@@ -83,6 +83,9 @@ export const TaskListItem = ({
       // Delete task when backspace is pressed on empty field
       e.preventDefault();
       onTaskSave?.(task, ''); // This will trigger deletion in handleTaskSave
+    } else {
+      // Stop propagation for all other keys to prevent global handlers from interfering
+      e.stopPropagation();
     }
   };
 
@@ -98,7 +101,7 @@ export const TaskListItem = ({
     <div 
       ref={setNodeRef}
       style={style}
-      className={`group ${!isLastInSection ? 'border-b border-[#AAAAAA]/20' : ''} hover:bg-red-500 rounded-lg overflow-hidden transition-all ${
+      className={`group task-item ${!isLastInSection ? 'border-b border-[#AAAAAA]/20' : ''} rounded-lg overflow-hidden transition-all ${
         isDragging ? 'bg-card border border-border rounded-lg shadow-sm opacity-80' : ''
       }`}
       onMouseEnter={() => {
@@ -142,21 +145,21 @@ export const TaskListItem = ({
                 onChange={(e) => onEditingTextChange?.(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
-                className="text-base font-normal bg-transparent border-none outline-none p-0 w-full"
-                style={{ color: '#6B7280', fontSize: '16px', lineHeight: '1.5', fontFamily: 'inherit' }}
+                className="text-base font-normal leading-6 bg-transparent border-none outline-none p-0 w-full ui-input"
+                style={{ pointerEvents: 'auto', color: 'var(--text-primary)' }}
                 autoFocus
               />
             ) : (
               <div>
                 <p 
-                  className="text-base font-normal break-words cursor-text"
-                  style={{ color: '#6B7280' }}
+                  className="text-base font-normal leading-6 break-words cursor-text"
+                  style={{ color: 'var(--text-primary)' }}
                   onDoubleClick={handleDoubleClick}
                 >
                   {taskTitle || 'Untitled Task'}
                 </p>
                 {totalTimeSpent && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs mt-1" style={{ color: 'var(--tag-icon-inactive)' }}>
                     Time Spent: {totalTimeSpent}
                   </p>
                 )}
@@ -176,8 +179,9 @@ export const TaskListItem = ({
             {/* Heart - always in first position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isLiked ? 'border-border text-red-500' : 'border-border text-white/60'
+                isLiked ? 'border-border text-red-500' : 'border-border'
               }`}
+              style={!isLiked ? { color: 'var(--tag-icon-inactive)' } : {}}
               onClick={() => onTagUpdate('liked', !isLiked)}
               aria-label={isLiked ? "Remove loved" : "Mark as loved"}
             >
@@ -187,8 +191,9 @@ export const TaskListItem = ({
             {/* Warning Triangle - always in second position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isUrgent ? 'border-border text-yellow-500' : 'border-border text-white/60'
+                isUrgent ? 'border-border text-yellow-500' : 'border-border'
               }`}
+              style={!isUrgent ? { color: 'var(--tag-icon-inactive)' } : {}}
               onClick={() => onTagUpdate('urgent', !isUrgent)}
               aria-label={isUrgent ? "Remove urgent" : "Mark as urgent"}
             >
@@ -198,8 +203,9 @@ export const TaskListItem = ({
             {/* Lightning Bolt - always in third position */}
             <button
               className={`p-3 rounded-lg transition-colors duration-200 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border ${
-                isQuick ? 'border-border text-green-500' : 'border-border text-white/60'
+                isQuick ? 'border-border text-green-500' : 'border-border'
               }`}
+              style={!isQuick ? { color: 'var(--tag-icon-inactive)' } : {}}
               onClick={() => onTagUpdate('quick', !isQuick)}
               aria-label={isQuick ? "Remove quick" : "Mark as quick"}
             >
@@ -296,15 +302,15 @@ export const TaskListItem = ({
               onChange={(e) => onEditingTextChange?.(e.target.value)}
               onKeyDown={handleEditKeyDown}
               onBlur={handleEditBlur}
-              className="text-base font-normal bg-transparent border-none outline-none p-0 w-full"
-              style={{ color: '#6B7280', fontSize: '16px', lineHeight: '1.5', fontFamily: 'inherit' }}
+              className="text-base font-medium leading-6 bg-transparent border-none outline-none p-0 w-full ui-input"
+              style={{ pointerEvents: 'auto', color: 'var(--inline-muted-color)' }}
               autoFocus
             />
           ) : (
             <div>
               <p 
-                className="text-base font-normal truncate cursor-text"
-                style={{ color: '#6B7280' }}
+                className="text-base font-normal leading-6 truncate cursor-text"
+                style={{ color: 'var(--text-primary)' }}
                 onDoubleClick={handleDoubleClick}
               >
                 {taskTitle || 'Untitled Task'}
@@ -330,24 +336,27 @@ export const TaskListItem = ({
               {/* Heart - always in first position */}
               <Heart
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isLiked ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-400'
+                  isLiked ? 'text-red-500 fill-red-500' : 'hover:text-red-400'
                 }`}
+                style={!isLiked ? { color: 'var(--tag-icon-inactive)' } : {}}
                 onClick={() => onTagUpdate('liked', !isLiked)}
               />
               
               {/* Warning Triangle - always in second position */}
               <AlertTriangle
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400 hover:text-yellow-400'
+                  isUrgent ? 'text-yellow-500 fill-yellow-500' : 'hover:text-yellow-400'
                 }`}
+                style={!isUrgent ? { color: 'var(--tag-icon-inactive)' } : {}}
                 onClick={() => onTagUpdate('urgent', !isUrgent)}
               />
               
               {/* Lightning Bolt - always in third position */}
               <Zap
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isQuick ? 'text-green-500 fill-green-500' : 'text-gray-400 hover:text-green-400'
+                  isQuick ? 'text-green-500 fill-green-500' : 'hover:text-green-400'
                 }`}
+                style={!isQuick ? { color: 'var(--tag-icon-inactive)' } : {}}
                 onClick={() => onTagUpdate('quick', !isQuick)}
               />
             </div>

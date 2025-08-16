@@ -37,12 +37,12 @@ const gradientPresets = {
     { stop: 1, color: '#5A3222' }     // Very dark brown at bottom
   ],
   night: [
-    { stop: 0, color: '#050A15' },    // Nearly black at top
-    { stop: 0.2, color: '#0A1018' },  // Very dark grey-blue
-    { stop: 0.4, color: '#0F1520' },  // Dark grey
-    { stop: 0.6, color: '#0D0D1A' },  // Very dark purple-blue
-    { stop: 0.8, color: '#0B1025' },  // Very dark blue
-    { stop: 1, color: '#070712' }     // Almost pure black
+    { stop: 0, color: '#000000' },    // Pure black at top
+    { stop: 0.2, color: '#010103' },  // Almost pure black
+    { stop: 0.4, color: '#010204' },  // Pure black with tiny hint
+    { stop: 0.6, color: '#000102' },  // Nearly pure black
+    { stop: 0.8, color: '#010103' },  // Almost pure black
+    { stop: 1, color: '#000000' }     // Pure black at bottom
   ]
 }
 
@@ -366,10 +366,10 @@ export default function CloudTest() {
         <SkyBackground timeOfDay={timeOfDay} />
         <InfiniteCloudPlane key="static-clouds" />
         
-        <ambientLight intensity={2.0} color="#ffffff" />
-        <directionalLight position={[30, 8, 15]} intensity={1.5} color="#ffffff" castShadow />
-        <directionalLight position={[-15, 5, -20]} intensity={1.0} color="#fff5e6" />
-        <directionalLight position={[5, -3, 8]} intensity={0.6} color="#ffe8cc" />
+        <ambientLight intensity={timeOfDay === 'night' ? 0.5 : 2.0} color="#ffffff" />
+        <directionalLight position={[30, 8, 15]} intensity={timeOfDay === 'night' ? 0.2 : 1.5} color="#ffffff" castShadow />
+        <directionalLight position={[-15, 5, -20]} intensity={timeOfDay === 'night' ? 0.1 : 1.0} color="#fff5e6" />
+        <directionalLight position={[5, -3, 8]} intensity={timeOfDay === 'night' ? 0.05 : 0.6} color="#ffe8cc" />
         
         <OrbitControls
           enablePan={false}

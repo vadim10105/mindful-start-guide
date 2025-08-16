@@ -1,6 +1,6 @@
 import React from 'react'
-
-export type TimeOfDay = 'sunrise' | 'day' | 'sunset' | 'night'
+import { Sunrise, Sun, Sunset, Moon } from 'lucide-react'
+import { TimeOfDay } from '@/contexts/TimeContext'
 
 interface TimeToggleProps {
   currentTime: TimeOfDay
@@ -8,11 +8,11 @@ interface TimeToggleProps {
 }
 
 export function TimeToggle({ currentTime, onTimeChange }: TimeToggleProps) {
-  const timeOptions: Array<{ value: TimeOfDay; icon: string; label: string }> = [
-    { value: 'sunrise', icon: '🌅', label: 'Sunrise' },
-    { value: 'day', icon: '☀️', label: 'Day' },
-    { value: 'sunset', icon: '🌇', label: 'Sunset' },
-    { value: 'night', icon: '🌙', label: 'Night' }
+  const timeOptions: Array<{ value: TimeOfDay; icon: React.ComponentType<any>; label: string }> = [
+    { value: 'sunrise', icon: Sunrise, label: 'Sunrise' },
+    { value: 'day', icon: Sun, label: 'Day' },
+    { value: 'sunset', icon: Sunset, label: 'Sunset' },
+    { value: 'night', icon: Moon, label: 'Night' }
   ]
 
   return (
@@ -24,45 +24,34 @@ export function TimeToggle({ currentTime, onTimeChange }: TimeToggleProps) {
       display: 'flex',
       flexDirection: 'column',
       gap: '8px',
-      background: 'rgba(255, 255, 255, 0.1)',
+      background: 'var(--toggle-bg)',
       backdropFilter: 'blur(10px)',
       padding: '12px 8px',
       borderRadius: '20px',
-      border: '1px solid rgba(255, 255, 255, 0.2)'
+      border: '1px solid var(--toggle-border)'
     }}>
-      {timeOptions.map(({ value, icon, label }) => (
+      {timeOptions.map(({ value, icon: IconComponent, label }) => (
         <button
           key={value}
           onClick={() => onTimeChange(value)}
+          className={`time-toggle-button ${currentTime === value ? 'active' : ''}`}
           style={{
             width: '44px',
             height: '44px',
             border: 'none',
             borderRadius: '12px',
             background: currentTime === value 
-              ? 'rgba(255, 255, 255, 0.3)' 
+              ? 'var(--toggle-active-bg)' 
               : 'transparent',
             cursor: 'pointer',
-            fontSize: '20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 0.2s ease',
             backdropFilter: currentTime === value ? 'blur(5px)' : 'none'
           }}
           title={label}
-          onMouseEnter={(e) => {
-            if (currentTime !== value) {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (currentTime !== value) {
-              e.currentTarget.style.background = 'transparent'
-            }
-          }}
         >
-          {icon}
+          <IconComponent size={20} color="white" />
         </button>
       ))}
     </div>

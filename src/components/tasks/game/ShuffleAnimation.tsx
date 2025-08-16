@@ -129,7 +129,9 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
           
           {/* Bottom stack cards (stationary) */}
           <div 
-            className="absolute w-full h-full rounded-2xl border-2 shadow-lg overflow-hidden"
+            className={`absolute w-full h-full rounded-2xl border-2 shadow-lg overflow-hidden transition-opacity duration-700 ${
+              imagesLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(10px)',
@@ -141,9 +143,7 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
             {randomCards[1] && (
               <>
                 <div 
-                  className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 ${
-                    imagesLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className="absolute inset-0 bg-cover bg-center"
                   style={{ backgroundImage: `url('${randomCards[1].imageUrl}')` }}
                 />
                 <div className="absolute inset-0 bg-black/20" />
@@ -151,7 +151,9 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
             )}
           </div>
           <div 
-            className="absolute w-full h-full rounded-2xl border-2 shadow-lg overflow-hidden"
+            className={`absolute w-full h-full rounded-2xl border-2 shadow-lg overflow-hidden transition-opacity duration-700 ${
+              imagesLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               backdropFilter: 'blur(10px)',
@@ -163,9 +165,7 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
             {randomCards[2] && (
               <>
                 <div 
-                  className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 ${
-                    imagesLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className="absolute inset-0 bg-cover bg-center"
                   style={{ backgroundImage: `url('${randomCards[2].imageUrl}')` }}
                 />
                 <div className="absolute inset-0 bg-black/20" />

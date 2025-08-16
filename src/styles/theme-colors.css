@@ -1,0 +1,197 @@
+/* 
+ * Centralized Theme Colors
+ * 
+ * This file contains all color variables for easy customization.
+ * Dark mode colors are automatically derived from light mode but can be tweaked here.
+ * 
+ * Usage: Update any color here to change it throughout the app
+ */
+
+:root {
+  /* =============================================================================
+   * MAIN CONTAINER COLORS
+   * ============================================================================= */
+  
+  /* Main task container background - glassmorphism effect */
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: rgba(255, 255, 255, 0.2);
+  
+  /* Background blur overlay behind main container */
+  --blur-overlay-bg: rgba(255, 255, 255, 0.3);
+
+  /* =============================================================================
+   * TEXT COLORS (based on existing #6B7280)
+   * ============================================================================= */
+  
+  /* Primary text color */
+  --text-primary: #6B7280;
+  
+  /* Secondary/muted text */
+  --text-muted: #9CA3AF;
+  
+  /* Small text (time spent, etc.) */
+  --text-small: #6B7280;
+
+  /* =============================================================================
+   * GLASSMORPHISM ELEMENTS
+   * ============================================================================= */
+  
+  /* Gallery icon cards */
+  --glass-card-bg: rgba(255, 255, 255, 0.1);
+  --glass-card-border: rgba(255, 255, 255, 0.2);
+  
+  /* Task item hover */
+  --task-hover-bg: rgba(0, 0, 0, 0.05);
+  
+  /* Progress bars in gallery hover */
+  --progress-bg: rgba(255, 255, 255, 0.2);
+  --progress-fill: rgba(255, 255, 255, 1.0);
+  
+  /* Time toggle buttons */
+  --toggle-bg: rgba(255, 255, 255, 0.1);
+  --toggle-border: rgba(255, 255, 255, 0.2);
+  --toggle-active-bg: rgba(255, 255, 255, 0.3);
+
+  /* =============================================================================
+   * COMPONENT SPECIFIC
+   * ============================================================================= */
+  
+  /* Task list item styling */
+  --task-item-bg: transparent;
+  --task-item-border: rgba(170, 170, 170, 0.2);
+  
+  /* Inline styles that need CSS variable equivalents */
+  --inline-text-color: #6B7280;
+  --inline-muted-color: #AAAAAA;
+  
+  /* UI labels that should stay consistent */
+  --ui-label-color: #AAAAAA;
+  
+  /* Tag icons inactive state */
+  --tag-icon-inactive: rgba(107, 114, 128, 0.4); /* --text-primary at 40% opacity */
+}
+
+/* =============================================================================
+ * DARK MODE OVERRIDES (activated when time === 'night')
+ * ============================================================================= */
+
+[data-theme="dark"] {
+  /* =============================================================================
+   * MAIN CONTAINER COLORS - DARK
+   * ============================================================================= */
+  
+  /* Main task container - darker glassmorphism */
+  --card-bg: rgba(20, 20, 20, 0.85);
+  --card-border: rgba(255, 255, 255, 0.1);
+  
+  /* Background blur overlay - coordinate with night sky gradient */
+  --blur-overlay-bg: rgba(0, 0, 0, 0.4);
+
+  /* =============================================================================
+   * TEXT COLORS - DARK (maintaining contrast ratios)
+   * ============================================================================= */
+  
+  /* Primary text - light gray for readability */
+  --text-primary: #E5E7EB;
+  
+  /* Secondary/muted text */
+  --text-muted: #D1D5DB;
+  
+  /* Small text */
+  --text-small: #D1D5DB;
+
+  /* =============================================================================
+   * GLASSMORPHISM ELEMENTS - DARK
+   * ============================================================================= */
+  
+  /* Gallery icon cards - maintain glass effect */
+  --glass-card-bg: rgba(255, 255, 255, 0.05);
+  --glass-card-border: rgba(255, 255, 255, 0.1);
+  
+  /* Task item hover */
+  --task-hover-bg: rgba(255, 255, 255, 0.05);
+  
+  /* Progress bars - keep light for visibility */
+  --progress-bg: rgba(255, 255, 255, 0.1);
+  --progress-fill: rgba(255, 255, 255, 0.8);
+  
+  /* Time toggle buttons */
+  --toggle-bg: rgba(255, 255, 255, 0.05);
+  --toggle-border: rgba(255, 255, 255, 0.1);
+  --toggle-active-bg: rgba(255, 255, 255, 0.15);
+
+  /* =============================================================================
+   * COMPONENT SPECIFIC - DARK
+   * ============================================================================= */
+  
+  /* Task list items */
+  --task-item-bg: transparent;
+  --task-item-border: rgba(255, 255, 255, 0.1);
+  
+  /* Inline styles equivalents */
+  --inline-text-color: #E5E7EB;
+  --inline-muted-color: #9CA3AF;
+  
+  /* UI labels that should stay consistent */
+  --ui-label-color: #666666;
+  
+  /* Tag icons inactive state */
+  --tag-icon-inactive: rgba(229, 231, 235, 0.4); /* --text-primary at 40% opacity for dark mode */
+}
+
+/* =============================================================================
+ * COMPONENT SPECIFIC STYLES
+ * ============================================================================= */
+
+/* Time toggle button hover states */
+.time-toggle-button {
+  transition: all 0.2s ease;
+}
+
+.time-toggle-button:hover:not(.active) {
+  background: var(--toggle-active-bg) !important;
+  opacity: 0.7;
+}
+
+/* Task list item hover effects */
+.task-item:hover:not(.dragging) {
+  background-color: var(--task-hover-bg) !important;
+}
+
+/* Tag icon inactive state */
+.tag-inactive {
+  color: var(--tag-icon-inactive);
+}
+
+/* Tag hover colors - more specific to override inactive state */
+.tag-inactive.hover\:text-red-400:hover {
+  color: #f87171 !important;
+}
+
+.tag-inactive.hover\:text-yellow-400:hover {
+  color: #facc15 !important;
+}
+
+.tag-inactive.hover\:text-green-400:hover {
+  color: #4ade80 !important;
+}
+
+/* UI input placeholder colors */
+.ui-input::placeholder {
+  color: var(--text-primary) !important;
+}
+
+.ui-textarea::placeholder {
+  color: var(--text-primary) !important;
+}
+
+/* =============================================================================
+ * SMOOTH TRANSITIONS
+ * ============================================================================= */
+
+* {
+  transition: 
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+}

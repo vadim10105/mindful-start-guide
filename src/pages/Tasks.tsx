@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
 import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, Images, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
@@ -125,8 +124,8 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   return (
     <div className={`absolute top-0 left-0 w-full h-full px-6 py-4 pointer-events-none flex items-start transition-all duration-300 ease-out ${
       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
-    }`} style={{ color: '#AAAAAA' }}>
-      <span className="text-lg leading-relaxed">
+    }`} style={{ color: 'var(--text-primary)' }}>
+      <span className="text-lg font-normal leading-relaxed">
         {text}
         {showCursor && <span className="animate-pulse">|</span>}
       </span>
@@ -188,6 +187,9 @@ const TaskListItem = ({
       // Delete task when backspace is pressed on empty field
       e.preventDefault();
       onTaskSave?.(task, ''); // This will trigger deletion in handleTaskSave
+    } else {
+      // Stop propagation for all other keys to prevent global handlers from interfering
+      e.stopPropagation();
     }
   };
 
@@ -202,9 +204,13 @@ const TaskListItem = ({
   return (
     <div 
       ref={setNodeRef}
-      style={style}
-      className={`${!isLastInSection ? 'border-b border-[#AAAAAA]/20' : ''} hover:bg-[#AAAAAA]/30 hover:rounded-lg transition-all ${
-        isDragging ? 'bg-[#4C4C4C] border border-white/30 rounded-lg shadow-sm opacity-80 cursor-grabbing' : ''
+      style={{
+        ...style,
+        borderBottomColor: !isLastInSection ? 'var(--task-item-border)' : undefined,
+        backgroundColor: isDragging ? 'var(--glass-card-bg)' : undefined
+      }}
+      className={`task-item ${!isLastInSection ? 'border-b' : ''} hover:rounded-lg transition-all ${
+        isDragging ? 'border border-white/30 rounded-lg shadow-sm opacity-80 cursor-grabbing dragging' : ''
       }`}
       onMouseEnter={() => {
         setIsHovering(true);
@@ -218,7 +224,7 @@ const TaskListItem = ({
       {/* Mobile Layout */}
       <div className="block sm:hidden">
         <div 
-          className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors cursor-grab hover:cursor-grabbing"
+          className="flex items-center gap-3 p-3 transition-colors cursor-grab hover:cursor-grabbing"
           {...attributes}
           {...listeners}
         >
@@ -226,14 +232,14 @@ const TaskListItem = ({
           {/* Task Title - Full width, no truncation */}
           <div className="flex-1 min-w-0">
             {isEditing ? (
-              <Input
+              <input
                 ref={editInputRef}
                 value={editingText || ''}
                 onChange={(e) => onEditingTextChange?.(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
-                className="text-lg font-medium leading-5 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
-                style={{ pointerEvents: 'auto' }}
+                className="text-lg font-normal leading-5 bg-transparent border-none outline-none p-0 w-full"
+                style={{ pointerEvents: 'auto', color: 'var(--text-primary)' }}
                 autoFocus
               />
             ) : (
@@ -372,7 +378,7 @@ const TaskListItem = ({
       {/* Desktop Layout - Original */}
       <div className="hidden sm:block">
         <div 
-          className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors cursor-grab hover:cursor-grabbing"
+          className="flex items-center gap-4 p-4 transition-colors cursor-grab hover:cursor-grabbing"
           {...attributes}
           {...listeners}
         >
@@ -380,28 +386,28 @@ const TaskListItem = ({
         {/* Task Title */}
         <div className="flex-1 min-w-0">
           {isEditing ? (
-            <Input
+            <input
               ref={editInputRef}
               value={editingText || ''}
               onChange={(e) => onEditingTextChange?.(e.target.value)}
               onKeyDown={handleEditKeyDown}
               onBlur={handleEditBlur}
-              className="text-base font-medium leading-6 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
-              style={{ pointerEvents: 'auto', color: '#AAAAAA' }}
+              className="text-base font-normal leading-6 bg-transparent border-none outline-none p-0 w-full"
+              style={{ pointerEvents: 'auto', color: 'var(--text-primary)' }}
               autoFocus
             />
           ) : (
             <div>
               <p 
                 className="text-base font-normal leading-6 truncate cursor-text"
-                style={{ color: '#6B7280' }}
+                style={{ color: 'var(--text-primary)' }}
                 onDoubleClick={handleDoubleClick}
               >
                 {taskTitle || 'Untitled Task'}
               </p>
               {totalTimeSpent && (
                 <div className="flex items-center gap-1 mt-1">
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs" style={{ color: 'var(--tag-icon-inactive)' }}>
                     Time Spent: {totalTimeSpent}
                   </p>
                   {tasksById && tasksById[task]?.parent_task_id && tasksById[tasksById[task]?.parent_task_id]?.collection_card_id && (
@@ -416,7 +422,7 @@ const TaskListItem = ({
                       className=""
                       title="View in collection"
                     >
-                      <ExternalLink className="h-3 w-3 text-gray-500" />
+                      <ExternalLink className="h-3 w-3" style={{ color: 'var(--tag-icon-inactive)' }} />
                     </button>
                   )}
                 </div>
@@ -437,7 +443,7 @@ const TaskListItem = ({
               {/* Heart - always in first position */}
               <Heart
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isLiked ? 'text-red-500 fill-red-500' : 'text-white/60 hover:text-red-400'
+                  isLiked ? 'text-red-500 fill-red-500' : 'tag-inactive hover:text-red-400'
                 }`}
                 onClick={() => onTagUpdate('liked', !isLiked)}
               />
@@ -445,7 +451,7 @@ const TaskListItem = ({
               {/* Warning Triangle - always in second position */}
               <AlertTriangle
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isUrgent ? 'text-yellow-500 fill-yellow-500' : 'text-white/60 hover:text-yellow-400'
+                  isUrgent ? 'text-yellow-500 fill-yellow-500' : 'tag-inactive hover:text-yellow-400'
                 }`}
                 onClick={() => onTagUpdate('urgent', !isUrgent)}
               />
@@ -453,7 +459,7 @@ const TaskListItem = ({
               {/* Lightning Bolt - always in third position */}
               <Zap
                 className={`h-5 w-5 cursor-pointer transition-colors duration-200 hover:scale-110 ${
-                  isQuick ? 'text-green-500 fill-green-500' : 'text-white/60 hover:text-green-400'
+                  isQuick ? 'text-green-500 fill-green-500' : 'tag-inactive hover:text-green-400'
                 }`}
                 onClick={() => onTagUpdate('quick', !isQuick)}
               />
@@ -750,9 +756,14 @@ const TasksContent = () => {
       // Skip if processing or transitioning
       if (isProcessing || isTransitioning) return;
       
-      // Skip if any input is already focused
+      // Skip if any input is already focused or if we're editing a task
       const activeElement = document.activeElement;
       if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+      
+      // Skip if we're in task editing mode
+      if (editingTaskId) {
         return;
       }
       
@@ -2270,7 +2281,7 @@ const TasksContent = () => {
         {currentStep === 'input' && (
           <div className="relative w-full h-full max-h-[700px] flex flex-col items-center justify-center">
             {/* Title */}
-            <h1 className="text-white text-3xl sm:text-4xl lg:text-5xl mb-8 text-center" style={{ fontFamily: 'Playfair Display, serif' }}>
+            <h1 className="text-white text-3xl sm:text-4xl lg:text-5xl mb-8 text-center relative" style={{ fontFamily: 'Playfair Display, serif', zIndex: 10 }}>
               Shape Dreams with Intentions
             </h1>
             
@@ -2281,10 +2292,10 @@ const TasksContent = () => {
               id="main-task-container"
               className="border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out backdrop-blur-md"
               style={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                backgroundColor: 'var(--card-bg)',
                 transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
                 zIndex: 2, // Main container in middle layer
-                boxShadow: '0 0 80px 40px rgba(224, 224, 224, 0.6), 0 0 120px 60px rgba(224, 224, 224, 0.3)',
+                boxShadow: '0 0 80px 40px var(--blur-overlay-bg), 0 0 120px 60px var(--blur-overlay-bg)',
                 borderRadius: '20px',
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)'
@@ -2293,9 +2304,9 @@ const TasksContent = () => {
               {/* Mode Toggle with Magical Transition */}
               <div className="flex items-center justify-center gap-4 mb-2">
                 <Label htmlFor="input-mode" className={`text-lg transition-colors duration-300 ${
-                  isTransitioning ? 'text-muted-foreground' : 
-                  inputMode === 'brain-dump' ? 'text-[#777777]' : 'text-[#777777]/40'
-                }`} style={{ fontFamily: 'Playfair Display, serif' }}>
+                  isTransitioning ? 'opacity-50' : 
+                  inputMode === 'brain-dump' ? 'opacity-100' : 'opacity-40'
+                }`} style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-primary)' }}>
                   Capture
                 </Label>
                 
@@ -2310,9 +2321,9 @@ const TasksContent = () => {
                 />
                 
                 <Label htmlFor="input-mode" className={`text-lg transition-colors duration-300 ${
-                  isTransitioning ? 'text-muted-foreground' : 
-                  inputMode === 'list' ? 'text-[#777777]' : 'text-[#777777]/40'
-                }`} style={{ fontFamily: 'Playfair Display, serif' }}>
+                  isTransitioning ? 'opacity-50' : 
+                  inputMode === 'list' ? 'opacity-100' : 'opacity-40'
+                }`} style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-primary)' }}>
                   Flow
                 </Label>
               </div>
@@ -2326,7 +2337,7 @@ const TasksContent = () => {
                   <div className={`relative transition-all duration-600 ease-out flex-1 ${
                     isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
                   }`} style={{ marginTop: '12px' }}>
-                    <div className="bg-transparent focus-within:bg-transparent border border-transparent focus-within:border-[#AAAAAA]/50 transition-all duration-300 rounded-[20px] relative">
+                    <div className="bg-transparent focus-within:bg-transparent border border-transparent transition-all duration-300 rounded-[20px] relative" style={{ borderColor: 'transparent' }} onFocusCapture={(e) => { e.currentTarget.style.borderColor = 'var(--inline-muted-color)' }} onBlur={(e) => { e.currentTarget.style.borderColor = 'transparent' }}>
                       <Textarea
                         ref={textareaRef}
                         value={brainDumpText}
@@ -2340,10 +2351,10 @@ const TasksContent = () => {
                           }
                         }}
                         disabled={isTransitioning}
-                        className={`h-full min-h-[400px] resize-none text-lg leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-6 py-4 pb-12 placeholder:text-[#AAAAAA] ${
+                        className={`h-full min-h-[400px] resize-none text-lg leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-6 py-4 pb-12 ui-textarea ${
                           isTransitioning ? 'text-muted-foreground' : ''
                         }`}
-                        style={{ color: '#AAAAAA' }}
+                        style={{ color: 'var(--text-primary)' }}
                         rows={8}
                       />
                       <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
@@ -2389,7 +2400,7 @@ const TasksContent = () => {
                             />
                           ))}
                         </div>
-                        <div className="text-base font-medium" style={{ color: '#AAAAAA' }}>
+                        <div className="text-base font-medium" style={{ color: 'var(--inline-muted-color)' }}>
                           {loadingMessages[currentMessageIndex]}
                         </div>
                       </div>
@@ -2401,14 +2412,15 @@ const TasksContent = () => {
                     <div className={`flex bg-transparent focus-within:bg-transparent transition-all duration-300 rounded-[20px] border border-transparent focus-within:border-[#AAAAAA]/50 ${
                       activeTaskIds.length > 0 || laterTaskIds.length > 0 ? 'opacity-40 focus-within:opacity-100' : 'opacity-100'
                     }`}>
-                      <Input
+                      <input
                         ref={taskInputRef}
                         value={newTaskInput}
                         onChange={(e) => setNewTaskInput(e.target.value)}
                         onKeyDown={handleAddTaskKeyPress}
                         placeholder="Share your Intention..."
-                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-lg font-medium leading-relaxed focus:bg-transparent placeholder:text-[#AAAAAA] px-6 py-4"
-                        style={{ color: '#AAAAAA', fontSize: '1.125rem' }}
+                        className="flex-1 border-none bg-transparent outline-none text-lg font-normal leading-relaxed px-6 py-4 ui-input w-full"
+                        style={{ color: 'var(--text-primary)', fontSize: '1.125rem' }}
+                        disabled={isProcessing || isTransitioning}
                       />
                       <Button 
                         onClick={handleAddTask}
@@ -2417,7 +2429,7 @@ const TasksContent = () => {
                         variant="ghost"
                         className="border-0 rounded-l-none hover:bg-transparent flex items-center justify-center p-2 pr-4 h-auto aspect-square"
                       >
-                        <Plus className="w-4 h-4" style={{ color: '#AAAAAA' }} />
+                        <Plus className="w-4 h-4" style={{ color: 'var(--inline-muted-color)' }} />
                       </Button>
                     </div>
                   </div>
@@ -2502,15 +2514,6 @@ const TasksContent = () => {
                         <div>
                           {/* Total Time Display - Only show if there are active tasks */}
                           {(() => {
-                            // Calculate total time for active tasks
-                            const calculateTotalActiveTime = () => {
-                              return activeTaskIds.reduce((total, taskId) => {
-                                const timeEstimate = taskTimeEstimatesById[taskId];
-                                const minutes = timeEstimate ? parseTimeToMinutes(timeEstimate) || 0 : 0;
-                                return total + minutes;
-                              }, 0);
-                            };
-
                             return (
                               <DoLessBetter
                                 user={user}
@@ -2826,12 +2829,12 @@ const TasksContent = () => {
             
             </Card>
             
-            {/* Timeline - Temporarily hidden
+            {/* Timeline */}
             {inputMode === 'list' && (listTasks.length > 0 || activeTaskIds.length > 0) && (
               <div 
                 className="hidden lg:block absolute w-80 overflow-y-auto transition-all duration-500 ease-in-out cursor-pointer group"
                 style={{
-                  top: '50%',
+                  top: 'calc(50% + 41px)', // Offset for title
                   height: cardRef.current?.offsetHeight || '700px',
                   transform: `translateY(-50%) ${!timelineExpanded ? 'translateX(0)' : 'translateX(0)'}`,
                   right: timelineExpanded ? '-7rem' : '13rem',
@@ -2868,7 +2871,7 @@ const TasksContent = () => {
                   className={timelineExpanded ? 'bg-transparent' : ''}
                 />
               </div>
-            )} */}
+            )}
           </div>
         )}
 

@@ -241,7 +241,7 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
           style={{ transitionDuration: '1.3s' }}
         >
           {/* Main Icon */}
-          <div className="h-16 w-16 rounded-full flex flex-col items-center justify-center p-2 relative">
+          <div className="h-20 w-20 rounded-full flex flex-col items-center justify-center p-2 relative">
             <div className="relative">
               {/* Silvery glow behind cards when celebrating */}
               {isCelebrating && (
@@ -249,25 +249,45 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
               )}
               
               {/* Stack of cards effect - simulate new card being added */}
-              <div className={`absolute -top-1 -left-1 w-6 h-8 bg-white/20 rounded border border-white/30 transform transition-all duration-500 ease-out ${
+              <div className={`absolute -top-1 -left-1 w-10 h-12 rounded transform transition-all duration-500 ease-out ${
                 isCelebrating 
                   ? 'rotate-[20deg] translate-x-1 translate-y-1 scale-105' 
                   : 'rotate-12'
-              }`}></div>
-              <div className={`absolute -top-0.5 -left-0.5 w-6 h-8 bg-white/30 rounded border border-white/40 transform transition-all duration-400 ease-out ${
+              }`}
+              style={{
+                background: 'var(--glass-card-bg)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid var(--glass-card-border)'
+              }}></div>
+              <div className={`absolute -top-0.5 -left-0.5 w-10 h-12 rounded transform transition-all duration-400 ease-out ${
                 isCelebrating 
                   ? 'rotate-[15deg] translate-x-1 scale-105' 
                   : 'rotate-6'
-              }`}></div>
-              <div className={`w-6 h-8 bg-white/40 rounded border border-white/50 transform transition-all duration-300 ease-out ${
+              }`}
+              style={{
+                background: 'var(--glass-card-bg)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid var(--glass-card-border)'
+              }}></div>
+              <div className={`w-10 h-12 rounded transform transition-all duration-300 ease-out ${
                 isCelebrating 
                   ? 'rotate-[8deg] translate-y-0.5 scale-105 shadow-lg' 
                   : 'rotate-0'
-              }`}></div>
+              }`}
+              style={{
+                background: 'var(--glass-card-bg)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid var(--glass-card-border)'
+              }}></div>
               
               {/* New card appearing effect */}
               {isCelebrating && (
-                <div className="absolute -top-1.5 -left-1.5 w-6 h-8 bg-white/50 rounded border border-white/60 transform rotate-[25deg] translate-x-2 translate-y-2 scale-110 animate-bounce shadow-xl"></div>
+                <div className="absolute -top-1.5 -left-1.5 w-10 h-12 rounded transform rotate-[25deg] translate-x-2 translate-y-2 scale-110 animate-bounce shadow-xl"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}></div>
               )}
             </div>
           </div>
