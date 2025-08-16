@@ -141,6 +141,7 @@ export const TaskCard = ({
   }, [task.notes, task.id]);
   
   const [isPauseHovered, setIsPauseHovered] = useState(false);
+  const [isPlayHovered, setIsPlayHovered] = useState(false);
 
 
 
@@ -564,6 +565,19 @@ export const TaskCard = ({
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05)'
         })
       }}>
+        {/* Blur Overlay - Show on all non-active cards */}
+        {!isActiveCommitted && (
+          <>
+            {/* Blur layer */}
+            <div className={`absolute inset-0 backdrop-blur-sm rounded-2xl z-20 pointer-events-none transition-opacity duration-300 ${
+              isPlayHovered ? 'opacity-0' : 'opacity-100'
+            }`} />
+            {/* Dark overlay layer */}
+            <div className={`absolute inset-0 bg-black/25 rounded-2xl z-21 pointer-events-none transition-opacity duration-300 ${
+              isPlayHovered ? 'opacity-0' : 'opacity-100'
+            }`} />
+          </>
+        )}
         <div className="h-full flex flex-col">
           <CardHeader className="text-center pb-4 flex-shrink-0 relative overflow-visible px-8 py-6">
             
@@ -612,8 +626,8 @@ export const TaskCard = ({
 
             {/* Progress Bar + Notes Section Combined */}
             <div className="flex-1 flex flex-col space-y-2">
-              {/* Progress Bar */}
-              <progressManager.ProgressBar
+              {/* Progress Bar - Temporarily Hidden */}
+              {/* <progressManager.ProgressBar
                 taskId={task.id}
                 estimatedTime={task.estimated_time}
                 isActiveCommitted={isActiveCommitted}
@@ -629,7 +643,7 @@ export const TaskCard = ({
                     onCommit();
                   }
                 }}
-              />
+              /> */}
 
               {/* Notes Section */}
               <div className="flex-1 flex flex-col min-h-0">
@@ -685,7 +699,7 @@ export const TaskCard = ({
 
             {/* Task Actions */}
             {!hideTaskActions && (
-              <div className="px-4 pb-2">
+              <div className="px-4 pb-2 relative z-30">
                 <TaskActions
                 task={task}
                 isCompleted={isCompleted}
@@ -722,7 +736,9 @@ export const TaskCard = ({
                 navigationUnlocked={navigationUnlocked}
                 formatTime={formatTime}
                 onPauseHover={setIsPauseHovered}
+                onPlayHover={setIsPlayHovered}
                 pipWindow={pipWindow}
+                taskStartTimes={taskStartTimes}
               />
               </div>
             )}
