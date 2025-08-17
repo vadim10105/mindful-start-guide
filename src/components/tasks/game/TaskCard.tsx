@@ -5,6 +5,9 @@ import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, ChevronUp, ChevronDow
 import { TaskActions } from "./TaskActions";
 import { TaskProgressManagerHook, taskTimers } from "./TaskProgressManager";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
+
+// Global pause timestamps to persist across navigation and PiP
+const pauseTimestamps = new Map<string, number>();
 import { NotesTypewriterPlaceholder } from "@/components/ui/NotesTypewriterPlaceholder";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,6 +95,7 @@ interface TaskCardProps {
   hideTaskActions?: boolean;
   pipWindow?: Window;
   onEnterPiP?: () => void;
+  hasAnyPausedTask?: boolean;
 }
 
 export const TaskCard = ({
@@ -127,7 +131,8 @@ export const TaskCard = ({
   formatTime,
   hideTaskActions = false,
   pipWindow,
-  onEnterPiP
+  onEnterPiP,
+  hasAnyPausedTask = false
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -142,8 +147,40 @@ export const TaskCard = ({
   
   const [isPauseHovered, setIsPauseHovered] = useState(false);
   const [isPlayHovered, setIsPlayHovered] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [pausedOverlayVisible, setPausedOverlayVisible] = useState(isPaused);
 
+  // Track when pause starts/stops using global map
+  useEffect(() => {
+    if (isPaused && !pauseTimestamps.has(task.id)) {
+      pauseTimestamps.set(task.id, Date.now());
+    } else if (!isPaused && pauseTimestamps.has(task.id)) {
+      pauseTimestamps.delete(task.id);
+    }
+    
+    // Always update overlay visibility based on isPaused state
+    if (isPaused) {
+      // Small delay for smooth animation when first pausing
+      const delay = pausedOverlayVisible ? 0 : 50;
+      setTimeout(() => setPausedOverlayVisible(true), delay);
+    } else {
+      setPausedOverlayVisible(false);
+    }
+  }, [isPaused, task.id]);
 
+  // Update timer for paused display
+  useEffect(() => {
+    if (isPaused && pauseTimestamps.has(task.id)) {
+      const interval = setInterval(() => {
+        setCurrentTime(Date.now());
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isPaused, task.id]);
+
+  // Get the pause start time from global map
+  const pausedStartTime = pauseTimestamps.get(task.id) || null;
 
 
   const handleNotesClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
@@ -381,7 +418,7 @@ export const TaskCard = ({
   if (isUltraCompact && pipWindow) {
     return (
       <Card 
-        className="h-[90px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg"
+        className="h-[90px] w-[368px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg"
         onMouseEnter={() => setIsUltraCompactHovered(true)}
         onMouseLeave={() => setIsUltraCompactHovered(false)}
       >
@@ -421,7 +458,7 @@ export const TaskCard = ({
         {/* Content */}
         <div className="relative flex items-center h-full px-4 z-10">
           {/* Left: Task title in darker rounded container - takes up more space */}
-          <div className="flex-[4] bg-black/20 rounded-xl px-3 py-2 overflow-hidden relative mr-2">
+          <div className="flex-1 bg-black/20 rounded-xl px-3 py-2 overflow-hidden relative mr-2">
             <div 
               className="overflow-hidden whitespace-nowrap"
               style={{
@@ -433,18 +470,40 @@ export const TaskCard = ({
                 <span 
                   className="inline-block text-white font-medium text-base animate-scroll-text" 
                   style={{ 
-                    animationDuration: `${Math.max(10, task.title.length * 0.4)}s`
+                    animationDuration: isPaused ? '15s' : `${Math.max(10, task.title.length * 0.4)}s`
                   }}
                 >
-                  {isPaused ? 'Paused' : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{isPaused ? 'Paused' : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  {isPaused ? `Paused for ${(() => {
+                    if (!pausedStartTime) return '00:00';
+                    const pausedDuration = Math.max(0, Math.floor((currentTime - pausedStartTime) / 1000));
+                    const minutes = Math.floor(pausedDuration / 60);
+                    const seconds = pausedDuration % 60;
+                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{isPaused ? `Paused for ${(() => {
+                    const pausedDuration = Math.floor((currentTime - (pausedStartTime || Date.now())) / 1000);
+                    const minutes = Math.floor(pausedDuration / 60);
+                    const seconds = pausedDuration % 60;
+                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 </span>
                 <span 
                   className="inline-block text-white font-medium text-base animate-scroll-text" 
                   style={{ 
-                    animationDuration: `${Math.max(10, task.title.length * 0.4)}s`
+                    animationDuration: isPaused ? '15s' : `${Math.max(10, task.title.length * 0.4)}s`
                   }}
                 >
-                  {isPaused ? 'Paused' : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{isPaused ? 'Paused' : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  {isPaused ? `Paused for ${(() => {
+                    if (!pausedStartTime) return '00:00';
+                    const pausedDuration = Math.max(0, Math.floor((currentTime - pausedStartTime) / 1000));
+                    const minutes = Math.floor(pausedDuration / 60);
+                    const seconds = pausedDuration % 60;
+                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{isPaused ? `Paused for ${(() => {
+                    const pausedDuration = Math.floor((currentTime - (pausedStartTime || Date.now())) / 1000);
+                    const minutes = Math.floor(pausedDuration / 60);
+                    const seconds = pausedDuration % 60;
+                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 </span>
               </div>
             </div>
@@ -555,29 +614,50 @@ export const TaskCard = ({
       
       
       {/* Front of Card */}
-      <Card className={`w-full h-full border-2 border-transparent z-[10] overflow-visible rounded-2xl relative ${
-        isActiveCommitted ? 'shadow-2xl' : 'shadow-xl'
-      }`} style={{ 
+      <Card className="w-full h-full border-2 border-transparent z-[10] overflow-hidden rounded-2xl relative transition-all duration-500 ease-out" style={{ 
         backfaceVisibility: 'hidden',
         backgroundColor: '#FFFFF7',
-        color: 'hsl(220 10% 20%)',
-        ...(isActiveCommitted && {
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05)'
-        })
+        color: 'hsl(220 10% 20%)'
       }}>
-        {/* Blur Overlay - Show on all non-active cards */}
-        {!isActiveCommitted && (
-          <>
-            {/* Blur layer */}
-            <div className={`absolute inset-0 backdrop-blur-sm rounded-2xl z-20 pointer-events-none transition-opacity duration-300 ${
-              isPlayHovered ? 'opacity-0' : 'opacity-100'
-            }`} />
-            {/* Dark overlay layer */}
-            <div className={`absolute inset-0 bg-black/25 rounded-2xl z-21 pointer-events-none transition-opacity duration-300 ${
-              isPlayHovered ? 'opacity-0' : 'opacity-100'
-            }`} />
-          </>
-        )}
+        {/* Overlay Logic */}
+        <>
+          {/* Show blur/dark overlay when: 
+              1. Card is not active AND no task is paused
+              2. OR card is paused (regardless of active state) */}
+          {((!isActiveCommitted && !hasAnyPausedTask) || isPaused) && (
+            <>
+              {/* Blur layer */}
+              <div className={`absolute inset-0 backdrop-blur-sm rounded-2xl z-20 pointer-events-none transition-opacity duration-300 ${
+                isPlayHovered ? 'opacity-0' : 'opacity-100'
+              }`} />
+              {/* Dark overlay layer */}
+              <div className={`absolute inset-0 bg-black/25 rounded-2xl z-20 pointer-events-none transition-opacity duration-300 ${
+                isPlayHovered ? 'opacity-0' : 'opacity-100'
+              }`} />
+            </>
+          )}
+          
+          {/* Paused Timer Overlay - only for this specific paused card */}
+          {isPaused && pausedStartTime && (
+            <div className={`absolute inset-0 flex items-center justify-center z-30 pointer-events-none transition-all duration-500 ease-out ${
+              isPlayHovered ? 'opacity-0 scale-95' : pausedOverlayVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
+            }`}>
+              <div className={`bg-black/40 backdrop-blur-md rounded-2xl px-6 py-4 min-w-[200px] transition-all duration-500 ease-out transform ${
+                pausedOverlayVisible ? 'scale-100' : 'scale-90'
+              }`}>
+                <p className="text-white text-xl font-medium text-center">
+                  Paused for {(() => {
+                    if (!pausedStartTime) return '00:00';
+                    const pausedDuration = Math.max(0, Math.floor((currentTime - pausedStartTime) / 1000));
+                    const minutes = Math.floor(pausedDuration / 60);
+                    const seconds = pausedDuration % 60;
+                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  })()}
+                </p>
+              </div>
+            </div>
+          )}
+        </>
         <div className="h-full flex flex-col">
           <CardHeader className="text-center pb-4 flex-shrink-0 relative overflow-visible px-8 py-6">
             
@@ -739,6 +819,7 @@ export const TaskCard = ({
                 onPlayHover={setIsPlayHovered}
                 pipWindow={pipWindow}
                 taskStartTimes={taskStartTimes}
+                hasAnyPausedTask={hasAnyPausedTask}
               />
               </div>
             )}

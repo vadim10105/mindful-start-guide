@@ -76,7 +76,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
             perSlideOffset: 8,
             perSlideRotate: 2,
             rotate: true,
-            slideShadows: true,
+            slideShadows: false,
           }}
           onSlideChange={(swiper) => {
             onSlideChange(swiper.activeIndex);
@@ -162,6 +162,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 formatTime={formatTime}
                 progressManager={progressManager}
                 onEnterPiP={onEnterPiP}
+                hasAnyPausedTask={gameState.pausedTasks.size > 0}
               />
             </SwiperSlide>
           ))}

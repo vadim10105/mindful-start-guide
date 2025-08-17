@@ -586,6 +586,7 @@ export const PiPCard = ({
           progressManager={progressManager}
           hideTaskActions={false}
           pipWindow={pipWindow}
+          hasAnyPausedTask={gameState.pausedTasks.size > 0}
         />
         </div>
       </div>

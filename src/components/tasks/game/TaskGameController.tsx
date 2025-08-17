@@ -210,18 +210,17 @@ export const TaskGameController = ({
         [currentTask.id]: adjustedStartTime
       }));
       
-      // Remove from paused tasks since we're resuming
-      gameState.setPausedTasks(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(currentTask.id);
-        return newMap;
-      });
+      // Clear ALL paused tasks when resuming this one
+      gameState.setPausedTasks(new Map());
     } else {
       // Fresh start for new task (only if it doesn't already have a start time)
       gameState.setTaskStartTimes(prev => ({
         ...prev,
         [currentTask.id]: prev[currentTask.id] || Date.now()
       }));
+      
+      // Clear ALL paused tasks when starting a fresh task
+      gameState.setPausedTasks(new Map());
       
       // Save start time and update status to incomplete for fresh starts
       if (!gameState.taskStartTimes[currentTask.id]) {

@@ -38,6 +38,7 @@ interface TaskActionsProps {
   onPlayHover?: (isHovering: boolean) => void;
   pipWindow?: Window;
   taskStartTimes?: Record<string, number>;
+  hasAnyPausedTask?: boolean;
 }
 
 export const TaskActions = ({
@@ -64,7 +65,8 @@ export const TaskActions = ({
   onPauseHover,
   onPlayHover,
   pipWindow,
-  taskStartTimes = {}
+  taskStartTimes = {},
+  hasAnyPausedTask = false
 }: TaskActionsProps) => {
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [isPlayButtonHovered, setIsPlayButtonHovered] = useState(false);
@@ -100,19 +102,21 @@ export const TaskActions = ({
     return null;
   }
 
-  // Check if this paused card should show "Back to Active Card" instead of "Play"
+  // Check if this paused card should show "Pause Card to View" instead of regular buttons
   if (!isActiveCommitted && hasCommittedToTask && activeCommittedIndex >= 0) {
     return (
-      <div className="space-y-2">
-        <Button
+      <div className="flex gap-2 justify-center">
+        <button
           onClick={onBackToActive}
-          size="sm"
-          className="w-full h-10 flex items-center gap-2 bg-primary hover:bg-primary/90 transition-all duration-700"
-          style={{ color: '#434343' }}
+          className="group relative w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-gray-600/50 hover:bg-gray-600 hover:shadow-lg overflow-hidden"
+          style={{ backgroundColor: 'transparent' }}
         >
-          <RotateCcw className="w-4 h-4" />
-          Back to Active Card
-        </Button>
+          <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
+          <Pause className="w-4 h-4 flex-shrink-0 text-white group-hover:text-white transition-colors duration-300 relative z-10" />
+          <span className="max-w-0 group-hover:max-w-[150px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
+            Pause Card to View
+          </span>
+        </button>
       </div>
     );
   }
@@ -194,8 +198,8 @@ export const TaskActions = ({
         </span>
       </button>
 
-      {/* Made Progress Button - Hidden when paused */}
-      {!isPaused && (
+      {/* Made Progress Button - Hidden when paused or when there's any paused task */}
+      {!isPaused && !hasAnyPausedTask && (
         <button
           onClick={() => onMadeProgress(task.id)}
           className="group relative w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-amber-400/50 hover:shadow-lg overflow-hidden"
@@ -209,8 +213,8 @@ export const TaskActions = ({
         </button>
       )}
 
-      {/* Complete Button - Hidden when paused */}
-      {!isPaused && (
+      {/* Complete Button - Hidden when paused or when there's any paused task */}
+      {!isPaused && !hasAnyPausedTask && (
         <button
           onClick={() => onComplete(task.id)}
           className="group relative w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-green-500/50 hover:shadow-lg overflow-hidden"
@@ -224,8 +228,8 @@ export const TaskActions = ({
         </button>
       )}
 
-      {/* Break it down Button - Hidden when paused */}
-      {!isPaused && (
+      {/* Break it down Button - Hidden when paused or when there's any paused task */}
+      {!isPaused && !hasAnyPausedTask && (
         <button
           onClick={() => onBreakdown?.()}
           disabled={isGenerating}
