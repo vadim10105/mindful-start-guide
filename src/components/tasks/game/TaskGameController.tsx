@@ -4,7 +4,7 @@ import { TaskSwiper } from "./TaskSwiper";
 import { NavigationDots } from "./NavigationDots";
 import { useGameState, TaskCardData } from "./GameState";
 import { ShuffleAnimation } from "./ShuffleAnimation";
-import { Eye } from "lucide-react";
+import { Eye, ListTodo } from "lucide-react";
 // New decomposed managers
 import { formatTime } from "@/utils/timeUtils";
 import { useTaskNavigationManager } from "./TaskNavigationManager";
@@ -385,7 +385,7 @@ export const TaskGameController = ({
           />
         ) : (
           /* Show normal task interface when PiP is not active */
-          <div className="w-full px-4">
+          <div className="w-full">
             <div className="w-full animate-in fade-in-0 duration-500 ease-out">
               {/* Main Card Display */}
               <div className="relative">
@@ -437,9 +437,9 @@ export const TaskGameController = ({
             onMouseUp={() => setShowWhatsAhead(false)}
             onTouchStart={() => setShowWhatsAhead(true)}
             onTouchEnd={() => setShowWhatsAhead(false)}
-            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 transition-all duration-300 px-4 shadow-lg"
+            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 transition-all duration-300 px-4 rounded-full"
           >
-            <Eye className="h-5 w-5" />
+            <ListTodo className="h-5 w-5" />
           </Button>
           
           {/* Finish Session */}
@@ -459,7 +459,7 @@ export const TaskGameController = ({
               onComplete(gameState.completedTasks);
             }} 
             size="lg" 
-            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 transition-all duration-300 px-8 shadow-lg"
+            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 transition-all duration-300 px-8 rounded-full"
           >
             Finish Session
           </Button>

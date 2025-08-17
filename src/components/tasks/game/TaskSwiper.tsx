@@ -163,6 +163,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
                 progressManager={progressManager}
                 onEnterPiP={onEnterPiP}
                 hasAnyPausedTask={gameState.pausedTasks.size > 0}
+                hasAnyCompletedTask={gameState.completedTasks.size > 0}
               />
             </SwiperSlide>
           ))}

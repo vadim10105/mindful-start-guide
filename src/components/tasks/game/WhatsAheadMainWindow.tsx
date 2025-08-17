@@ -12,8 +12,15 @@ export const WhatsAheadMainWindow = ({
   gameState
 }: WhatsAheadMainWindowProps) => {
   return (
-    <div className="flex-1 flex items-center justify-center p-8">
-      <div className="shadow-xl rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" style={{ backgroundColor: '#1a1a1a' }}>
+    <>
+      {/* Dark overlay background */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[90]" />
+      
+      <div className="flex-1 flex items-center justify-center p-8 relative z-[95]">
+        <div className="rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden backdrop-blur-md" style={{ 
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        border: '1px solid rgba(255, 255, 255, 0.2)'
+      }}>
         <div className="overflow-y-auto max-h-[80vh] p-4">
           <div className="space-y-2">
             {tasks.map((task, index) => {
@@ -32,17 +39,18 @@ export const WhatsAheadMainWindow = ({
                       !isActive ? 'opacity-50' : 'opacity-100'
                     }`}
                     style={{ 
-                      backgroundColor: isActive ? 'rgba(250, 204, 21, 0.1)' : 'transparent'
+                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                      border: isActive ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent'
                     }}
                   >
                     <div className="flex items-start gap-4">
                       <div 
                         className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
                         style={{ 
-                          backgroundColor: isCompleted ? '#16a34a' :
-                                        isActive ? '#facc15' : 
-                                        isPaused ? '#fb923c' : '#606060',
-                          color: isActive || isCompleted || isPaused ? '#000' : '#fff'
+                          backgroundColor: isCompleted ? 'rgba(34, 197, 94, 0.8)' :
+                                        isActive ? 'rgba(251, 191, 36, 0.8)' : 
+                                        isPaused ? 'rgba(251, 146, 60, 0.8)' : 'rgba(255, 255, 255, 0.2)',
+                          color: isActive || isCompleted || isPaused ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)'
                         }}
                       >
                         {index + 1}
@@ -65,8 +73,9 @@ export const WhatsAheadMainWindow = ({
                               <div 
                                 className="px-2 py-1 rounded text-xs font-medium"
                                 style={{ 
-                                  backgroundColor: '#404040',
-                                  color: '#a0a0a0'
+                                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                  color: 'rgba(255, 255, 255, 0.7)',
+                                  border: '1px solid rgba(255, 255, 255, 0.2)'
                                 }}
                               >
                                 {task.estimated_time}
@@ -76,8 +85,8 @@ export const WhatsAheadMainWindow = ({
                         </div>
                         
                         {timeSpent > 0 && (
-                          <div className="flex items-center gap-4 text-sm mb-1" style={{ color: '#a0a0a0' }}>
-                            <div className="text-blue-400 font-medium">
+                          <div className="flex items-center gap-4 text-sm mb-1" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            <div className="font-medium" style={{ color: 'rgba(147, 197, 253, 0.9)' }}>
                               {timeSpent}min spent
                             </div>
                           </div>
@@ -92,5 +101,6 @@ export const WhatsAheadMainWindow = ({
         </div>
       </div>
     </div>
+    </>
   );
 };

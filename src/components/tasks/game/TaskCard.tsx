@@ -96,6 +96,7 @@ interface TaskCardProps {
   pipWindow?: Window;
   onEnterPiP?: () => void;
   hasAnyPausedTask?: boolean;
+  hasAnyCompletedTask?: boolean;
 }
 
 export const TaskCard = ({
@@ -132,7 +133,8 @@ export const TaskCard = ({
   hideTaskActions = false,
   pipWindow,
   onEnterPiP,
-  hasAnyPausedTask = false
+  hasAnyPausedTask = false,
+  hasAnyCompletedTask = false
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -331,9 +333,9 @@ export const TaskCard = ({
 
       if (error) throw error;
 
-      // Format the AI response into checkbox list
+      // Format the AI response into checkbox list with blank lines between items
       const subtasks = data.subtasks.map((subtask: any) => `☐ ${subtask.subtask}`);
-      const generatedBreakdown = subtasks.join('\n');
+      const generatedBreakdown = subtasks.join('\n\n');
       
       // Preserve existing notes and append breakdown underneath
       const newNotes = notes.trim() 
@@ -622,9 +624,9 @@ export const TaskCard = ({
         {/* Overlay Logic */}
         <>
           {/* Show blur/dark overlay when: 
-              1. Card is not active AND no task is paused
+              1. Card is not active AND no task is paused AND (no task is completed OR there is an active task)
               2. OR card is paused (regardless of active state) */}
-          {((!isActiveCommitted && !hasAnyPausedTask) || isPaused) && (
+          {((!isActiveCommitted && !hasAnyPausedTask && (!hasAnyCompletedTask || hasCommittedToTask)) || isPaused) && (
             <>
               {/* Blur layer */}
               <div className={`absolute inset-0 backdrop-blur-sm rounded-2xl z-20 pointer-events-none transition-opacity duration-300 ${
@@ -820,6 +822,7 @@ export const TaskCard = ({
                 pipWindow={pipWindow}
                 taskStartTimes={taskStartTimes}
                 hasAnyPausedTask={hasAnyPausedTask}
+                hasAnyCompletedTask={hasAnyCompletedTask}
               />
               </div>
             )}
@@ -830,7 +833,7 @@ export const TaskCard = ({
       {/* Back of Card (Sunset Image) */}
       {isCompleted && (
         <div 
-          className="absolute inset-0 rounded-2xl shadow-xl border-2 border-transparent [transform:rotateY(180deg)] z-20"
+          className="absolute inset-0 rounded-2xl border-2 border-transparent [transform:rotateY(180deg)] z-20"
           style={{ backfaceVisibility: 'hidden' }}
         >
           <div 
@@ -844,7 +847,7 @@ export const TaskCard = ({
           {/* White border inside the card */}
           <div className="absolute inset-0 border-2 border-white rounded-2xl opacity-80" />
           {cardNumber && (
-            <div className="absolute top-2 right-4 text-gray-300 text-4xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
+            <div className="absolute top-2 right-4 text-white text-4xl font-bold z-30" style={{ fontFamily: 'Calendas Plus' }}>
               {cardNumber.toString().padStart(2, '0')}
             </div>
           )}

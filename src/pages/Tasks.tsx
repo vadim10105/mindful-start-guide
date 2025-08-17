@@ -2241,7 +2241,7 @@ const TasksContent = () => {
   return (
     <>
       <CloudIframeBackground />
-      <div className="h-screen bg-transparent p-2 sm:p-4 overflow-hidden relative">
+      <div className={`h-screen bg-transparent overflow-hidden relative ${currentStep === 'game-cards' ? '' : 'p-2 sm:p-4'}`}>
       {/* Settings - Fixed Top Right */}
       {currentStep === 'input' && (
         <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
@@ -2275,7 +2275,7 @@ const TasksContent = () => {
       )}
       
       
-      <div className={`${currentStep === 'game-cards' ? 'w-full' : (currentStep === 'input') ? 'sm:max-w-6xl sm:mx-auto sm:flex sm:items-center sm:justify-center h-full flex items-center justify-center px-2 sm:px-4' : currentStep === 'review' ? 'max-w-6xl mx-auto flex items-center justify-center h-full' : 'max-w-6xl mx-auto'} space-y-6`}>
+      <div className={`${currentStep === 'game-cards' ? 'w-full h-full' : (currentStep === 'input') ? 'sm:max-w-6xl sm:mx-auto sm:flex sm:items-center sm:justify-center h-full flex items-center justify-center px-2 sm:px-4' : currentStep === 'review' ? 'max-w-6xl mx-auto flex items-center justify-center h-full' : 'max-w-6xl mx-auto'} ${currentStep === 'game-cards' ? '' : 'space-y-6'}`}>
 
         {/* Input Step */}
         {currentStep === 'input' && (

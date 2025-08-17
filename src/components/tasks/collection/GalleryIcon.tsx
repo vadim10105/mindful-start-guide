@@ -255,9 +255,9 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
                   : 'rotate-12'
               }`}
               style={{
-                background: 'var(--glass-card-bg)',
+                background: 'rgba(255, 255, 255, 0.1)',
                 backdropFilter: 'blur(10px)',
-                border: '1px solid var(--glass-card-border)'
+                border: '1px solid rgba(255, 255, 255, 0.2)'
               }}></div>
               <div className={`absolute -top-0.5 -left-0.5 w-10 h-12 rounded transform transition-all duration-400 ease-out ${
                 isCelebrating 
@@ -265,9 +265,9 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
                   : 'rotate-6'
               }`}
               style={{
-                background: 'var(--glass-card-bg)',
+                background: 'rgba(255, 255, 255, 0.1)',
                 backdropFilter: 'blur(10px)',
-                border: '1px solid var(--glass-card-border)'
+                border: '1px solid rgba(255, 255, 255, 0.2)'
               }}></div>
               <div className={`w-10 h-12 rounded transform transition-all duration-300 ease-out ${
                 isCelebrating 
@@ -275,9 +275,9 @@ export const GalleryIcon = ({ onOpenGallery, refreshTrigger }: GalleryIconProps)
                   : 'rotate-0'
               }`}
               style={{
-                background: 'var(--glass-card-bg)',
+                background: 'rgba(255, 255, 255, 0.3)',
                 backdropFilter: 'blur(10px)',
-                border: '1px solid var(--glass-card-border)'
+                border: '1px solid rgba(255, 255, 255, 0.4)'
               }}></div>
               
               {/* New card appearing effect */}

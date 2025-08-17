@@ -71,6 +71,9 @@ const usePictureInPictureManager = ({
   };
 
   const renderPiPToggleButton = () => {
+    // PiP button is currently hidden
+    return null;
+    
     if (!isPiPAvailable) return null;
     
     return (
