@@ -122,12 +122,12 @@ const TypewriterPlaceholder = ({ isVisible }: { isVisible: boolean }) => {
   const { text, showCursor } = useTypewriter();
   
   return (
-    <div className={`absolute top-0 left-0 w-full h-full px-6 py-4 pointer-events-none flex items-start transition-all duration-300 ease-out ${
+    <div className={`absolute top-0 left-0 w-full h-full px-6 py-4 pointer-events-none flex items-center justify-center transition-all duration-300 ease-out ${
       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
     }`} style={{ color: 'var(--text-primary)' }}>
-      <span className="text-lg font-normal leading-relaxed">
+      <span className="text-lg font-normal leading-relaxed text-center relative">
         {text}
-        {showCursor && <span className="animate-pulse">|</span>}
+        {showCursor && <span className="animate-pulse absolute -right-2">|</span>}
       </span>
     </div>
   );
