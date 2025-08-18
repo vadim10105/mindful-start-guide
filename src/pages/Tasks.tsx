@@ -206,10 +206,9 @@ const TaskListItem = ({
       ref={setNodeRef}
       style={{
         ...style,
-        borderBottomColor: !isLastInSection ? 'var(--task-item-border)' : undefined,
         backgroundColor: isDragging ? 'var(--glass-card-bg)' : undefined
       }}
-      className={`task-item ${!isLastInSection ? 'border-b' : ''} hover:rounded-lg transition-all ${
+      className={`task-item hover:rounded-lg transition-all max-w-[650px] mx-auto ${
         isDragging ? 'border border-white/30 rounded-lg shadow-sm opacity-80 cursor-grabbing dragging' : ''
       }`}
       onMouseEnter={() => {
@@ -238,14 +237,15 @@ const TaskListItem = ({
                 onChange={(e) => onEditingTextChange?.(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={handleEditBlur}
-                className="text-lg font-normal leading-5 bg-transparent border-none outline-none p-0 w-full"
-                style={{ pointerEvents: 'auto', color: 'var(--text-primary)' }}
+                className="font-normal leading-5 bg-transparent border-none outline-none p-0 w-full"
+                style={{ pointerEvents: 'auto', color: 'var(--text-primary)', fontSize: 'var(--text-primary-size)' }}
                 autoFocus
               />
             ) : (
               <div>
                 <p 
-                  className="text-lg font-medium leading-5 text-white break-words cursor-text"
+                  className="font-medium leading-6 break-words cursor-text"
+                  style={{ color: 'var(--text-primary)', fontSize: 'var(--text-primary-size)' }}
                   onDoubleClick={handleDoubleClick}
                 >
                   {taskTitle || 'Untitled Task'}
@@ -378,7 +378,7 @@ const TaskListItem = ({
       {/* Desktop Layout - Original */}
       <div className="hidden sm:block">
         <div 
-          className="flex items-center gap-4 p-4 transition-colors cursor-grab hover:cursor-grabbing"
+          className="flex items-center gap-4 pl-4 pt-4 pb-4 pr-0 transition-colors cursor-grab hover:cursor-grabbing"
           {...attributes}
           {...listeners}
         >
@@ -392,15 +392,15 @@ const TaskListItem = ({
               onChange={(e) => onEditingTextChange?.(e.target.value)}
               onKeyDown={handleEditKeyDown}
               onBlur={handleEditBlur}
-              className="text-base font-normal leading-6 bg-transparent border-none outline-none p-0 w-full"
-              style={{ pointerEvents: 'auto', color: 'var(--text-primary)' }}
+              className="font-normal leading-6 bg-transparent border-none outline-none p-0 w-full"
+              style={{ pointerEvents: 'auto', color: 'var(--text-primary)', fontSize: 'var(--text-primary-size)' }}
               autoFocus
             />
           ) : (
             <div>
               <p 
-                className="text-base font-normal leading-6 truncate cursor-text"
-                style={{ color: 'var(--text-primary)' }}
+                className="font-normal leading-6 truncate cursor-text"
+                style={{ color: 'var(--text-primary)', fontSize: 'var(--text-primary-size)' }}
                 onDoubleClick={handleDoubleClick}
               >
                 {taskTitle || 'Untitled Task'}
@@ -432,7 +432,7 @@ const TaskListItem = ({
         </div>
         
         {/* Tag Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0">
           <div className="relative">
             {/* Hover state: All tags in original positions */}
             <div className={`flex items-center gap-2 transition-all duration-300 ease-in-out transform ${
@@ -507,6 +507,13 @@ const TaskListItem = ({
         </div>
         </div>
       </div>
+      
+      {/* Custom border separator */}
+      {!isLastInSection && (
+        <div className="mx-4">
+          <div className="border-b" style={{ borderColor: 'var(--task-item-border)' }}></div>
+        </div>
+      )}
     </div>
   );
 };
@@ -560,7 +567,6 @@ const customCollisionDetection: CollisionDetection = (args) => {
 const TasksContent = () => {
   const { enterPiP } = usePiP();
   const [currentStep, setCurrentStep] = useState<FlowStep>('input');
-  const [brainDumpText, setBrainDumpText] = useState("");
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
   const [reviewedTasks, setReviewedTasks] = useState<string[]>([]); // Now stores task IDs
   const [taggedTasks, setTaggedTasks] = useState<Task[]>([]);
@@ -609,14 +615,15 @@ const TasksContent = () => {
   const [user, setUser] = useState(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [inputMode, setInputMode] = useState<'brain-dump' | 'list'>('brain-dump');
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
+  const [inputText, setInputText] = useState('');
   const [cameFromBrainDump, setCameFromBrainDump] = useState(false);
   // Legacy state - will be replaced by activeTaskIds and laterTaskIds
   const [listTasks, setListTasks] = useState<string[]>([]);
   const [laterTasks, setLaterTasks] = useState<string[]>([]);
   const [laterTasksExpanded, setLaterTasksExpanded] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [newTaskInput, setNewTaskInput] = useState('');
+  // Input text is now declared above as inputText
   const [loadingTimeEstimates, setLoadingTimeEstimates] = useState<Set<string>>(new Set());
   const [cardDimensions, setCardDimensions] = useState({ top: 0, height: 0 });
   const [hoveredTaskIndex, setHoveredTaskIndex] = useState<number | undefined>(undefined);
@@ -670,7 +677,7 @@ const TasksContent = () => {
       window.removeEventListener('resize', updateCardDimensions);
       observer.disconnect();
     };
-  }, [listTasks, inputMode, currentStep]);
+  }, [listTasks, currentStep]);
 
   // Enhanced user check with profile creation
   useEffect(() => {
@@ -776,31 +783,18 @@ const TasksContent = () => {
       if (!isPrintableChar) return;
       
       // Route to the appropriate input based on current mode
-      if (inputMode === 'brain-dump' && textareaRef.current) {
+      if (textareaRef.current) {
         // Focus textarea and add the character
         textareaRef.current.focus();
         
         if (e.key === 'Space') {
-          setBrainDumpText(prev => prev + ' ');
+          setInputText(prev => prev + ' ');
         } else if (e.key === 'Backspace') {
-          setBrainDumpText(prev => prev.slice(0, -1));
+          setInputText(prev => prev.slice(0, -1));
         } else if (e.key === 'Delete') {
           // For Delete key, don't add anything (just focus)
         } else {
-          setBrainDumpText(prev => prev + e.key);
-        }
-      } else if (inputMode === 'list' && taskInputRef.current) {
-        // Focus task input and add the character
-        taskInputRef.current.focus();
-        
-        if (e.key === 'Space') {
-          setNewTaskInput(prev => prev + ' ');
-        } else if (e.key === 'Backspace') {
-          setNewTaskInput(prev => prev.slice(0, -1));
-        } else if (e.key === 'Delete') {
-          // For Delete key, don't add anything (just focus)
-        } else {
-          setNewTaskInput(prev => prev + e.key);
+          setInputText(prev => prev + e.key);
         }
       }
       
@@ -810,7 +804,7 @@ const TasksContent = () => {
 
     document.addEventListener('keydown', handleGlobalKeyDown);
     return () => document.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [currentStep, isSettingsOpen, isProcessing, isTransitioning, inputMode]);
+  }, [currentStep, isSettingsOpen, isProcessing, isTransitioning]);
 
   // Phantom focus effect to activate keyboard capture while preserving typewriter animation
   useEffect(() => {
@@ -819,10 +813,8 @@ const TasksContent = () => {
       // Brief delay to ensure components are rendered
       const timeoutId = setTimeout(() => {
         let targetRef = null;
-        if (inputMode === 'brain-dump' && textareaRef.current) {
+        if (textareaRef.current) {
           targetRef = textareaRef.current;
-        } else if (inputMode === 'list' && taskInputRef.current) {
-          targetRef = taskInputRef.current;
         }
         
         if (targetRef) {
@@ -836,7 +828,7 @@ const TasksContent = () => {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [currentStep, inputMode, isProcessing, isTransitioning, isSettingsOpen]);
+  }, [currentStep, isProcessing, isTransitioning, isSettingsOpen]);
 
   // Load tasks when user changes or component mounts  
   useEffect(() => {
@@ -855,39 +847,51 @@ const TasksContent = () => {
     if (!cameFromBrainDump && !isProcessing && !isTransitioning) {
       if (hasAnyTasks) {
         // If there are any tasks, default to list mode
-        setInputMode('list');
+        // setInputMode('list');
       } else {
         // If no tasks exist, default to brain dump mode
-        setInputMode('brain-dump');
+        // setInputMode('brain-dump');
       }
       
-      // Auto-expand later section if no active tasks but later tasks exist (only on initial load)
-      if (!hasActiveTasks && hasLaterTasks && !laterTasksExpanded) {
-        setLaterTasksExpanded(true);
-      }
+      // Keep later section collapsed by default
     }
   }, [activeTaskIds, laterTaskIds, cameFromBrainDump, isProcessing, isTransitioning, laterTasksExpanded]);
 
+  // Clear input and collapse gently
+  const clearInputGently = () => {
+    // Clear the text immediately
+    setInputText('');
+    // Gentle collapse after a short delay
+    setTimeout(() => {
+      setIsInputExpanded(false);
+    }, 300);
+  };
+
   const handleBrainDumpSubmit = async () => {
-    console.log('handleBrainDumpSubmit called with text:', brainDumpText);
+    console.log('handleBrainDumpSubmit called with text:', inputText);
     
-    if (!brainDumpText.trim()) {
+    if (!inputText.trim()) {
       console.log('No brain dump text provided');
       return;
     }
 
-    // Start clean transition - toggle immediately switches to list
+    // Save the text before clearing
+    const textToProcess = inputText;
+    
+    // Clear input gently after submission
+    clearInputGently();
+
+    // Start clean transition
     setIsProcessing(true);
     setIsTransitioning(true);
-    setCameFromBrainDump(true); // Track that we came from brain dump
-    setInputMode('list'); // Toggle immediately transitions to list position
+    setCameFromBrainDump(true);
     console.log('Starting clean transition...');
 
     try {
       console.log('Calling edge function with brain dump text...');
       
       const { data, error } = await supabase.functions.invoke('process-brain-dump', {
-        body: { brainDumpText }
+        body: { brainDumpText: textToProcess }
       });
 
       console.log('Edge function response:', { data, error });
@@ -964,7 +968,7 @@ const TasksContent = () => {
       // Small delay to show the transition animation  
       setTimeout(() => {
         // Switch to list mode - the ID-based state is already set above
-        setInputMode('list');
+        // setInputMode('list');
         
         // Legacy state is already updated by loadTasksById() above
         
@@ -1020,7 +1024,7 @@ const TasksContent = () => {
     setIsProcessing(true);
     setIsTransitioning(true);
     setCameFromBrainDump(true); // Track that we came from brain dump
-    setInputMode('list'); // Toggle immediately transitions to list position
+    // setInputMode('list'); // Toggle immediately transitions to list position
     console.log('Starting image upload transition...');
 
     try {
@@ -1107,11 +1111,11 @@ const TasksContent = () => {
       const newTaskTitles = insertedTasks.map(task => task.title);
       setListTasks(prev => [...prev, ...newTaskTitles]);
       
-      setBrainDumpText('');
+      setInputText('');
 
       // Just switch to Plan mode - same as text brain dump
       setTimeout(() => {
-        setInputMode('list'); // Switch toggle to Plan
+        // setInputMode('list'); // Switch toggle to Plan
         setTimeout(() => {
           setIsTransitioning(false);
         }, 100);
@@ -1149,19 +1153,19 @@ const TasksContent = () => {
 
   const resetFlow = () => {
     setCurrentStep('input');
-    setBrainDumpText("");
+    setInputText("");
     setExtractedTasks([]);
     setReviewedTasks([]);
     setTaggedTasks([]);
     setListTasks([]);
     setLaterTasks([]);
     setLaterTasksExpanded(false);
-    setNewTaskInput('');
+    setInputText('');
     setTaskTags({});
     setTaskTimeEstimates({});
     setIsTransitioning(false);
     setCameFromBrainDump(false); // Reset brain dump flag
-    setInputMode('brain-dump'); // Reset to brain-dump mode
+    // setInputMode('brain-dump'); // Reset to brain-dump mode
   };
 
   // Extract time estimate for a single task
@@ -1275,83 +1279,10 @@ const TasksContent = () => {
     }
   };
 
-  // List mode handlers
+  // Unified handler - all input goes through brain dump processing
   const handleAddTask = async () => {
-    if (!newTaskInput.trim()) {
-      return;
-    }
-
-    if (!user) {
-      // Try to get user again if not available
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) {
-        return;
-      }
-      setUser(currentUser);
-    }
-
-    const taskTitle = newTaskInput.trim();
-    
-    try {
-      // Get current user for the insert
-      const currentUser = user || (await supabase.auth.getUser()).data.user;
-      if (!currentUser) {
-        return;
-      }
-
-      // Save to Supabase first
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({
-          title: taskTitle,
-          user_id: currentUser.id,
-          list_location: 'active',
-          task_status: 'task_list',
-          is_liked: false,
-          is_urgent: false,
-          is_quick: false
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating task:', error);
-        return;
-      }
-
-      if (data) {
-        // Update local state with new task
-        const newTask = {
-          id: data.id,
-          title: data.title,
-          list_location: data.list_location,
-          task_status: data.task_status,
-          is_liked: data.is_liked || false,
-          is_urgent: data.is_urgent || false,
-          is_quick: data.is_quick || false,
-          notes: data.notes || ''
-        };
-
-        // Add to local state
-        setTasksById(prev => ({ ...prev, [data.id]: newTask }));
-        setActiveTaskIds(prev => [...prev, data.id]);
-        setTaskTagsById(prev => ({
-          ...prev,
-          [data.id]: {
-            isLiked: false,
-            isUrgent: false,
-            isQuick: false
-          }
-        }));
-
-        setNewTaskInput('');
-        
-        // Extract time estimate and category for the new task
-        await extractTimeEstimateAndCategory(data.id, taskTitle);
-      }
-    } catch (error) {
-      console.error('Failed to create task:', error);
-    }
+    // Simply call the brain dump handler
+    await handleBrainDumpSubmit();
   };
 
   const handleAddTaskKeyPress = (e: React.KeyboardEvent) => {
@@ -2300,7 +2231,7 @@ const TasksContent = () => {
             <Card 
               ref={cardRef}
               id="main-task-container"
-              className="border-0 w-full max-w-2xl h-full sm:h-auto flex flex-col transition-all duration-600 ease-out backdrop-blur-md"
+              className="border-0 w-full max-w-[750px] h-full sm:h-auto flex flex-col transition-all duration-600 ease-out backdrop-blur-md"
               style={{ 
                 backgroundColor: 'var(--card-bg)',
                 transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
@@ -2310,65 +2241,52 @@ const TasksContent = () => {
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)'
               }}>
-            <CardHeader className="text-center px-8 sm:px-10 pb-2">
-              {/* Mode Toggle with Magical Transition */}
-              <div className="flex items-center justify-center gap-4 mb-2">
-                <Label htmlFor="input-mode" className={`text-lg font-normal transition-colors duration-300 ${
-                  isTransitioning ? 'opacity-50' : 
-                  inputMode === 'brain-dump' ? 'opacity-100' : 'opacity-40'
-                }`} style={{ color: 'var(--text-primary)' }}>
-                  Capture
-                </Label>
-                
-                {/* 
-                Clean Toggle Transition */}
-                <Switch
-                  id="input-mode"
-                  checked={inputMode === 'list'}
-                  onCheckedChange={(checked) => !isTransitioning && setInputMode(checked ? 'list' : 'brain-dump')}
-                  disabled={isTransitioning}
-                  className="transition-all duration-300 ease-out data-[state=checked]:bg-[#7F7F7F]/70 data-[state=unchecked]:bg-[#7F7F7F]/70 [&>span]:bg-white"
-                />
-                
-                <Label htmlFor="input-mode" className={`text-lg font-normal transition-colors duration-300 ${
-                  isTransitioning ? 'opacity-50' : 
-                  inputMode === 'list' ? 'opacity-100' : 'opacity-40'
-                }`} style={{ color: 'var(--text-primary)' }}>
-                  Flow
-                </Label>
-              </div>
-              
-            </CardHeader>
-            <CardContent ref={cardContentRef} className="flex-1 sm:flex-none flex flex-col px-8 sm:px-10 pb-8 sm:pb-10 transition-all duration-500 ease-out">
-              
-              {inputMode === 'brain-dump' ? (
-                // Brain Dump Mode
-                <div className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
-                  <div className="relative flex-1" style={{ marginTop: '12px' }}>
-                    <div className="bg-transparent focus-within:bg-transparent border border-transparent transition-all duration-300 rounded-[20px] relative" style={{ borderColor: 'transparent' }} onFocusCapture={(e) => { e.currentTarget.style.borderColor = 'var(--inline-muted-color)' }} onBlur={(e) => { e.currentTarget.style.borderColor = 'transparent' }}>
-                      <Textarea
+            <CardContent ref={cardContentRef} className="flex-1 sm:flex-none flex flex-col px-8 sm:px-10 pt-8 pb-5 sm:pt-10 sm:pb-5 transition-all duration-500 ease-out">
+              {/* Unified input */}
+              <div ref={taskListContentRef} className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
+                  
+                  {/* Unified expandable input */}
+                  <div className="flex-shrink-0 pb-3" style={{ marginTop: '12px' }}>
+                    <div className={`relative bg-transparent focus-within:bg-transparent transition-all duration-500 rounded-[20px] border border-transparent focus-within:border-[#AAAAAA]/50 overflow-hidden ${
+                      activeTaskIds.length > 0 || laterTaskIds.length > 0 || isProcessing ? 'opacity-30 focus-within:opacity-100' : 'opacity-100'
+                    }`}>
+                      <textarea
                         ref={textareaRef}
-                        value={brainDumpText}
-                        onChange={(e) => setBrainDumpText(e.target.value)}
-                        onFocus={() => setIsTextareaFocused(true)}
-                        onBlur={() => setIsTextareaFocused(false)}
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        onFocus={() => setIsInputExpanded(true)}
+                        onBlur={() => {
+                          if (!inputText.trim() && !isProcessing) {
+                            setTimeout(() => setIsInputExpanded(false), 100);
+                          }
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
                             handleBrainDumpSubmit();
                           }
                         }}
-                        disabled={isTransitioning}
-                        className={`h-full min-h-[400px] resize-none text-lg leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-6 py-4 pb-12 ui-textarea ${
-                          isTransitioning ? 'text-muted-foreground' : ''
+                        placeholder=""
+                        className={`w-full resize-none text-lg font-normal leading-relaxed border-none bg-transparent outline-none px-6 ui-textarea transition-all duration-500 ease-out ${
+                          isInputExpanded ? 'py-4 pb-12' : 'py-4'
                         }`}
-                        style={{ color: 'var(--text-primary)' }}
-                        rows={8}
+                        style={{ 
+                          color: 'var(--text-primary)',
+                          height: isInputExpanded 
+                            ? (activeTaskIds.length === 0 && laterTaskIds.length === 0) 
+                              ? '180px' 
+                              : '120px' 
+                            : '56px',
+                          transition: 'height 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }}
+                        disabled={isProcessing || isTransitioning}
                       />
-                      <TypewriterPlaceholder isVisible={!brainDumpText && !isTextareaFocused && !isTransitioning} />
+                      <TypewriterPlaceholder isVisible={!inputText && !isInputExpanded} />
                       
-                      {/* Image Upload Icon - Bottom Left Corner */}
-                      <label className="absolute bottom-3 left-3 z-50 cursor-pointer">
+                      {/* Image Upload Icon - Bottom Left Corner (fades in when expanded) */}
+                      <label className={`absolute bottom-3 left-3 z-50 cursor-pointer transition-all duration-500 ease-out ${
+                        isInputExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+                      }`}>
                         <input
                           type="file"
                           accept="image/*"
@@ -2391,59 +2309,11 @@ const TasksContent = () => {
                       </label>
                     </div>
                   </div>
-                </div>
-              ) : (
-                // List Mode with Full Tagging Interface
-                <div ref={taskListContentRef} className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
-                  {/* Loading overlay for brain dump transition */}
-                  {isTransitioning && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-lg z-50 flex items-center justify-center">
-                      <div className="text-center space-y-4">
-                        <div className="flex justify-center space-x-3">
-                          {[...Array(5)].map((_, i) => (
-                            <div
-                              key={i}
-                              className="w-3 h-3 rounded-full animate-bounce"
-                              style={{ backgroundColor: '#AAAAAA', animationDelay: `${i * 0.15}s` }}
-                            />
-                          ))}
-                        </div>
-                        <div className="text-base font-medium" style={{ color: 'var(--inline-muted-color)' }}>
-                          {loadingMessages[currentMessageIndex]}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Fixed input at top */}
-                  <div className="flex-shrink-0 pb-3" style={{ marginTop: '12px' }}>
-                    <div className={`flex bg-transparent focus-within:bg-transparent transition-all duration-300 rounded-[20px] border border-transparent focus-within:border-[#AAAAAA]/50 ${
-                      activeTaskIds.length > 0 || laterTaskIds.length > 0 ? 'opacity-40 focus-within:opacity-100' : 'opacity-100'
-                    }`}>
-                      <input
-                        ref={taskInputRef}
-                        value={newTaskInput}
-                        onChange={(e) => setNewTaskInput(e.target.value)}
-                        onKeyDown={handleAddTaskKeyPress}
-                        placeholder="Share your Intention..."
-                        className="flex-1 border-none bg-transparent outline-none text-lg font-normal leading-relaxed px-6 py-4 ui-input w-full"
-                        style={{ color: 'var(--text-primary)', fontSize: '1.125rem' }}
-                        disabled={isProcessing || isTransitioning}
-                      />
-                      <Button 
-                        onClick={handleAddTask}
-                        disabled={!newTaskInput.trim()}
-                        size="sm"
-                        variant="ghost"
-                        className="border-0 rounded-l-none hover:bg-transparent flex items-center justify-center p-2 pr-4 h-auto aspect-square"
-                      >
-                        <Plus className="w-4 h-4" style={{ color: 'var(--inline-muted-color)' }} />
-                      </Button>
-                    </div>
-                  </div>
                   
                   {/* Scrollable task list area */}
-                  <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                  <div className={`flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent transition-opacity duration-500 pb-4 ${
+                    isInputExpanded ? 'opacity-30' : 'opacity-100'
+                  }`}>
                     <div className="relative">
                       
 
@@ -2532,6 +2402,7 @@ const TasksContent = () => {
                                 setActiveTaskIds={setActiveTaskIds}
                                 setLaterTaskIds={setLaterTaskIds}
                                 saveTaskAsLater={saveTaskAsLater}
+                                setLaterTasksExpanded={setLaterTasksExpanded}
                               />
                             );
                           })()}
@@ -2543,6 +2414,41 @@ const TasksContent = () => {
                               strategy={verticalListSortingStrategy}
                             >
                               <div className="space-y-2 transition-all duration-300 ease-out min-h-[40px]">
+                                {/* Show loading task when processing */}
+                                {isProcessing && (
+                                  <div>
+                                    {/* Show divider if no tasks */}
+                                    {activeTaskIds.length === 0 && (
+                                      <div className="flex items-center gap-4 py-6">
+                                        <div className="flex-1 h-px bg-[#AAAAAA]/20"></div>
+                                        <span className="text-sm font-medium" style={{ color: '#AAAAAA', opacity: 0.4 }}>
+                                          Active (0)
+                                        </span>
+                                        <div className="flex-1 h-px bg-[#AAAAAA]/20"></div>
+                                      </div>
+                                    )}
+                                    <div className="animate-in fade-in slide-in-from-top-2 fill-mode-both">
+                                      <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--task-hover-bg)' }}>
+                                        <div className="flex items-center justify-center">
+                                          <div className="flex space-x-1">
+                                            {[...Array(3)].map((_, i) => (
+                                              <div
+                                                key={i}
+                                                className="w-2 h-2 rounded-full animate-bounce"
+                                                style={{ 
+                                                  backgroundColor: '#AAAAAA', 
+                                                  animationDelay: `${i * 0.1}s`,
+                                                  animationDuration: '0.8s'
+                                                }}
+                                              />
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 {(() => {
                                   const filteredTasks = activeTaskIds.filter(taskId => {
                                     const task = tasksById[taskId];
@@ -2631,6 +2537,17 @@ const TasksContent = () => {
                                     );
                                   });
                                 })()}
+                                
+                                {/* Show divider when no active tasks */}
+                                {activeTaskIds.length === 0 && !isProcessing && (
+                                  <div className="flex items-center gap-4 py-6">
+                                    <div className="flex-1 h-px bg-[#AAAAAA]/20"></div>
+                                    <span className="text-sm font-medium" style={{ color: '#AAAAAA', opacity: 0.4 }}>
+                                      Active (0)
+                                    </span>
+                                    <div className="flex-1 h-px bg-[#AAAAAA]/20"></div>
+                                  </div>
+                                )}
                               </div>
                             </SortableContext>
                           </DroppableZone>
@@ -2641,24 +2558,20 @@ const TasksContent = () => {
                               <div 
                                 className="flex items-center gap-4 py-6 rounded-lg transition-colors group cursor-pointer hover:bg-muted/10"
                                 onClick={() => {
-                                  if (activeTaskIds.length > 0) {
-                                    setLaterTasksExpanded(!laterTasksExpanded);
-                                  }
+                                  setLaterTasksExpanded(!laterTasksExpanded);
                                 }}
                               >
                                 <div className="flex-1 h-px bg-[#AAAAAA]/20 group-hover:bg-[#AAAAAA]/60 transition-colors"></div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
                                   <span className="text-sm font-medium transition-all group-hover:opacity-100" style={{ color: '#AAAAAA', opacity: 0.4 }}>
                                     Later ({laterTaskIds.length})
                                   </span>
-                                  {laterTaskIds.length > 0 && activeTaskIds.length > 0 && (
-                                    <ChevronDown 
-                                      className={`h-4 w-4 transition-all duration-200 group-hover:opacity-100 ${
-                                        laterTasksExpanded ? 'rotate-180' : ''
-                                      }`}
-                                      style={{ color: '#AAAAAA', opacity: 0.4 }} 
-                                    />
-                                  )}
+                                  <ChevronDown 
+                                    className={`h-4 w-4 transition-all duration-200 ${
+                                      laterTasksExpanded ? 'rotate-180' : ''
+                                    }`}
+                                    style={{ color: '#AAAAAA', opacity: 0.4 }} 
+                                  />
                                 </div>
                                 <div className="flex-1 h-px bg-[#AAAAAA]/20 group-hover:bg-[#AAAAAA]/60 transition-colors"></div>
                               </div>
@@ -2683,7 +2596,7 @@ const TasksContent = () => {
                                 return (
                                   <div
                                     key={taskId}
-                                    className="animate-in fade-in slide-in-from-top-2 fill-mode-both"
+                                    className="animate-in fade-in slide-in-from-top-2 fill-mode-both opacity-40"
                                     style={{ 
                                       animationDelay: `${index * 100}ms`,
                                       animationDuration: '400ms',
@@ -2784,35 +2697,10 @@ const TasksContent = () => {
                   </div>
                   
                   {/* Fixed buttons at bottom */}
-                  <div className="flex-shrink-0 pt-4">
+                  <div className="flex-shrink-0 pt-4 pb-4">
                     {/* Action Buttons - Show appropriate buttons based on state */}
-                  {cameFromBrainDump && listTasks.length === 0 && laterTasks.length === 0 && !isTransitioning ? (
-                    <Button 
-                      onClick={handleListSubmit}
-                      disabled={activeTaskIds.length === 0 && laterTaskIds.length === 0 && !cameFromBrainDump}
-                      className="w-full h-12 sm:h-11"
-                      size="lg"
-                    >
-                      Shuffle
-                    </Button>
-                  ) : (listTasks.length > 0 || laterTasks.length > 0 || !isTransitioning) ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mt-12">
-                      <Button
-                        onClick={() => {
-                          // Pass only active tasks to shuffle (later tasks stay in later list)
-                          handleShuffle(listTasks);
-                        }}
-                        disabled={activeTaskIds.length <= 1 || isProcessing || isTransitioning}
-                        className={`w-full h-16 sm:h-14 transition-all duration-300 ${
-                          activeTaskIds.length <= 1 || isProcessing || isTransitioning
-                            ? 'bg-transparent border-2 border-[#AAAAAA]/40 text-[#AAAAAA]/40' 
-                            : 'bg-[#FFCC00] border-2 border-[#FFCC00] hover:bg-[#FFCC00]/90 text-[#777777]'
-                        } rounded-[20px] text-lg font-medium`}
-                        size="lg"
-                      >
-                        Shuffle
-                      </Button>
-
+                  {true ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                       <Button
                         onClick={() => {
                           // Pass only active tasks to manual order (later tasks stay in later list)
@@ -2822,35 +2710,60 @@ const TasksContent = () => {
                         className={`w-full h-16 sm:h-14 transition-all duration-300 ${
                           activeTaskIds.length === 0 || isProcessing || isTransitioning
                             ? 'bg-transparent border-2 border-[#AAAAAA]/40 text-[#AAAAAA]/40' 
-                            : 'bg-[#4C4C4C] border-2 border-[#4C4C4C] text-white hover:bg-[#4C4C4C]/90'
-                        } rounded-[20px] text-lg font-medium`}
+                            : 'border-2 hover:shadow-md'
+                        } rounded-[20px] text-lg font-medium transition-shadow duration-200 ease-out`}
                         size="lg"
+                        style={activeTaskIds.length === 0 || isProcessing || isTransitioning ? {} : { 
+                          backgroundColor: 'var(--button-inorder-bg)',
+                          borderColor: 'var(--button-inorder-border)',
+                          color: 'var(--button-inorder-text)'
+                        }}
                       >
                         In Order
+                      </Button>
+
+                      <Button
+                        onClick={() => {
+                          // Pass only active tasks to shuffle (later tasks stay in later list)
+                          handleShuffle(activeTaskIds);
+                        }}
+                        disabled={activeTaskIds.length <= 1 || isProcessing || isTransitioning}
+                        className={`w-full h-16 sm:h-14 transition-all duration-300 ${
+                          activeTaskIds.length <= 1 || isProcessing || isTransitioning
+                            ? 'bg-transparent border-2 border-[#AAAAAA]/40 text-[#AAAAAA]/40' 
+                            : 'border-2 hover:shadow-lg'
+                        } rounded-[20px] text-lg font-medium transition-shadow duration-200 ease-out`}
+                        size="lg"
+                        style={activeTaskIds.length <= 1 || isProcessing || isTransitioning ? {} : { 
+                          backgroundColor: 'var(--button-shuffle-bg)',
+                          borderColor: 'var(--button-shuffle-border)',
+                          color: 'var(--button-shuffle-text)'
+                        }}
+                      >
+                        Shuffle
                       </Button>
                     </div>
                   ) : null}
                   </div>
                 </div>
-              )}
             </CardContent>
             
             </Card>
             
             {/* Timeline */}
-            {inputMode === 'list' && (listTasks.length > 0 || activeTaskIds.length > 0) && (
+            {(listTasks.length > 0 || activeTaskIds.length > 0) && (
               <div 
-                className="hidden lg:block absolute w-80 overflow-y-auto transition-all duration-500 ease-in-out cursor-pointer group"
+                className="hidden lg:block absolute w-64 overflow-y-auto transition-all duration-500 ease-in-out cursor-pointer group"
                 style={{
                   top: 'calc(50% + 41px)', // Offset for title
                   height: cardRef.current?.offsetHeight || '700px',
                   transform: `translateY(-50%) ${!timelineExpanded ? 'translateX(0)' : 'translateX(0)'}`,
-                  right: timelineExpanded ? '-7rem' : '13rem',
+                  right: timelineExpanded ? '-6rem' : '10rem',
                   zIndex: timelineExpanded ? 0 : 0,
                 }}
                 onMouseEnter={(e) => {
                   if (!timelineExpanded) {
-                    e.currentTarget.style.transform = `translateY(-50%) translateX(2rem)`;
+                    e.currentTarget.style.transform = `translateY(-50%) translateX(1rem)`;
                   }
                 }}
                 onMouseLeave={(e) => {

@@ -26,6 +26,7 @@ interface DoLessBetterProps {
   setActiveTaskIds: (ids: string[]) => void;
   setLaterTaskIds: (updater: (prev: string[]) => string[]) => void;
   saveTaskAsLater: (taskId: string) => Promise<void>;
+  setLaterTasksExpanded?: (expanded: boolean) => void;
 }
 
 export const DoLessBetter = ({
@@ -36,7 +37,8 @@ export const DoLessBetter = ({
   taskTimeEstimatesById,
   setActiveTaskIds,
   setLaterTaskIds,
-  saveTaskAsLater
+  saveTaskAsLater,
+  setLaterTasksExpanded
 }: DoLessBetterProps) => {
   const { toast } = useToast();
 
@@ -142,6 +144,11 @@ export const DoLessBetter = ({
         title: "List shortened",
         description: `Moved ${toMoveToLater.length} tasks to later to keep under 3 hours`,
       });
+      
+      // Collapse the later tasks section after shortening
+      if (setLaterTasksExpanded) {
+        setLaterTasksExpanded(false);
+      }
     }
   };
 

@@ -140,13 +140,13 @@ function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplifi
         className="flex-1 px-4 py-4 transition-all duration-200 flex h-full"
         style={{
           borderRadius: '12px',
-          background: isHovered ? 'var(--toggle-active-bg)' : 'rgba(255, 255, 255, 0.1)',
+          background: isHovered ? 'var(--timeline-task-hover-bg)' : 'var(--timeline-task-bg)',
           backdropFilter: isHovered ? 'blur(5px)' : 'none',
           border: isHovered ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent'
         }}
       >
         <div className="flex flex-col justify-center w-full h-full">
-          <div className="text-sm leading-tight font-normal" style={{ color: 'white' }}>
+          <div className="text-sm leading-tight font-normal" style={{ color: 'white', opacity: 0.7 }}>
             {isLoadingSimplified ? (
               <div className="animate-pulse rounded h-4 w-20" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
             ) : (
@@ -158,11 +158,11 @@ function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplifi
       
       {/* Time Marker */}
       <div className="w-12 flex-shrink-0 text-left flex flex-col justify-between h-full">
-        <div className="text-xs font-mono" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+        <div className="text-xs font-mono" style={{ color: 'white', opacity: 0.7 }}>
           {block.startTimeString}
         </div>
         {showEndTime && (
-          <div className="text-xs font-mono" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+          <div className="text-xs font-mono" style={{ color: 'white', opacity: 0.7 }}>
             {block.endTimeString}
           </div>
         )}

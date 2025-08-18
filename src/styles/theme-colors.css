@@ -24,7 +24,8 @@
    * ============================================================================= */
   
   /* Primary text color */
-  --text-primary: #6B7280;
+  --text-primary: #5A5A5A;
+  --text-primary-size: 18px;
   
   /* Secondary/muted text */
   --text-muted: #9CA3AF;
@@ -68,7 +69,19 @@
   --ui-label-color: #AAAAAA;
   
   /* Tag icons inactive state */
-  --tag-icon-inactive: rgba(107, 114, 128, 0.4); /* --text-primary at 40% opacity */
+  --tag-icon-inactive: rgba(90, 90, 90, 0.4); /* --text-primary at 40% opacity */
+  
+  /* Timeline task backgrounds */
+  --timeline-task-bg: rgba(200, 200, 200, 0.25);
+  --timeline-task-hover-bg: rgba(150, 150, 150, 0.3);
+  
+  /* Button colors */
+  --button-shuffle-bg: #FFCC00;
+  --button-shuffle-border: #FFCC00;
+  --button-shuffle-text: #5A5A5A;
+  --button-inorder-bg: #BFBFBF;
+  --button-inorder-border: #BFBFBF;
+  --button-inorder-text: white;
 }
 
 /* =============================================================================
@@ -93,6 +106,7 @@
   
   /* Primary text - light gray for readability */
   --text-primary: #E5E7EB;
+  --text-primary-size: 18px;
   
   /* Secondary/muted text */
   --text-muted: #D1D5DB;
@@ -137,6 +151,18 @@
   
   /* Tag icons inactive state */
   --tag-icon-inactive: rgba(229, 231, 235, 0.4); /* --text-primary at 40% opacity for dark mode */
+  
+  /* Timeline task backgrounds - reversed for dark mode */
+  --timeline-task-bg: rgba(0, 0, 0, 0.4);
+  --timeline-task-hover-bg: rgba(255, 255, 255, 0.15);
+  
+  /* Button colors - dark mode */
+  --button-shuffle-bg: #FFB800;
+  --button-shuffle-border: #FFB800;
+  --button-shuffle-text: #5A5A5A;
+  --button-inorder-bg: #4A4A4A;
+  --button-inorder-border: #4A4A4A;
+  --button-inorder-text: rgba(255, 255, 255, 0.9);
 }
 
 /* =============================================================================
@@ -183,6 +209,16 @@
 
 .ui-textarea::placeholder {
   color: var(--text-primary) !important;
+}
+
+/* =============================================================================
+ * UTILITY CLASSES
+ * ============================================================================= */
+
+/* Primary text style class */
+.text-primary {
+  color: var(--text-primary);
+  font-size: var(--text-primary-size);
 }
 
 /* =============================================================================
