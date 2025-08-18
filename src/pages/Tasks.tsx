@@ -2241,16 +2241,6 @@ const TasksContent = () => {
   return (
     <>
       <CloudIframeBackground />
-      
-      {/* TFC Logo - Fixed Top Left */}
-      {/* <div className="fixed top-6 left-6 z-30">
-        <img 
-          src="/TFC-Logo-White.svg" 
-          alt="TFC Logo" 
-          className="h-12 w-12 opacity-80 hover:opacity-100 transition-opacity duration-200"
-        />
-      </div> */}
-      
       <div className={`h-screen bg-transparent overflow-hidden relative ${currentStep === 'game-cards' ? '' : 'p-2 sm:p-4'}`}>
       {/* Settings - Fixed Top Right */}
       {currentStep === 'input' && (
@@ -2313,10 +2303,10 @@ const TasksContent = () => {
             <CardHeader className="text-center px-8 sm:px-10 pb-2">
               {/* Mode Toggle with Magical Transition */}
               <div className="flex items-center justify-center gap-4 mb-2">
-                <Label htmlFor="input-mode" className={`text-lg font-normal transition-colors duration-300 ${
+                <Label htmlFor="input-mode" className={`text-lg transition-colors duration-300 ${
                   isTransitioning ? 'opacity-50' : 
                   inputMode === 'brain-dump' ? 'opacity-100' : 'opacity-40'
-                }`} style={{ color: 'var(--text-primary)' }}>
+                }`} style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-primary)' }}>
                   Capture
                 </Label>
                 
@@ -2330,10 +2320,10 @@ const TasksContent = () => {
                   className="transition-all duration-300 ease-out data-[state=checked]:bg-[#7F7F7F]/70 data-[state=unchecked]:bg-[#7F7F7F]/70 [&>span]:bg-white"
                 />
                 
-                <Label htmlFor="input-mode" className={`text-lg font-normal transition-colors duration-300 ${
+                <Label htmlFor="input-mode" className={`text-lg transition-colors duration-300 ${
                   isTransitioning ? 'opacity-50' : 
                   inputMode === 'list' ? 'opacity-100' : 'opacity-40'
-                }`} style={{ color: 'var(--text-primary)' }}>
+                }`} style={{ fontFamily: 'Playfair Display, serif', color: 'var(--text-primary)' }}>
                   Flow
                 </Label>
               </div>
@@ -2343,8 +2333,10 @@ const TasksContent = () => {
               
               {inputMode === 'brain-dump' ? (
                 // Brain Dump Mode
-                <div className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
-                  <div className="relative flex-1" style={{ marginTop: '12px' }}>
+                <div className="min-h-[400px] flex flex-col relative">
+                  <div className={`relative transition-all duration-600 ease-out flex-1 ${
+                    isTransitioning ? 'opacity-60 scale-[0.98]' : 'opacity-100 scale-100'
+                  }`} style={{ marginTop: '12px' }}>
                     <div className="bg-transparent focus-within:bg-transparent border border-transparent transition-all duration-300 rounded-[20px] relative" style={{ borderColor: 'transparent' }} onFocusCapture={(e) => { e.currentTarget.style.borderColor = 'var(--inline-muted-color)' }} onBlur={(e) => { e.currentTarget.style.borderColor = 'transparent' }}>
                       <Textarea
                         ref={textareaRef}
@@ -2377,15 +2369,15 @@ const TasksContent = () => {
                           className="sr-only"
                           aria-label="Upload image"
                         />
-                        <div className={`p-2 ${
+                        <div className={`p-2 rounded-md transition-all duration-200 ${
                           isProcessing || isTransitioning 
                             ? 'opacity-50 cursor-not-allowed' 
-                            : 'cursor-pointer'
+                            : 'hover:bg-muted/30 cursor-pointer'
                         }`}>
                           <Images className={`w-5 h-5 transition-colors duration-200 ${
                             isProcessing || isTransitioning 
                               ? 'text-gray-400' 
-                              : 'text-gray-400 hover:text-gray-700'
+                              : 'text-gray-500 hover:text-gray-300'
                           }`} />
                         </div>
                       </label>
