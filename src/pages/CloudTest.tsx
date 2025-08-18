@@ -335,7 +335,7 @@ function Stars({ timeOfDay }: { timeOfDay: TimeOfDay }) {
     const colors = [];
     
     // Create a sphere of stars
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < 1000; i++) {
       // Random spherical coordinates
       const r = 100 + Math.random() * 100; // radius between 100-200
       const theta = Math.random() * Math.PI * 2;
@@ -350,7 +350,8 @@ function Stars({ timeOfDay }: { timeOfDay: TimeOfDay }) {
         positions.push(x, y, z);
         
         // Vary opacity through color alpha (using vertex colors)
-        const brightness = 0.3 + Math.random() * 0.7;
+        // Much dimmer overall with more variation
+        const brightness = 0.1 + Math.random() * 0.4; // Range from 0.1 to 0.5 instead of 0.3 to 1.0
         colors.push(brightness, brightness, brightness); // RGB all same for white
       }
     }
@@ -375,7 +376,7 @@ function Stars({ timeOfDay }: { timeOfDay: TimeOfDay }) {
     <points ref={ref} geometry={geometry} frustumCulled={false} renderOrder={-1}>
       <pointsMaterial
         transparent
-        size={1}
+        size={0.6}
         sizeAttenuation={false}
         depthWrite={false}
         vertexColors

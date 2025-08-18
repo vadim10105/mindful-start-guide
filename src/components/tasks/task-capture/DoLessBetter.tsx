@@ -140,10 +140,6 @@ export const DoLessBetter = ({
         await saveTaskAsLater(taskId);
       }
 
-      toast({
-        title: "List shortened",
-        description: `Moved ${toMoveToLater.length} tasks to later to keep under 3 hours`,
-      });
       
       // Collapse the later tasks section after shortening
       if (setLaterTasksExpanded) {

@@ -1560,12 +1560,6 @@ const TasksContent = () => {
     const taskIds = taskIdsToProcess || activeTaskIds;
     console.log('📋 Play in Order button clicked - Using manual task order...');
     
-    // Capture current container dimensions before collapsing
-    if (cardRef.current) {
-      const rect = cardRef.current.getBoundingClientRect();
-      setContainerDimensions({ width: rect.width, height: rect.height });
-    }
-    
     // Trigger container collapse animation
     setIsContainerCollapsed(true);
     setShowShuffleAnimation(true);
