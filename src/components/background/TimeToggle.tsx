@@ -20,7 +20,7 @@ export function TimeToggle({ currentTime, onTimeChange }: TimeToggleProps) {
       position: 'fixed',
       right: '20px',
       bottom: '20px',
-      zIndex: 1000,
+      zIndex: 10,
       display: 'flex',
       flexDirection: 'column',
       gap: '8px',

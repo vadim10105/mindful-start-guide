@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useMemo, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Cloud, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -138,7 +138,7 @@ function generateCloudData(count: number, width: number, depth: number, heightVa
         y: -15 + (Math.random() - 0.5) * heightVariation, // Lower the clouds (negative Y)
         z: (Math.random() - 0.5) * depth
       },
-      speed: 0.1 + Math.random() * 0.2,
+      speed: 0.02 + Math.random() * 0.03, // Much slower rotation
       opacity: 0.3 + Math.random() * 0.2,
       segments: Math.floor(12 + Math.random() * 8),
       bounds: [
@@ -163,7 +163,7 @@ function generateHighClouds(count: number, width: number, depth: number, heightV
         y: 5 + (Math.random() - 0.5) * heightVariation, // Higher up (positive Y)
         z: (Math.random() - 0.5) * depth
       },
-      speed: 0.05 + Math.random() * 0.1,
+      speed: 0.01 + Math.random() * 0.02, // Very slow rotation for high clouds
       opacity: 0.05 + Math.random() * 0.1, // Very low opacity
       segments: Math.floor(8 + Math.random() * 6),
       bounds: [
@@ -327,6 +327,63 @@ function InfiniteCloudPlane() {
   );
 }
 
+function Stars({ timeOfDay }: { timeOfDay: TimeOfDay }) {
+  const ref = useRef<THREE.Points>(null);
+  
+  const [geometry] = useMemo(() => {
+    const positions = [];
+    const colors = [];
+    
+    // Create a sphere of stars
+    for (let i = 0; i < 2000; i++) {
+      // Random spherical coordinates
+      const r = 100 + Math.random() * 100; // radius between 100-200
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.sin(phi) * Math.sin(theta);
+      const z = r * Math.cos(phi);
+      
+      // Only add stars above horizon (y > -20)
+      if (y > -20) {
+        positions.push(x, y, z);
+        
+        // Vary opacity through color alpha (using vertex colors)
+        const brightness = 0.3 + Math.random() * 0.7;
+        colors.push(brightness, brightness, brightness); // RGB all same for white
+      }
+    }
+    
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    
+    return [geo];
+  }, []);
+
+  useFrame((state, delta) => {
+    if (ref.current) {
+      ref.current.rotation.y += delta * 0.01; // Slow rotation for realism
+    }
+  });
+
+  // Only show stars at night
+  if (timeOfDay !== 'night') return null;
+
+  return (
+    <points ref={ref} geometry={geometry} frustumCulled={false} renderOrder={-1}>
+      <pointsMaterial
+        transparent
+        size={1}
+        sizeAttenuation={false}
+        depthWrite={false}
+        vertexColors
+      />
+    </points>
+  );
+}
+
 
 function getCurrentTimeOfDay(): TimeOfDay {
   const hour = new Date().getHours()
@@ -364,6 +421,7 @@ export default function CloudTest() {
         gl={{ antialias: true }}
       >
         <SkyBackground timeOfDay={timeOfDay} />
+        <Stars timeOfDay={timeOfDay} />
         <InfiniteCloudPlane key="static-clouds" />
         
         <ambientLight intensity={timeOfDay === 'night' ? 0.5 : 2.0} color="#ffffff" />
