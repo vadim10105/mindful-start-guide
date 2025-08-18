@@ -161,13 +161,7 @@ export const TaskCard = ({
     }
     
     // Always update overlay visibility based on isPaused state
-    if (isPaused) {
-      // Small delay for smooth animation when first pausing
-      const delay = pausedOverlayVisible ? 0 : 50;
-      setTimeout(() => setPausedOverlayVisible(true), delay);
-    } else {
-      setPausedOverlayVisible(false);
-    }
+    setPausedOverlayVisible(isPaused);
   }, [isPaused, task.id]);
 
   // Update timer for paused display
@@ -623,26 +617,23 @@ export const TaskCard = ({
       }}>
         {/* Overlay Logic */}
         <>
-          {/* Show blur/dark overlay when: 
-              1. Card is not active AND no task is paused AND (no task is completed OR there is an active task)
-              2. OR card is paused (regardless of active state) */}
-          {((!isActiveCommitted && !hasAnyPausedTask && (!hasAnyCompletedTask || hasCommittedToTask)) || isPaused) && (
-            <>
-              {/* Blur layer */}
-              <div className={`absolute inset-0 backdrop-blur-sm rounded-2xl z-20 pointer-events-none transition-opacity duration-300 ${
-                isPlayHovered ? 'opacity-0' : 'opacity-100'
-              }`} />
-              {/* Dark overlay layer */}
-              <div className={`absolute inset-0 bg-black/25 rounded-2xl z-20 pointer-events-none transition-opacity duration-300 ${
-                isPlayHovered ? 'opacity-0' : 'opacity-100'
-              }`} />
-            </>
-          )}
+          {/* Blur layer */}
+          <div className={`absolute inset-0 backdrop-blur-sm rounded-2xl z-20 pointer-events-none transition-all duration-500 ${
+            ((!isActiveCommitted && !hasAnyPausedTask && (!hasAnyCompletedTask || hasCommittedToTask)) || isPaused) 
+              ? (isPaused ? 'opacity-100' : (isPlayHovered ? 'opacity-0' : 'opacity-100'))
+              : 'opacity-0'
+          }`} />
+          {/* Dark overlay layer */}
+          <div className={`absolute inset-0 bg-black/25 rounded-2xl z-20 pointer-events-none transition-all duration-500 ${
+            ((!isActiveCommitted && !hasAnyPausedTask && (!hasAnyCompletedTask || hasCommittedToTask)) || isPaused)
+              ? (isPaused ? 'opacity-100' : (isPlayHovered ? 'opacity-0' : 'opacity-100'))
+              : 'opacity-0'
+          }`} />
           
           {/* Paused Timer Overlay - only for this specific paused card */}
           {isPaused && pausedStartTime && (
             <div className={`absolute inset-0 flex items-center justify-center z-30 pointer-events-none transition-all duration-500 ease-out ${
-              isPlayHovered ? 'opacity-0 scale-95' : pausedOverlayVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
+              pausedOverlayVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
             }`}>
               <div className={`bg-black/40 backdrop-blur-md rounded-2xl px-6 py-4 min-w-[200px] transition-all duration-500 ease-out transform ${
                 pausedOverlayVisible ? 'scale-100' : 'scale-90'

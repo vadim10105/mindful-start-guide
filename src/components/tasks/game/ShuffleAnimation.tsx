@@ -18,21 +18,27 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
   const [randomCards, setRandomCards] = useState<EarnedCard[]>([]);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [shouldShowCards, setShouldShowCards] = useState(false);
 
   // Fetch random earned cards when animation starts
   useEffect(() => {
-    if (isProcessing && randomCards.length === 0) {
+    if (isProcessing) {
+      setShouldShowCards(false);
+      setRandomCards([]);
+      setImagesLoaded(false);
+      setMinTimeElapsed(false);
+      setIsSettling(false);
       fetchRandomEarnedCards();
     }
-  }, [isProcessing, randomCards.length]);
+  }, [isProcessing]);
 
   // Preload images and enforce minimum loading time
   useEffect(() => {
     if (randomCards.length > 0 && isProcessing) {
-      // Start minimum time timer (2 seconds)
+      // Start minimum time timer (2.5 seconds)
       const minTimeTimer = setTimeout(() => {
         setMinTimeElapsed(true);
-      }, 2000);
+      }, 2500);
 
       // Preload all images
       const imagePromises = randomCards.map((card) => {
@@ -46,6 +52,7 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
 
       Promise.all(imagePromises).then(() => {
         setImagesLoaded(true);
+        setShouldShowCards(true);
       });
 
       return () => {
@@ -66,18 +73,11 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
           if (!isPiP) {
             onLoadingComplete?.();
           }
-        }, 600);
+        }, 800);
       }
     }
   }, [isProcessing, isSettling, imagesLoaded, minTimeElapsed, onLoadingComplete, isPiP]);
 
-  // Reset states when starting new animation
-  useEffect(() => {
-    if (isProcessing) {
-      setImagesLoaded(false);
-      setMinTimeElapsed(false);
-    }
-  }, [isProcessing]);
 
   const fetchRandomEarnedCards = async () => {
     try {
@@ -140,7 +140,7 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               zIndex: 1
             }}
           >
-            {randomCards[1] && (
+            {randomCards[1] && shouldShowCards && (
               <>
                 <div 
                   className="absolute inset-0 bg-cover bg-center"
@@ -162,7 +162,7 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               zIndex: 2
             }}
           >
-            {randomCards[2] && (
+            {randomCards[2] && shouldShowCards && (
               <>
                 <div 
                   className="absolute inset-0 bg-cover bg-center"
@@ -186,12 +186,10 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               zIndex: 6
             }}
           >
-            {randomCards[0] && (
+            {randomCards[0] && shouldShowCards && (
               <>
                 <div 
-                  className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 ${
-                    imagesLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className="absolute inset-0 bg-cover bg-center"
                   style={{ backgroundImage: `url('${randomCards[0].imageUrl}')` }}
                 />
                 <div className="absolute inset-0 bg-black/20" />
@@ -213,12 +211,10 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               zIndex: 5
             }}
           >
-            {randomCards[1] && (
+            {randomCards[1] && shouldShowCards && (
               <>
                 <div 
-                  className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 ${
-                    imagesLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className="absolute inset-0 bg-cover bg-center"
                   style={{ backgroundImage: `url('${randomCards[1].imageUrl}')` }}
                 />
                 <div className="absolute inset-0 bg-black/20" />
@@ -240,12 +236,10 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               zIndex: 4
             }}
           >
-            {randomCards[2] && (
+            {randomCards[2] && shouldShowCards && (
               <>
                 <div 
-                  className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 ${
-                    imagesLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className="absolute inset-0 bg-cover bg-center"
                   style={{ backgroundImage: `url('${randomCards[2].imageUrl}')` }}
                 />
                 <div className="absolute inset-0 bg-black/20" />
@@ -265,12 +259,10 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
               zIndex: 3
             }}
           >
-            {randomCards[0] && (
+            {randomCards[0] && shouldShowCards && (
               <>
                 <div 
-                  className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 ${
-                    imagesLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className="absolute inset-0 bg-cover bg-center"
                   style={{ backgroundImage: `url('${randomCards[0].imageUrl}')` }}
                 />
                 <div className="absolute inset-0 bg-black/30" />

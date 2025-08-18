@@ -110,12 +110,12 @@ export const TaskActions = ({
       <div className="flex gap-2 justify-center">
         <button
           onClick={onBackToActive}
-          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-300 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-gray-600/50 hover:bg-gray-600 hover:shadow-lg overflow-hidden"
+          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-gray-600/50 hover:bg-gray-600 hover:shadow-lg overflow-hidden"
           style={{ backgroundColor: 'transparent' }}
         >
           <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
           <Pause className="w-4 h-4 flex-shrink-0 text-white group-hover:text-white transition-colors duration-300 relative z-10" />
-          <span className="max-w-0 group-hover:max-w-[150px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out relative z-10">
+          <span className="max-w-0 group-hover:max-w-[150px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
             Pause Card to View
           </span>
         </button>
@@ -183,19 +183,19 @@ export const TaskActions = ({
             onPauseHover?.(false);
           }
         }}
-        className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-300 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-yellow-400/50 hover:bg-yellow-400 hover:shadow-lg overflow-hidden"
+        className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-yellow-400/50 hover:bg-yellow-400 hover:shadow-lg overflow-hidden"
         style={{ 
           backgroundColor: isPaused ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
           backdropFilter: isPaused ? 'blur(10px)' : 'none'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/0 to-yellow-500/0 group-hover:from-yellow-400 group-hover:to-yellow-500 transition-all duration-300 ease-out opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/0 to-yellow-500/0 group-hover:from-yellow-400 group-hover:to-yellow-500 transition-all duration-500 ease-out opacity-90" />
         {shouldShowPlay ? (
           <Play className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-gray-600'} group-hover:text-white transition-colors duration-300 relative z-10`} />
         ) : (
           <Pause className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-gray-600'} group-hover:text-white transition-colors duration-300 relative z-10`} />
         )}
-        <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out relative z-10">
+        <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
           {shouldShowPlay ? 'Start' : formatElapsedTime(sessionElapsedMs || 0)}
         </span>
       </button>
@@ -204,12 +204,12 @@ export const TaskActions = ({
       {!isPaused && !hasAnyPausedTask && (!hasAnyCompletedTask || isActiveCommitted) && (
         <button
           onClick={() => onMadeProgress(task.id)}
-          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-300 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-amber-400/50 hover:shadow-lg overflow-hidden"
+          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-amber-400/50 hover:shadow-lg overflow-hidden"
           style={{ backgroundColor: 'transparent' }}
         >
           <div className="absolute inset-0 bg-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
           <TrendingUp className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
-          <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out relative z-10">
+          <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
             Progressed
           </span>
         </button>
@@ -219,12 +219,12 @@ export const TaskActions = ({
       {!isPaused && !hasAnyPausedTask && (!hasAnyCompletedTask || isActiveCommitted) && (
         <button
           onClick={() => onComplete(task.id)}
-          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-300 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-green-500/50 hover:shadow-lg overflow-hidden"
+          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-green-500/50 hover:shadow-lg overflow-hidden"
           style={{ backgroundColor: 'transparent' }}
         >
           <div className="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
           <Check className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
-          <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out relative z-10">
+          <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
             Complete
           </span>
         </button>
@@ -235,7 +235,7 @@ export const TaskActions = ({
         <button
           onClick={() => onBreakdown?.()}
           disabled={isGenerating}
-          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-300 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-purple-500/50 hover:shadow-lg overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-purple-500/50 hover:shadow-lg overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ backgroundColor: 'transparent' }}
         >
           <div className="absolute inset-0 bg-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
@@ -244,7 +244,7 @@ export const TaskActions = ({
           ) : (
             <Wand2 className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
           )}
-          <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out relative z-10">
+          <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
             Break down
           </span>
         </button>
@@ -253,7 +253,7 @@ export const TaskActions = ({
       {/* Focus/Minify Button */}
       <button
         onClick={() => onMinify?.()}
-        className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-300 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-gray-600/50 hover:bg-gray-600 hover:shadow-lg overflow-hidden"
+        className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-gray-600/50 hover:bg-gray-600 hover:shadow-lg overflow-hidden"
         style={{ 
           backgroundColor: isPaused ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
           backdropFilter: isPaused ? 'blur(10px)' : 'none'
@@ -265,7 +265,7 @@ export const TaskActions = ({
         ) : (
           <ExternalLink className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-gray-600'} group-hover:text-white transition-colors duration-300 relative z-10`} />
         )}
-        <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out relative z-10">
+        <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
           {pipWindow ? 'Mini' : 'Focus'}
         </span>
       </button>

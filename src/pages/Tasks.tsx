@@ -23,6 +23,7 @@ import { PiPProvider, usePiP } from "@/components/tasks/game/PictureInPicture";
 import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery";
 import { GalleryIcon } from "@/components/tasks/collection/GalleryIcon";
 import { CloudIframeBackground } from "@/components/background/CloudIframeBackground";
+import { ShuffleAnimation } from "@/components/tasks/game/ShuffleAnimation";
 import {
   DndContext,
   closestCenter,
@@ -593,6 +594,8 @@ const TasksContent = () => {
   };
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isContainerCollapsed, setIsContainerCollapsed] = useState(false);
+  const [showShuffleAnimation, setShowShuffleAnimation] = useState(false);
   // Loading messages
   const loadingMessages = [
     "I guess I'll do something with this",
@@ -1155,6 +1158,8 @@ const TasksContent = () => {
     setCurrentStep('input');
     setInputText("");
     setExtractedTasks([]);
+    setIsContainerCollapsed(false);
+    setShowShuffleAnimation(false);
     setReviewedTasks([]);
     setTaggedTasks([]);
     setListTasks([]);
@@ -1164,6 +1169,7 @@ const TasksContent = () => {
     setTaskTags({});
     setTaskTimeEstimates({});
     setIsTransitioning(false);
+    setIsProcessing(false); // Reset processing state
     setCameFromBrainDump(false); // Reset brain dump flag
     // setInputMode('brain-dump'); // Reset to brain-dump mode
   };
@@ -1476,9 +1482,9 @@ const TasksContent = () => {
       return;
     }
     
-    // Go directly to game cards with processing state
-    setCurrentStep('game-cards');
-    setIsProcessing(true);
+    // Trigger container collapse animation
+    setIsContainerCollapsed(true);
+    setShowShuffleAnimation(true);
     
     try {
       // Call our new simplified shuffle edge function
@@ -1524,27 +1530,18 @@ const TasksContent = () => {
         
         setTaggedTasks(orderedTaggedTasks);
         
-        // Open PiP after tasks are set
+        // Open PiP after animation completes
         setTimeout(() => {
           enterPiP();
-        }, 100);
+        }, 2800);
       }
       
       // Update tasks to not_started status when entering game
       const activeIds = data.shuffledTasks ? data.shuffledTasks.map(t => t.id) : activeTaskIds;
       await updateTasksToNotStarted(activeIds);
       
-      toast({
-        title: "Tasks Shuffled!",
-        description: data.message || "Tasks have been reordered using your preferences.",
-      });
       
       // Let shuffle animation control processing state
-      // Safety timeout in case shuffle animation fails to complete
-      setTimeout(() => {
-        console.log('Safety timeout: forcing processing to false after 3 seconds');
-        setIsProcessing(false);
-      }, 3000);
       
     } catch (error) {
       console.error('Error during shuffling:', error);
@@ -1562,6 +1559,16 @@ const TasksContent = () => {
   const handleManualOrder = async (taskIdsToProcess?: string[]) => {
     const taskIds = taskIdsToProcess || activeTaskIds;
     console.log('📋 Play in Order button clicked - Using manual task order...');
+    
+    // Capture current container dimensions before collapsing
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      setContainerDimensions({ width: rect.width, height: rect.height });
+    }
+    
+    // Trigger container collapse animation
+    setIsContainerCollapsed(true);
+    setShowShuffleAnimation(true);
     
     // Update tagged tasks with the current order for game cards
     const orderedTaggedTasks = taskIds.map((taskId, index) => {
@@ -1592,20 +1599,10 @@ const TasksContent = () => {
     // Update tasks to not_started status when entering game
     await updateTasksToNotStarted(taskIds);
     
-    // Go directly to game cards with processing state
-    setCurrentStep('game-cards');
-    setIsProcessing(true);
-    
-    // Open PiP after tasks are set
+    // Open PiP after animation completes
     setTimeout(() => {
       enterPiP();
-    }, 100);
-    
-    // Safety timeout to stop processing state (same as shuffle function)
-    setTimeout(() => {
-      console.log('Safety timeout: forcing processing to false after 3 seconds');
-      setIsProcessing(false);
-    }, 3000);
+    }, 2800);
     
     // Run AI categorization in background for logging (optional)
     setTimeout(async () => {
@@ -2204,6 +2201,8 @@ const TasksContent = () => {
               setCurrentStep('review');
             } else {
               setCurrentStep('input');
+              setIsContainerCollapsed(false);
+              setShowShuffleAnimation(false);
             }
           }}
           variant="ghost"
@@ -2222,7 +2221,9 @@ const TasksContent = () => {
         {currentStep === 'input' && (
           <div className="relative w-full h-full max-h-[700px] flex flex-col items-center justify-center">
             {/* Title */}
-            <h1 className="text-white text-3xl sm:text-4xl lg:text-5xl mb-8 text-center relative" style={{ fontFamily: 'Playfair Display, serif', zIndex: 10 }}>
+            <h1 className={`text-white text-3xl sm:text-4xl lg:text-5xl mb-8 text-center relative transition-opacity duration-300 ease-out ${
+              isContainerCollapsed ? 'opacity-0' : 'opacity-100'
+            }`} style={{ fontFamily: 'Playfair Display, serif', zIndex: 10 }}>
               Shape Dreams with Intentions
             </h1>
             
@@ -2231,17 +2232,27 @@ const TasksContent = () => {
             <Card 
               ref={cardRef}
               id="main-task-container"
-              className="border-0 w-full max-w-[750px] h-full sm:h-auto flex flex-col transition-all duration-600 ease-out backdrop-blur-md"
+              className={`border-0 flex flex-col transition-all duration-[1500ms] ease-out backdrop-blur-md ${
+                isContainerCollapsed 
+                  ? 'w-[368px]' 
+                  : 'w-full max-w-[750px] h-full sm:h-auto'
+              }`}
               style={{ 
                 backgroundColor: 'var(--card-bg)',
-                transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-                zIndex: 2, // Main container in middle layer
-                boxShadow: '0 0 80px 40px var(--blur-overlay-bg), 0 0 120px 60px var(--blur-overlay-bg)',
+                transition: 'all 1500ms cubic-bezier(0.4, 0, 0.2, 1)',
+                zIndex: 2,
+                boxShadow: isContainerCollapsed 
+                  ? '0 0 40px 20px var(--blur-overlay-bg)'
+                  : '0 0 80px 40px var(--blur-overlay-bg), 0 0 120px 60px var(--blur-overlay-bg)',
                 borderRadius: '20px',
                 backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)'
+                WebkitBackdropFilter: 'blur(10px)',
+                aspectRatio: isContainerCollapsed ? '63/88' : 'auto',
+                maxWidth: isContainerCollapsed ? '368px' : undefined
               }}>
-            <CardContent ref={cardContentRef} className="flex-1 sm:flex-none flex flex-col px-8 sm:px-10 pt-8 pb-5 sm:pt-10 sm:pb-5 transition-all duration-500 ease-out">
+            <CardContent ref={cardContentRef} className={`flex-1 sm:flex-none flex flex-col px-8 sm:px-10 pt-8 pb-5 sm:pt-10 sm:pb-5 transition-all duration-500 ease-out ${
+              isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}>
               {/* Unified input */}
               <div ref={taskListContentRef} className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
                   
@@ -2748,12 +2759,29 @@ const TasksContent = () => {
                 </div>
             </CardContent>
             
+            {/* Shuffle Animation - Shows inside collapsed container */}
+            {showShuffleAnimation && isContainerCollapsed && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ShuffleAnimation 
+                  isProcessing={true}
+                  onLoadingComplete={() => {
+                    // Animation complete, proceed to game
+                    setShowShuffleAnimation(false);
+                    setCurrentStep('game-cards');
+                    setIsProcessing(true);
+                  }}
+                />
+              </div>
+            )}
+            
             </Card>
             
             {/* Timeline */}
             {(listTasks.length > 0 || activeTaskIds.length > 0) && (
               <div 
-                className="hidden lg:block absolute w-64 overflow-y-auto transition-all duration-500 ease-in-out cursor-pointer group"
+                className={`hidden lg:block absolute w-64 overflow-y-auto transition-all duration-1000 ease-in-out cursor-pointer group ${
+                  isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                }`}
                 style={{
                   top: 'calc(50% + 41px)', // Offset for title
                   height: cardRef.current?.offsetHeight || '700px',
@@ -3042,8 +3070,8 @@ const TasksContent = () => {
               estimated_time: taskTimeEstimatesById[task.id] || taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes),
               notes: task.notes // Include notes for game cards
             }))}
-            isLoading={isProcessing}
-            isProcessing={isProcessing}
+            isLoading={false}
+            isProcessing={false}
             onLoadingComplete={() => setIsProcessing(false)}
             onComplete={async (completedTaskIds: Set<string>) => {
               console.log('Finishing session with completed IDs:', completedTaskIds);
@@ -3091,16 +3119,6 @@ const TasksContent = () => {
                     console.error('Error moving incomplete task to later:', error);
                   }
                 }
-
-                toast({
-                  title: "Session Complete!",
-                  description: `Great work! ${incompleteTasks.length} incomplete tasks saved for later.`,
-                });
-              } else {
-                toast({
-                  title: "Session Complete!",
-                  description: "Great work on focusing through your tasks!",
-                });
               }
               
               // Refresh task list to show updated state BEFORE resetting flow
