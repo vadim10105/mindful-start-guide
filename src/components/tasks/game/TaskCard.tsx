@@ -5,6 +5,7 @@ import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, ChevronUp, ChevronDow
 import { TaskActions } from "./TaskActions";
 import { TaskProgressManagerHook, taskTimers } from "./TaskProgressManager";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
+import { BlockStackingProgress } from "./BlockStackingProgress";
 
 // Global pause timestamps to persist across navigation and PiP
 const pauseTimestamps = new Map<string, number>();
@@ -387,6 +388,9 @@ export const TaskCard = ({
   const [ultraCompactTime, setUltraCompactTime] = useState(Date.now());
   const [isUltraCompactHovered, setIsUltraCompactHovered] = useState(false);
   
+  // Feature flag for block stacking progress (set to true to enable)
+  const useBlockStackingProgress = true;
+  
   // Update timer for ultra-compact view
   useEffect(() => {
     if (isUltraCompact && isActiveCommitted && !isPaused && pipWindow) {
@@ -456,195 +460,159 @@ export const TaskCard = ({
         <div className="absolute inset-0" style={{ backgroundColor: '#FFFFF7' }} />
         
         {/* Progress background - fills from left dynamically */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: (() => {
-              const progress = getUltraCompactProgress();
+        {!useBlockStackingProgress && (
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: (() => {
+                const progress = getUltraCompactProgress();
+                const estimatedMinutes = parseTimeToMinutes(task.estimated_time || '');
+                const timerState = taskTimers.get(task.id);
+                const sessionElapsedMs = timerState?.currentSessionStart 
+                  ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+                  : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
+                const elapsedMinutes = Math.floor(sessionElapsedMs / 60000);
+                const isOvertime = estimatedMinutes > 0 && elapsedMinutes > estimatedMinutes;
+                
+                let progressColor;
+                if (isPaused) {
+                  progressColor = 'rgba(251, 191, 36, 0.4)'; // Yellow with low opacity when paused
+                } else if (isOvertime) {
+                  progressColor = '#f59e0b'; // Orange when overtime
+                } else {
+                  progressColor = 'rgb(251 191 36)'; // Yellow when normal
+                }
+                
+                return progress > 0
+                  ? `linear-gradient(to right, ${progressColor} ${progress}%, transparent ${progress}%)`
+                  : 'transparent';
+              })()
+            }} 
+          />
+        )}
+        
+        {/* Block stacking progress - new animated version */}
+        {useBlockStackingProgress && (
+          <BlockStackingProgress 
+            progress={getUltraCompactProgress()}
+            isPaused={isPaused}
+            isOvertime={(() => {
               const estimatedMinutes = parseTimeToMinutes(task.estimated_time || '');
               const timerState = taskTimers.get(task.id);
               const sessionElapsedMs = timerState?.currentSessionStart 
                 ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
                 : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
               const elapsedMinutes = Math.floor(sessionElapsedMs / 60000);
-              const isOvertime = estimatedMinutes > 0 && elapsedMinutes > estimatedMinutes;
-              
-              let progressColor;
-              if (isPaused) {
-                progressColor = 'rgba(251, 191, 36, 0.4)'; // Yellow with low opacity when paused
-              } else if (isOvertime) {
-                progressColor = '#f59e0b'; // Orange when overtime
-              } else {
-                progressColor = 'rgb(251 191 36)'; // Yellow when normal
-              }
-              
-              return progress > 0
-                ? `linear-gradient(to right, ${progressColor} ${progress}%, transparent ${progress}%)`
-                : 'transparent';
-            })()
-          }} 
-        />
+              return estimatedMinutes > 0 && elapsedMinutes > estimatedMinutes;
+            })()}
+            taskTitle={task.title}
+            estimatedTime={task.estimated_time}
+          />
+        )}
       
-        {/* Content */}
-        <div className="relative flex items-center h-full px-4 z-10">
-          {/* Left: Task title - takes up more space */}
-          <div className="flex-1 bg-gray-400/10 rounded-xl px-3 py-2 overflow-hidden relative mr-2">
-            <div 
-              className="overflow-hidden whitespace-nowrap"
-              style={{
-                maskImage: 'linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)',
-                WebkitMaskImage: 'linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)'
-              }}
-            >
-              <div className="inline-flex">
-                <span 
-                  className="inline-block font-medium text-base animate-scroll-text" 
-                  style={{ 
-                    color: '#7C7C7C',
-                    animationDuration: isPaused ? '15s' : `${Math.max(10, task.title.length * 0.4)}s`
-                  }}
-                >
-                  {isPaused ? `Paused for ${(() => {
-                    if (!pausedStartTime) return '00:00';
-                    const pausedDuration = Math.max(0, Math.floor((currentTime - pausedStartTime) / 1000));
-                    const minutes = Math.floor(pausedDuration / 60);
-                    const seconds = pausedDuration % 60;
-                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                  })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{isPaused ? `Paused for ${(() => {
-                    const pausedDuration = Math.floor((currentTime - (pausedStartTime || Date.now())) / 1000);
-                    const minutes = Math.floor(pausedDuration / 60);
-                    const seconds = pausedDuration % 60;
-                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                  })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                </span>
-                <span 
-                  className="inline-block font-medium text-base animate-scroll-text" 
-                  style={{ 
-                    color: '#7C7C7C',
-                    animationDuration: isPaused ? '15s' : `${Math.max(10, task.title.length * 0.4)}s`
-                  }}
-                >
-                  {isPaused ? `Paused for ${(() => {
-                    if (!pausedStartTime) return '00:00';
-                    const pausedDuration = Math.max(0, Math.floor((currentTime - pausedStartTime) / 1000));
-                    const minutes = Math.floor(pausedDuration / 60);
-                    const seconds = pausedDuration % 60;
-                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                  })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{isPaused ? `Paused for ${(() => {
-                    const pausedDuration = Math.floor((currentTime - (pausedStartTime || Date.now())) / 1000);
-                    const minutes = Math.floor(pausedDuration / 60);
-                    const seconds = pausedDuration % 60;
-                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                  })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                </span>
-              </div>
+        {/* Top-right timer container */}
+        <div className="absolute z-30 w-[110px]" style={{ position: 'absolute', top: '12px', right: '16px' }}>
+          {/* Time display - visible when not hovering */}
+          <div className={`absolute right-0 flex items-center justify-end w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-0' : 'opacity-100'}`}>
+            <div className="font-medium whitespace-nowrap [&>span]:!text-xs" style={{ color: 'hsl(220 10% 50%)' }}>
+              {hasStartTime ? (
+                <TaskTimeDisplay
+                  taskId={task.id}
+                  startTime={taskStartTimes[task.id]}
+                  estimatedTime={task.estimated_time}
+                  isActiveCommitted={isActiveCommitted}
+                  isUltraCompact={true}
+                  totalPausedTime={pausedTime * 60000}
+                />
+              ) : (
+                <span style={{ color: 'hsl(220 10% 50%)' }}>--:-- → --:--</span>
+              )}
             </div>
           </div>
           
-          {/* Right side container for time and chevron - fixed width */}
-          <div className="w-[110px] flex items-center justify-end relative">
-            {/* Time display - visible when not hovering */}
-            <div className={`absolute right-0 flex items-center justify-end w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-0' : 'opacity-100'}`}>
-              <div className="font-medium whitespace-nowrap [&>span]:!text-xs" style={{ color: 'hsl(220 10% 50%)' }}>
-                {hasStartTime ? (
-                  <TaskTimeDisplay
-                    taskId={task.id}
-                    startTime={taskStartTimes[task.id]}
-                    estimatedTime={task.estimated_time}
-                    isActiveCommitted={isActiveCommitted}
-                    isUltraCompact={true}
-                    totalPausedTime={pausedTime * 60000}
-                  />
-                ) : (
-                  <span style={{ color: 'hsl(220 10% 50%)' }}>--:-- → --:--</span>
-                )}
-              </div>
+          {/* Timer + Play/Pause + Chevron container - visible on hover */}
+          <div className={`absolute right-0 flex items-center justify-end gap-0.5 w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-100' : 'opacity-0'}`}>
+            {/* Timer */}
+            <div className="font-medium whitespace-nowrap text-xs mr-2" style={{ color: 'hsl(220 10% 50%)' }}>
+              {(() => {
+                const timerState = taskTimers.get(task.id);
+                if (!timerState) return '0:00';
+                
+                // If paused, return the frozen elapsed time (don't keep counting)
+                let sessionElapsedMs;
+                if (isPaused) {
+                  // When paused, use the elapsed time from when pause was triggered (frozen)
+                  sessionElapsedMs = timerState.baseElapsedMs - timerState.sessionStartElapsedMs;
+                } else {
+                  sessionElapsedMs = timerState.currentSessionStart 
+                    ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+                    : (timerState.baseElapsedMs - timerState.sessionStartElapsedMs);
+                }
+                
+                const totalSeconds = Math.floor(sessionElapsedMs / 1000);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+              })()}
             </div>
             
-            {/* Timer + Play/Pause + Chevron container - visible on hover */}
-            <div className={`absolute right-0 flex items-center justify-end gap-0.5 w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-100' : 'opacity-0'}`}>
-              {/* Timer */}
-              <div className="font-medium whitespace-nowrap text-xs mr-2" style={{ color: 'hsl(220 10% 50%)' }}>
-                {(() => {
-                  const timerState = taskTimers.get(task.id);
-                  if (!timerState) return '0:00';
-                  
-                  // If paused, return the frozen elapsed time (don't keep counting)
-                  let sessionElapsedMs;
-                  if (isPaused) {
-                    // When paused, use the elapsed time from when pause was triggered (frozen)
-                    sessionElapsedMs = timerState.baseElapsedMs - timerState.sessionStartElapsedMs;
-                  } else {
-                    sessionElapsedMs = timerState.currentSessionStart 
-                      ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
-                      : (timerState.baseElapsedMs - timerState.sessionStartElapsedMs);
+            {/* Play/Pause button */}
+            <button
+              className="group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border border-gray-200/50 hover:border-yellow-400/50 hover:shadow-sm overflow-hidden flex-shrink-0"
+              style={{ backgroundColor: 'transparent' }}
+              onClick={() => {
+                // Same logic as progress bar play/pause
+                if (isPaused) {
+                  onCarryOn(task.id);
+                } else if (isActiveCommitted) {
+                  onMoveOn(task.id);
+                } else if (isCurrentTask && !hasCommittedToTask) {
+                  onCommit();
+                }
+              }}
+            >
+              <div className="absolute inset-0 bg-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
+              {(() => {
+                const timerState = taskTimers.get(task.id);
+                
+                // If paused, return the frozen elapsed time (don't keep counting)
+                let sessionElapsedMs;
+                if (isPaused) {
+                  // When paused, use the elapsed time from when pause was triggered (frozen)
+                  sessionElapsedMs = timerState?.baseElapsedMs ? timerState.baseElapsedMs - timerState.sessionStartElapsedMs : 0;
+                } else {
+                  sessionElapsedMs = timerState?.currentSessionStart 
+                    ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+                    : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
+                }
+                
+                return (isPaused || sessionElapsedMs < 1000) ? (
+                  <Play className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
+                ) : (
+                  <Pause className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
+                );
+              })()}
+            </button>
+            
+            {/* Expand chevron */}
+            <button
+              className="group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border border-gray-200/50 hover:border-gray-600/50 hover:shadow-sm overflow-hidden flex-shrink-0"
+              style={{ backgroundColor: 'transparent' }}
+              onClick={() => {
+                setIsUltraCompact(false);
+                if (pipWindow && !pipWindow.closed) {
+                  try {
+                    pipWindow.resizeTo(368, 575);
+                  } catch (error) {
+                    console.warn('Failed to resize PiP window:', error);
                   }
-                  
-                  const totalSeconds = Math.floor(sessionElapsedMs / 1000);
-                  const minutes = Math.floor(totalSeconds / 60);
-                  const seconds = totalSeconds % 60;
-                  
-                  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                })()}
-              </div>
-              
-              {/* Play/Pause button */}
-              <button
-                className="group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border border-gray-200/50 hover:border-yellow-400/50 hover:shadow-sm overflow-hidden flex-shrink-0"
-                style={{ backgroundColor: 'transparent' }}
-                onClick={() => {
-                  // Same logic as progress bar play/pause
-                  if (isPaused) {
-                    onCarryOn(task.id);
-                  } else if (isActiveCommitted) {
-                    onMoveOn(task.id);
-                  } else if (isCurrentTask && !hasCommittedToTask) {
-                    onCommit();
-                  }
-                }}
-              >
-                <div className="absolute inset-0 bg-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
-                {(() => {
-                  const timerState = taskTimers.get(task.id);
-                  
-                  // If paused, return the frozen elapsed time (don't keep counting)
-                  let sessionElapsedMs;
-                  if (isPaused) {
-                    // When paused, use the elapsed time from when pause was triggered (frozen)
-                    sessionElapsedMs = timerState?.baseElapsedMs ? timerState.baseElapsedMs - timerState.sessionStartElapsedMs : 0;
-                  } else {
-                    sessionElapsedMs = timerState?.currentSessionStart 
-                      ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
-                      : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
-                  }
-                  
-                  return (isPaused || sessionElapsedMs < 1000) ? (
-                    <Play className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
-                  ) : (
-                    <Pause className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
-                  );
-                })()}
-              </button>
-              
-              {/* Expand chevron */}
-              <button
-                className="group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border border-gray-200/50 hover:border-gray-600/50 hover:shadow-sm overflow-hidden flex-shrink-0"
-                style={{ backgroundColor: 'transparent' }}
-                onClick={() => {
-                  setIsUltraCompact(false);
-                  if (pipWindow && !pipWindow.closed) {
-                    try {
-                      pipWindow.resizeTo(368, 575);
-                    } catch (error) {
-                      console.warn('Failed to resize PiP window:', error);
-                    }
-                  }
-                }}
-              >
-                <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
-                <Maximize2 className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" strokeWidth={2.5} />
-              </button>
-            </div>
+                }
+              }}
+            >
+              <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
+              <Maximize2 className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" strokeWidth={2.5} />
+            </button>
           </div>
         </div>
       </Card>
