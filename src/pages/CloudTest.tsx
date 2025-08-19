@@ -1,9 +1,49 @@
 import React, { useRef, useMemo, useState } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, extend } from '@react-three/fiber'
 import { Cloud, OrbitControls } from '@react-three/drei'
+import { EffectComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js'
 import * as THREE from 'three'
 
 type TimeOfDay = 'sunrise' | 'day' | 'sunset' | 'night'
+
+// Custom pixel art shader
+const PixelArtShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    resolution: { value: new THREE.Vector2() },
+    pixelSize: { value: 12.0 }
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 resolution;
+    uniform float pixelSize;
+    varying vec2 vUv;
+    
+    void main() {
+      // Calculate pixel grid coordinates
+      vec2 pixelatedUV = floor(vUv * resolution / pixelSize) * pixelSize / resolution;
+      
+      // Sample the color at the center of each pixel square
+      vec2 centerOffset = (pixelSize * 0.5) / resolution;
+      vec4 color = texture2D(tDiffuse, pixelatedUV + centerOffset);
+      
+      // Reduce contrast for each pixel square
+      color.rgb = (color.rgb - 0.5) * 0.7 + 0.5;
+      color.rgb = clamp(color.rgb, 0.0, 1.0);
+      
+      gl_FragColor = color;
+    }
+  `
+}
+
+extend({ EffectComposer, RenderPass, ShaderPass })
 
 // Ease in-out function for smooth transitions
 function easeInOut(t: number): number {
@@ -349,9 +389,8 @@ function Stars({ timeOfDay }: { timeOfDay: TimeOfDay }) {
       if (y > -20) {
         positions.push(x, y, z);
         
-        // Vary opacity through color alpha (using vertex colors)
-        // Much dimmer overall with more variation
-        const brightness = 0.1 + Math.random() * 0.4; // Range from 0.1 to 0.5 instead of 0.3 to 1.0
+        // More stable brightness for pixel art effect
+        const brightness = 0.3 + Math.random() * 0.2; // Narrower range 0.3-0.5 for less blinking
         colors.push(brightness, brightness, brightness); // RGB all same for white
       }
     }
@@ -376,7 +415,7 @@ function Stars({ timeOfDay }: { timeOfDay: TimeOfDay }) {
     <points ref={ref} geometry={geometry} frustumCulled={false} renderOrder={-1}>
       <pointsMaterial
         transparent
-        size={0.6}
+        size={1.2}
         sizeAttenuation={false}
         depthWrite={false}
         vertexColors
@@ -385,6 +424,33 @@ function Stars({ timeOfDay }: { timeOfDay: TimeOfDay }) {
   );
 }
 
+
+function PixelArtEffect() {
+  const { gl, scene, camera, size } = useThree()
+  const composer = useRef<EffectComposer>()
+  
+  React.useEffect(() => {
+    const effectComposer = new EffectComposer(gl)
+    const renderPass = new RenderPass(scene, camera)
+    
+    const pixelArtPass = new ShaderPass(PixelArtShader)
+    pixelArtPass.uniforms.resolution.value.set(size.width, size.height)
+    pixelArtPass.uniforms.pixelSize.value = 14 // Perfect pixel size
+    
+    effectComposer.addPass(renderPass)
+    effectComposer.addPass(pixelArtPass)
+    
+    composer.current = effectComposer
+  }, [gl, scene, camera, size])
+  
+  useFrame(() => {
+    if (composer.current) {
+      composer.current.render()
+    }
+  }, 1)
+  
+  return null
+}
 
 function getCurrentTimeOfDay(): TimeOfDay {
   const hour = new Date().getHours()
@@ -419,13 +485,22 @@ export default function CloudTest() {
       
       <Canvas
         camera={{ position: [0, 35, 40], fov: 75 }}
-        gl={{ antialias: true }}
+        gl={{ 
+          antialias: false,
+          powerPreference: "low-power"
+        }}
+        dpr={1}
+        style={{
+          imageRendering: 'pixelated',
+          imageRendering: '-moz-crisp-edges',
+          imageRendering: 'crisp-edges'
+        }}
       >
         <SkyBackground timeOfDay={timeOfDay} />
         <Stars timeOfDay={timeOfDay} />
         <InfiniteCloudPlane key="static-clouds" />
         
-        <ambientLight intensity={timeOfDay === 'night' ? 0.5 : 2.0} color="#ffffff" />
+        <ambientLight intensity={timeOfDay === 'night' ? 1.2 : 2.0} color="#ffffff" />
         <directionalLight position={[30, 8, 15]} intensity={timeOfDay === 'night' ? 0.2 : 1.5} color="#ffffff" castShadow />
         <directionalLight position={[-15, 5, -20]} intensity={timeOfDay === 'night' ? 0.1 : 1.0} color="#fff5e6" />
         <directionalLight position={[5, -3, 8]} intensity={timeOfDay === 'night' ? 0.05 : 0.6} color="#ffe8cc" />
@@ -442,6 +517,8 @@ export default function CloudTest() {
           maxAzimuthAngle={0}
           minAzimuthAngle={0}
         />
+        
+        <PixelArtEffect />
       </Canvas>
     </div>
   )
