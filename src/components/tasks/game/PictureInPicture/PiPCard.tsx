@@ -386,6 +386,40 @@ export const PiPCard = ({
   }, [showingSummaryCard, gameState.completedTasks]);
   
   if (showingSummaryCard) {
+    // Ultra-compact finish session card for PiP
+    if (pipWindow?.innerHeight && pipWindow.innerHeight <= 150) {
+      return (
+        <div 
+          className="h-[90px] w-[368px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg cursor-grab active:cursor-grabbing"
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* White background layer */}
+          <div className="absolute inset-0 bg-white" />
+          
+          {/* Light gray background to match regular cards */}
+          <div className="absolute inset-0 bg-[#FFFFF7]" />
+          
+          {/* Content - centered button */}
+          <div className="relative flex items-center justify-center h-full px-4 z-10">
+            <button
+              onClick={() => {
+                if (pipWindow && !pipWindow.closed) {
+                  pipWindow.close();
+                }
+                onComplete();
+              }}
+              className="bg-[hsl(220_10%_20%)] hover:bg-[hsl(220_10%_30%)] text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 text-sm"
+            >
+              Finish Session
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div 
         className={`relative w-full h-full flex flex-col transition-all duration-700 ease-out ${

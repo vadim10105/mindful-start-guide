@@ -7,6 +7,8 @@ interface TaskTimeDisplayProps {
   estimatedTime?: string;
   isActiveCommitted: boolean;
   isUltraCompact?: boolean;
+  pausedTasks?: Map<string, number>;
+  totalPausedTime?: number; // Total time this task has been paused (in ms)
 }
 
 export const TaskTimeDisplay = ({ 
@@ -14,7 +16,9 @@ export const TaskTimeDisplay = ({
   startTime, 
   estimatedTime, 
   isActiveCommitted,
-  isUltraCompact = false
+  isUltraCompact = false,
+  pausedTasks,
+  totalPausedTime = 0
 }: TaskTimeDisplayProps) => {
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -52,18 +56,28 @@ export const TaskTimeDisplay = ({
     return startTime + (durationMinutes * 60000);
   };
 
-  // Check if we're in overtime (1 minute past original estimated finish time)
+  // Calculate adjusted finish time accounting for paused time
+  const getAdjustedEstimatedFinishTime = (): number | null => {
+    const originalFinishTime = getOriginalEstimatedFinishTime();
+    if (!originalFinishTime) return null;
+    
+    // Add total paused time to extend the finish time
+    return originalFinishTime + totalPausedTime;
+  };
+
+  // Check if we're in overtime (1 minute past adjusted estimated finish time)
   const originalEstimatedFinishTime = getOriginalEstimatedFinishTime();
-  const isOvertime = originalEstimatedFinishTime && currentTime > (originalEstimatedFinishTime + 60000);
+  const adjustedEstimatedFinishTime = getAdjustedEstimatedFinishTime();
+  const isOvertime = adjustedEstimatedFinishTime && currentTime > (adjustedEstimatedFinishTime + 60000);
 
   // Always show the actual start time (when the task was started)
   const displayStartTime = startTime;
   const startTimeFormatted = formatTime(displayStartTime);
-  const originalEstimatedFinishTimeFormatted = originalEstimatedFinishTime ? formatTime(originalEstimatedFinishTime) : null;
+  const adjustedEstimatedFinishTimeFormatted = adjustedEstimatedFinishTime ? formatTime(adjustedEstimatedFinishTime) : null;
   const currentTimeFormatted = formatTime(currentTime);
 
   // If no estimated time, show simple start time
-  if (!estimatedTime || !originalEstimatedFinishTimeFormatted) {
+  if (!estimatedTime || !adjustedEstimatedFinishTimeFormatted) {
     return (
       <span className="text-xs" style={{ color: '#7C7C7C' }}>
         {startTimeFormatted}
@@ -71,17 +85,17 @@ export const TaskTimeDisplay = ({
     );
   }
 
-  // Normal state: show start → estimated finish
+  // Normal state: show start → adjusted estimated finish (accounts for paused time)
   if (!isOvertime) {
     return (
       <span className="text-xs" style={{ color: '#7C7C7C' }}>
-        {startTimeFormatted} → {originalEstimatedFinishTimeFormatted}
+        {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
       </span>
     );
   }
 
-  // Overtime state: show start → original estimated +overtime
-  const overtimeMs = currentTime - originalEstimatedFinishTime;
+  // Overtime state: show start → adjusted estimated +overtime
+  const overtimeMs = currentTime - adjustedEstimatedFinishTime!;
   const overtimeMinutes = Math.floor(overtimeMs / 60000);
   const overtimeHours = Math.floor(overtimeMinutes / 60);
   const remainingMinutes = overtimeMinutes % 60;
@@ -106,7 +120,7 @@ export const TaskTimeDisplay = ({
           {overtimeDisplay}
         </span>
         <span style={{ color: 'white' }}>
-          {startTimeFormatted} → {originalEstimatedFinishTimeFormatted}
+          {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
         </span>
       </div>
     );
@@ -115,7 +129,7 @@ export const TaskTimeDisplay = ({
   // Normal view: inline overtime
   return (
     <span className="text-xs" style={{ color: '#7C7C7C' }}>
-      {startTimeFormatted} → {originalEstimatedFinishTimeFormatted}
+      {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
       <span style={{ color: 'hsl(220 10% 50%)' }}>  </span>
       <span 
         style={{ 

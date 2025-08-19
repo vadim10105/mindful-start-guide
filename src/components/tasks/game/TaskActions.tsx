@@ -82,23 +82,32 @@ export const TaskActions = ({
     });
   }
 
-  // Update timer like the progress bar does
+  // Reset timer session when resuming from pause
   useEffect(() => {
-    if (isActiveCommitted) {
+    if (isActiveCommitted && !isPaused) {
       const timerState = taskTimers.get(task.id)!;
-      // Start timer if not already started
-      if (!timerState.currentSessionStart) {
-        const now = Date.now();
-        timerState.currentSessionStart = now;
-        setCurrentTime(now);
+      
+      // Always reset the session start when becoming active and not paused
+      // This ensures we start fresh when resuming from pause
+      const now = Date.now();
+      timerState.currentSessionStart = now;
+      
+      // If there's a task start time, use it to calculate the current baseline
+      const startTime = taskStartTimes?.[task.id];
+      if (startTime) {
+        // The elapsed time shown should match the time between startTime and now
+        const totalElapsedMs = now - startTime;
+        timerState.sessionStartElapsedMs = timerState.baseElapsedMs - totalElapsedMs;
       }
+      
+      setCurrentTime(now);
       
       const interval = setInterval(() => {
         setCurrentTime(Date.now());
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [isActiveCommitted, task.id]);
+  }, [isActiveCommitted, isPaused, task.id, taskStartTimes]);
 
   if (isCompleted) {
     return null;
@@ -146,6 +155,11 @@ export const TaskActions = ({
   const getSessionElapsedMs = () => {
     const timerState = taskTimers.get(task.id);
     if (!timerState) return 0;
+    
+    // If paused, return the frozen elapsed time (don't keep counting)
+    if (isPaused) {
+      return timerState.baseElapsedMs - timerState.sessionStartElapsedMs;
+    }
     
     return timerState.currentSessionStart 
       ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (currentTime - timerState.currentSessionStart)
@@ -210,7 +224,7 @@ export const TaskActions = ({
           <div className="absolute inset-0 bg-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
           <TrendingUp className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
           <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
-            Progressed
+            Progress
           </span>
         </button>
       )}
@@ -225,7 +239,7 @@ export const TaskActions = ({
           <div className="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
           <Check className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
           <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
-            Complete
+            Finish
           </span>
         </button>
       )}
@@ -245,7 +259,7 @@ export const TaskActions = ({
             <Wand2 className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
           )}
           <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
-            Break down
+            Split
           </span>
         </button>
       )}

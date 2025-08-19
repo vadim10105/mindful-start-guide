@@ -142,6 +142,14 @@ export const TaskCard = ({
   const [isNotesFocused, setIsNotesFocused] = useState(false);
   const [isUltraCompact, setIsUltraCompact] = useState(false);
   
+  // Auto-detect ultra-compact mode based on PiP window size
+  useEffect(() => {
+    if (pipWindow && !pipWindow.closed) {
+      const shouldBeUltraCompact = pipWindow.innerHeight <= 150;
+      setIsUltraCompact(shouldBeUltraCompact);
+    }
+  }, [pipWindow]);
+  
   // Track the last props value to detect actual changes
   const lastPropsNotesRef = useRef(task.notes);
   
@@ -529,6 +537,7 @@ export const TaskCard = ({
                     estimatedTime={task.estimated_time}
                     isActiveCommitted={isActiveCommitted}
                     isUltraCompact={true}
+                    totalPausedTime={pausedTime * 60000}
                   />
                 ) : (
                   <span className="!text-white">--:-- → --:--</span>
@@ -647,7 +656,7 @@ export const TaskCard = ({
             <div className={`absolute inset-0 flex items-center justify-center z-30 pointer-events-none transition-all duration-500 ease-out ${
               pausedOverlayVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
             }`}>
-              <div className={`bg-black/40 backdrop-blur-md rounded-2xl px-6 py-4 min-w-[200px] transition-all duration-500 ease-out transform ${
+              <div className={`bg-black/40 backdrop-blur-md rounded-2xl px-6 py-4 w-[240px] transition-all duration-500 ease-out transform ${
                 pausedOverlayVisible ? 'scale-100' : 'scale-90'
               }`}>
                 <p className="text-white text-xl font-medium text-center">
@@ -690,6 +699,7 @@ export const TaskCard = ({
                   startTime={taskStartTimes[task.id]}
                   estimatedTime={task.estimated_time}
                   isActiveCommitted={isActiveCommitted}
+                  totalPausedTime={pausedTime * 60000}
                 />
               ) : (
                 <>
