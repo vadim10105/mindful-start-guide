@@ -9,7 +9,7 @@ import { TaskTimeDisplay } from "./TaskTimeDisplay";
 // Global pause timestamps to persist across navigation and PiP
 const pauseTimestamps = new Map<string, number>();
 import { NotesTypewriterPlaceholder } from "@/components/ui/NotesTypewriterPlaceholder";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseTimeToMinutes } from '@/utils/timeUtils';
 
@@ -142,10 +142,22 @@ export const TaskCard = ({
   const [isNotesFocused, setIsNotesFocused] = useState(false);
   const [isUltraCompact, setIsUltraCompact] = useState(false);
   
-  // Update notes when task prop changes (important for PiP synchronization)
+  // Track the last props value to detect actual changes
+  const lastPropsNotesRef = useRef(task.notes);
+  
+  // Sync with props only when not actively focused and props actually changed
   useEffect(() => {
-    setNotes(task.notes || "");
-  }, [task.notes, task.id]);
+    // Only sync if user is not currently typing AND the props value actually changed
+    if (!isNotesFocused && task.notes !== lastPropsNotesRef.current) {
+      console.log(`📝 TaskCard syncing notes for task ${task.id}:`, {
+        from: lastPropsNotesRef.current?.substring(0, 30) + '...',
+        to: task.notes?.substring(0, 30) + '...',
+        isNotesFocused
+      });
+      setNotes(task.notes || "");
+      lastPropsNotesRef.current = task.notes;
+    }
+  }, [task.notes, isNotesFocused]);
   
   const [isPauseHovered, setIsPauseHovered] = useState(false);
   const [isPlayHovered, setIsPlayHovered] = useState(false);
@@ -750,13 +762,20 @@ export const TaskCard = ({
                 <Textarea
                   value={notes}
                   onChange={(e) => {
+                    console.log(`✏️ Notes onChange for task ${task.id}:`, e.target.value.substring(0, 30) + '...');
                     setNotes(e.target.value);
                     onNotesChange?.(task.id, e.target.value);
                   }}
                   onClick={handleNotesClick}
                   onKeyDown={handleNotesKeyDown}
-                  onFocus={() => setIsNotesFocused(true)}
-                  onBlur={() => setIsNotesFocused(false)}
+                  onFocus={() => {
+                    console.log(`🎯 Notes focused for task ${task.id}`);
+                    setIsNotesFocused(true);
+                  }}
+                  onBlur={() => {
+                    console.log(`💨 Notes blurred for task ${task.id}`);
+                    setIsNotesFocused(false);
+                  }}
                   placeholder=""
                   className="resize-none !text-sm leading-relaxed border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[#7C7C7C] placeholder:text-[#7C7C7C] h-full min-h-[80px] cursor-text hover:cursor-pointer"
                   style={{ backgroundColor: 'transparent' }}

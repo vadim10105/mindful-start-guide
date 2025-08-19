@@ -41,9 +41,21 @@ export const TaskGameController = ({
   const gameState = useGameState(tasks);
   const [showWhatsAhead, setShowWhatsAhead] = useState(false);
 
-  // Update tasks when initialTasks changes
+  // Update tasks when initialTasks changes - but only if they're actually different
   useEffect(() => {
-    setTasks(initialTasks);
+    // Check if initialTasks are actually different from current tasks
+    const tasksAreDifferent = initialTasks.length !== tasks.length || 
+      initialTasks.some((initTask, index) => {
+        const currentTask = tasks[index];
+        return !currentTask || initTask.id !== currentTask.id || initTask.title !== currentTask.title;
+      });
+    
+    if (tasksAreDifferent) {
+      console.log('🔄 initialTasks genuinely changed - updating tasks state:', initialTasks.map(t => ({ id: t.id, notes: t.notes?.substring(0, 30) + '...' })));
+      setTasks(initialTasks);
+    } else {
+      console.log('⏭️ initialTasks changed but are same tasks - skipping update to preserve local state');
+    }
   }, [initialTasks]);
   const { toast } = useToast();
 
@@ -53,6 +65,9 @@ export const TaskGameController = ({
   // Function to refresh tasks from database (for PiP sync)
   const refreshTasksFromDB = useCallback(async () => {
     if (tasks.length === 0) return;
+    
+    console.log('🔄 refreshTasksFromDB called - refreshing from database');
+    console.trace('Called from:');
     
     try {
       const taskIds = tasks.map(t => t.id);
@@ -67,9 +82,16 @@ export const TaskGameController = ({
       }
 
       if (data) {
+        console.log('💾 Database notes retrieved:', data.map(d => ({ id: d.id, notes: d.notes?.substring(0, 50) + '...' })));
         setTasks(prevTasks => 
           prevTasks.map(task => {
             const dbTask = data.find(d => d.id === task.id);
+            if (dbTask) {
+              console.log(`📝 Updating task ${task.id} notes:`, {
+                current: task.notes?.substring(0, 30) + '...',
+                new: dbTask.notes?.substring(0, 30) + '...'
+              });
+            }
             return dbTask ? { ...task, notes: dbTask.notes || '' } : task;
           })
         );
@@ -81,6 +103,7 @@ export const TaskGameController = ({
 
   // Function to update task notes
   const updateTaskNotes = useCallback((taskId: string, notes: string) => {
+    console.log(`📝 updateTaskNotes called for task ${taskId}:`, notes.substring(0, 50) + '...');
     // Update local state immediately for responsive UI
     setTasks(prevTasks => 
       prevTasks.map(task => 
