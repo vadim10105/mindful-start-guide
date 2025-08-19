@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, ChevronUp, ChevronDown, Play, Pause } from "lucide-react";
+import { Heart, AlertTriangle, Zap, Check, Wand2, Loader2, ChevronUp, ChevronDown, Play, Pause, Maximize2 } from "lucide-react";
 import { TaskActions } from "./TaskActions";
 import { TaskProgressManagerHook, taskTimers } from "./TaskProgressManager";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
@@ -389,14 +389,28 @@ export const TaskCard = ({
   
   // Update timer for ultra-compact view
   useEffect(() => {
-    if (isUltraCompact && isActiveCommitted && pipWindow) {
+    if (isUltraCompact && isActiveCommitted && !isPaused && pipWindow) {
+      const timerState = taskTimers.get(task.id);
+      if (timerState) {
+        // Reset the session start when resuming from pause to account for paused time
+        const now = Date.now();
+        const startTime = taskStartTimes?.[task.id];
+        if (startTime) {
+          const totalElapsedMs = now - startTime;
+          timerState.sessionStartElapsedMs = timerState.baseElapsedMs - totalElapsedMs;
+        }
+        timerState.currentSessionStart = now;
+      }
+      
+      setUltraCompactTime(Date.now());
+      
       const interval = setInterval(() => {
         setUltraCompactTime(Date.now());
       }, 1000); // Update every second
       
       return () => clearInterval(interval);
     }
-  }, [isUltraCompact, isActiveCommitted, pipWindow]);
+  }, [isUltraCompact, isActiveCommitted, isPaused, pipWindow, task.id, taskStartTimes]);
   
   // Get actual session progress using the same logic as ProgressBar
   const getUltraCompactProgress = () => {
@@ -438,8 +452,8 @@ export const TaskCard = ({
         onMouseEnter={() => setIsUltraCompactHovered(true)}
         onMouseLeave={() => setIsUltraCompactHovered(false)}
       >
-        {/* White background layer */}
-        <div className="absolute inset-0 bg-white" />
+        {/* Off-white background layer to match main card */}
+        <div className="absolute inset-0" style={{ backgroundColor: '#FFFFF7' }} />
         
         {/* Progress background - fills from left dynamically */}
         <div 
@@ -457,7 +471,7 @@ export const TaskCard = ({
               
               let progressColor;
               if (isPaused) {
-                progressColor = '#6b7280'; // Gray when paused
+                progressColor = 'rgba(251, 191, 36, 0.4)'; // Yellow with low opacity when paused
               } else if (isOvertime) {
                 progressColor = '#f59e0b'; // Orange when overtime
               } else {
@@ -465,16 +479,16 @@ export const TaskCard = ({
               }
               
               return progress > 0
-                ? `linear-gradient(to right, ${progressColor} ${progress}%, rgba(152, 152, 152, 0.4) ${progress}%)`
-                : 'rgba(152, 152, 152, 0.4)';
+                ? `linear-gradient(to right, ${progressColor} ${progress}%, transparent ${progress}%)`
+                : 'transparent';
             })()
           }} 
         />
       
         {/* Content */}
         <div className="relative flex items-center h-full px-4 z-10">
-          {/* Left: Task title in darker rounded container - takes up more space */}
-          <div className="flex-1 bg-black/20 rounded-xl px-3 py-2 overflow-hidden relative mr-2">
+          {/* Left: Task title - takes up more space */}
+          <div className="flex-1 bg-gray-400/10 rounded-xl px-3 py-2 overflow-hidden relative mr-2">
             <div 
               className="overflow-hidden whitespace-nowrap"
               style={{
@@ -484,8 +498,9 @@ export const TaskCard = ({
             >
               <div className="inline-flex">
                 <span 
-                  className="inline-block text-white font-medium text-base animate-scroll-text" 
+                  className="inline-block font-medium text-base animate-scroll-text" 
                   style={{ 
+                    color: '#7C7C7C',
                     animationDuration: isPaused ? '15s' : `${Math.max(10, task.title.length * 0.4)}s`
                   }}
                 >
@@ -503,8 +518,9 @@ export const TaskCard = ({
                   })()}` : task.title}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 </span>
                 <span 
-                  className="inline-block text-white font-medium text-base animate-scroll-text" 
+                  className="inline-block font-medium text-base animate-scroll-text" 
                   style={{ 
+                    color: '#7C7C7C',
                     animationDuration: isPaused ? '15s' : `${Math.max(10, task.title.length * 0.4)}s`
                   }}
                 >
@@ -529,7 +545,7 @@ export const TaskCard = ({
           <div className="w-[110px] flex items-center justify-end relative">
             {/* Time display - visible when not hovering */}
             <div className={`absolute right-0 flex items-center justify-end w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-0' : 'opacity-100'}`}>
-              <div className="text-white font-medium whitespace-nowrap [&>span]:!text-xs [&>span]:!text-white">
+              <div className="font-medium whitespace-nowrap [&>span]:!text-xs" style={{ color: 'hsl(220 10% 50%)' }}>
                 {hasStartTime ? (
                   <TaskTimeDisplay
                     taskId={task.id}
@@ -540,7 +556,7 @@ export const TaskCard = ({
                     totalPausedTime={pausedTime * 60000}
                   />
                 ) : (
-                  <span className="!text-white">--:-- → --:--</span>
+                  <span style={{ color: 'hsl(220 10% 50%)' }}>--:-- → --:--</span>
                 )}
               </div>
             </div>
@@ -548,14 +564,21 @@ export const TaskCard = ({
             {/* Timer + Play/Pause + Chevron container - visible on hover */}
             <div className={`absolute right-0 flex items-center justify-end gap-0.5 w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-100' : 'opacity-0'}`}>
               {/* Timer */}
-              <div className="text-white font-medium whitespace-nowrap text-xs mr-2">
+              <div className="font-medium whitespace-nowrap text-xs mr-2" style={{ color: 'hsl(220 10% 50%)' }}>
                 {(() => {
                   const timerState = taskTimers.get(task.id);
                   if (!timerState) return '0:00';
                   
-                  const sessionElapsedMs = timerState.currentSessionStart 
-                    ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
-                    : (timerState.baseElapsedMs - timerState.sessionStartElapsedMs);
+                  // If paused, return the frozen elapsed time (don't keep counting)
+                  let sessionElapsedMs;
+                  if (isPaused) {
+                    // When paused, use the elapsed time from when pause was triggered (frozen)
+                    sessionElapsedMs = timerState.baseElapsedMs - timerState.sessionStartElapsedMs;
+                  } else {
+                    sessionElapsedMs = timerState.currentSessionStart 
+                      ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+                      : (timerState.baseElapsedMs - timerState.sessionStartElapsedMs);
+                  }
                   
                   const totalSeconds = Math.floor(sessionElapsedMs / 1000);
                   const minutes = Math.floor(totalSeconds / 60);
@@ -566,10 +589,9 @@ export const TaskCard = ({
               </div>
               
               {/* Play/Pause button */}
-              <Button 
-                variant="ghost"
-                size="sm"
-                className="w-6 h-6 p-0 hover:bg-black/10 rounded-lg flex-shrink-0"
+              <button
+                className="group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border border-gray-200/50 hover:border-yellow-400/50 hover:shadow-sm overflow-hidden flex-shrink-0"
+                style={{ backgroundColor: 'transparent' }}
                 onClick={() => {
                   // Same logic as progress bar play/pause
                   if (isPaused) {
@@ -581,25 +603,33 @@ export const TaskCard = ({
                   }
                 }}
               >
+                <div className="absolute inset-0 bg-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
                 {(() => {
                   const timerState = taskTimers.get(task.id);
-                  const sessionElapsedMs = timerState?.currentSessionStart 
-                    ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
-                    : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
+                  
+                  // If paused, return the frozen elapsed time (don't keep counting)
+                  let sessionElapsedMs;
+                  if (isPaused) {
+                    // When paused, use the elapsed time from when pause was triggered (frozen)
+                    sessionElapsedMs = timerState?.baseElapsedMs ? timerState.baseElapsedMs - timerState.sessionStartElapsedMs : 0;
+                  } else {
+                    sessionElapsedMs = timerState?.currentSessionStart 
+                      ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+                      : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
+                  }
                   
                   return (isPaused || sessionElapsedMs < 1000) ? (
-                    <Play className="w-3 h-3 text-white" fill="currentColor" />
+                    <Play className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
                   ) : (
-                    <Pause className="w-3 h-3 text-white" fill="currentColor" />
+                    <Pause className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
                   );
                 })()}
-              </Button>
+              </button>
               
               {/* Expand chevron */}
-              <Button 
-                variant="ghost"
-                size="sm"
-                className="w-6 h-6 p-0 hover:bg-black/10 rounded-lg flex-shrink-0"
+              <button
+                className="group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border border-gray-200/50 hover:border-gray-600/50 hover:shadow-sm overflow-hidden flex-shrink-0"
+                style={{ backgroundColor: 'transparent' }}
                 onClick={() => {
                   setIsUltraCompact(false);
                   if (pipWindow && !pipWindow.closed) {
@@ -611,8 +641,9 @@ export const TaskCard = ({
                   }
                 }}
               >
-                <ChevronDown className="w-3 h-3 text-white" strokeWidth={4} />
-              </Button>
+                <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
+                <Maximize2 className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" strokeWidth={2.5} />
+              </button>
             </div>
           </div>
         </div>

@@ -113,13 +113,13 @@ export const TaskTimeDisplay = ({
       <div className="flex flex-col items-end text-xs">
         <span 
           style={{ 
-            color: 'rgba(255, 255, 255, 0.5)',
+            color: 'hsl(220 10% 40%)',
             fontSize: '10px'
           }}
         >
           {overtimeDisplay}
         </span>
-        <span style={{ color: 'white' }}>
+        <span style={{ color: 'hsl(220 10% 50%)' }}>
           {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
         </span>
       </div>
