@@ -34,26 +34,32 @@ export const ShuffleAnimation = ({ isProcessing, onLoadingComplete, isPiP = fals
 
   // Preload images and enforce minimum loading time
   useEffect(() => {
-    if (randomCards.length > 0 && isProcessing) {
+    if (isProcessing) {
       // Start minimum time timer (2.5 seconds)
       const minTimeTimer = setTimeout(() => {
         setMinTimeElapsed(true);
       }, 2500);
 
-      // Preload all images
-      const imagePromises = randomCards.map((card) => {
-        return new Promise<void>((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve();
-          img.onerror = () => resolve(); // Still resolve on error to not block loading
-          img.src = card.imageUrl;
+      if (randomCards.length > 0) {
+        // Preload all images
+        const imagePromises = randomCards.map((card) => {
+          return new Promise<void>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // Still resolve on error to not block loading
+            img.src = card.imageUrl;
+          });
         });
-      });
 
-      Promise.all(imagePromises).then(() => {
+        Promise.all(imagePromises).then(() => {
+          setImagesLoaded(true);
+          setShouldShowCards(true);
+        });
+      } else {
+        // No images to load - set as loaded immediately
         setImagesLoaded(true);
-        setShouldShowCards(true);
-      });
+        setShouldShowCards(false); // No cards to show
+      }
 
       return () => {
         clearTimeout(minTimeTimer);
