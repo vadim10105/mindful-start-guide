@@ -2217,7 +2217,7 @@ const TasksContent = () => {
             {/* Title */}
             <h1 className={`text-white text-3xl sm:text-4xl lg:text-5xl mb-8 text-center relative transition-opacity duration-300 ease-out ${
               isContainerCollapsed ? 'opacity-0' : 'opacity-100'
-            }`} style={{ fontFamily: 'Playfair Display, serif', zIndex: 10 }}>
+            }`} style={{ fontFamily: 'Playfair Display, serif', zIndex: 10, display: 'none' }}>
               Shape Dreams with Intentions
             </h1>
             
@@ -2252,9 +2252,12 @@ const TasksContent = () => {
                   
                   {/* Unified expandable input */}
                   <div className="flex-shrink-0 pb-3" style={{ marginTop: '12px' }}>
-                    <div className={`relative bg-transparent focus-within:bg-transparent transition-all duration-500 rounded-[20px] border border-transparent focus-within:border-[#AAAAAA]/50 overflow-hidden ${
+                    <div className={`relative transition-all duration-500 rounded-[20px] border border-transparent overflow-hidden ${
                       activeTaskIds.length > 0 || laterTaskIds.length > 0 || isProcessing ? 'opacity-30 focus-within:opacity-100' : 'opacity-100'
-                    }`}>
+                    }`}
+                    style={{
+                      backgroundColor: activeTaskIds.length === 0 && laterTaskIds.length === 0 ? 'rgba(170, 170, 170, 0.1)' : (isInputExpanded ? 'rgba(170, 170, 170, 0.1)' : 'transparent')
+                    }}>
                       <textarea
                         ref={textareaRef}
                         value={inputText}
@@ -2777,7 +2780,7 @@ const TasksContent = () => {
                   isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
                 style={{
-                  top: 'calc(50% + 41px)', // Offset for title
+                  top: 'calc(50% + 0px)', // Offset for title
                   height: cardRef.current?.offsetHeight || '700px',
                   transform: `translateY(-50%) ${!timelineExpanded ? 'translateX(0)' : 'translateX(0)'}`,
                   right: timelineExpanded ? '-6rem' : '10rem',
