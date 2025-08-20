@@ -650,6 +650,7 @@ const TasksContent = () => {
   const [hoveredTaskIndex, setHoveredTaskIndex] = useState<number | undefined>(undefined);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const [collectionExpanded, setCollectionExpanded] = useState(false);
+  const [autoCollapseTimer, setAutoCollapseTimer] = useState<NodeJS.Timeout | null>(null);
   const [currentCollection, setCurrentCollection] = useState<{
     id: string;
     name: string;
@@ -979,8 +980,41 @@ const TasksContent = () => {
     fetchCollectionData();
   }, []); // Empty dependency array to run only on mount
 
-  // Remove the adaptive positioning - we'll use fixed positions relative to card top
-  // This useEffect is no longer needed since we're positioning relative to the card
+  // Auto-expand collection progress when no active tasks and auto-collapse after 30s
+  useEffect(() => {
+    // If there are no active tasks and collection exists
+    if (activeTaskIds.length === 0 && currentCollection && !isContainerCollapsed) {
+      // Expand the collection progress
+      setCollectionExpanded(true);
+      
+      // Clear any existing timer
+      if (autoCollapseTimer) {
+        clearTimeout(autoCollapseTimer);
+      }
+      
+      // Set a new timer to collapse after 30 seconds
+      const timer = setTimeout(() => {
+        setCollectionExpanded(false);
+        setAutoCollapseTimer(null);
+      }, 30000); // 30 seconds
+      
+      setAutoCollapseTimer(timer);
+    } else if (activeTaskIds.length > 0) {
+      // If tasks are added, clear timer and collapse
+      if (autoCollapseTimer) {
+        clearTimeout(autoCollapseTimer);
+        setAutoCollapseTimer(null);
+      }
+      setCollectionExpanded(false);
+    }
+    
+    // Cleanup timer on unmount
+    return () => {
+      if (autoCollapseTimer) {
+        clearTimeout(autoCollapseTimer);
+      }
+    };
+  }, [activeTaskIds.length, currentCollection, isContainerCollapsed]);
 
   // Clear input and collapse gently
   const clearInputGently = () => {
@@ -2370,6 +2404,12 @@ const TasksContent = () => {
                     }
                   }}
                   onClick={() => {
+                    // Clear any existing auto-collapse timer
+                    if (autoCollapseTimer) {
+                      clearTimeout(autoCollapseTimer);
+                      setAutoCollapseTimer(null);
+                    }
+                    
                     setCollectionExpanded(!collectionExpanded);
                     // Reset to current collection when collapsing
                     if (collectionExpanded) {
@@ -2434,10 +2474,10 @@ const TasksContent = () => {
                   {/* Unified expandable input */}
                   <div className="flex-shrink-0 pb-3" style={{ marginTop: '12px' }}>
                     <div className={`relative transition-all duration-500 rounded-[20px] border border-transparent overflow-hidden ${
-                      activeTaskIds.length > 0 || laterTaskIds.length > 0 || isProcessing ? 'opacity-30 focus-within:opacity-100' : 'opacity-100'
+                      activeTaskIds.length > 0 || isProcessing ? 'opacity-30 focus-within:opacity-100' : 'opacity-100'
                     }`}
                     style={{
-                      backgroundColor: activeTaskIds.length === 0 && laterTaskIds.length === 0 ? 'rgba(170, 170, 170, 0.1)' : (isInputExpanded ? 'rgba(170, 170, 170, 0.1)' : 'transparent')
+                      backgroundColor: activeTaskIds.length === 0 ? 'rgba(170, 170, 170, 0.1)' : (isInputExpanded ? 'rgba(170, 170, 170, 0.1)' : 'transparent')
                     }}>
                       <textarea
                         ref={textareaRef}
@@ -2462,7 +2502,7 @@ const TasksContent = () => {
                         style={{ 
                           color: 'var(--text-primary)',
                           height: isInputExpanded 
-                            ? (activeTaskIds.length === 0 && laterTaskIds.length === 0) 
+                            ? (activeTaskIds.length === 0) 
                               ? '180px' 
                               : '120px' 
                             : '56px',
