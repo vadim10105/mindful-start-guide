@@ -24,6 +24,7 @@ import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery
 import { GalleryIcon } from "@/components/tasks/collection/GalleryIcon";
 import { CloudIframeBackground } from "@/components/background/CloudIframeBackground";
 import { ShuffleAnimation } from "@/components/tasks/game/ShuffleAnimation";
+import { CollectionProgress } from "@/components/tasks/task-capture/CollectionProgress";
 import {
   DndContext,
   closestCenter,
@@ -592,6 +593,23 @@ const TasksContent = () => {
     setInitialCardId(cardId);
     setShowImmersiveGallery(true);
   };
+
+  // Collection navigation handlers
+  const handlePreviousCollection = () => {
+    if (currentCollectionIndex > 0) {
+      const newIndex = currentCollectionIndex - 1;
+      setCurrentCollectionIndex(newIndex);
+      setCurrentCollection(allCollections[newIndex]);
+    }
+  };
+
+  const handleNextCollection = () => {
+    if (currentCollectionIndex < allCollections.length - 1) {
+      const newIndex = currentCollectionIndex + 1;
+      setCurrentCollectionIndex(newIndex);
+      setCurrentCollection(allCollections[newIndex]);
+    }
+  };
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isContainerCollapsed, setIsContainerCollapsed] = useState(false);
@@ -631,6 +649,25 @@ const TasksContent = () => {
   const [cardDimensions, setCardDimensions] = useState({ top: 0, height: 0 });
   const [hoveredTaskIndex, setHoveredTaskIndex] = useState<number | undefined>(undefined);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
+  const [collectionExpanded, setCollectionExpanded] = useState(false);
+  const [currentCollection, setCurrentCollection] = useState<{
+    id: string;
+    name: string;
+    totalCards: number;
+    earnedCards: number;
+    cardImages: string[];
+    displayOrder: number;
+  } | null>(null);
+  const [allCollections, setAllCollections] = useState<Array<{
+    id: string;
+    name: string;
+    totalCards: number;
+    earnedCards: number;
+    cardImages: string[];
+    displayOrder: number;
+  }>>([]);
+  const [currentCollectionIndex, setCurrentCollectionIndex] = useState(0);
+  const [collectionProgressTop, setCollectionProgressTop] = useState({ collapsed: 110, expanded: -20, hover: 70 });
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskText, setEditingTaskText] = useState('');
   const { toast } = useToast();
@@ -859,6 +896,91 @@ const TasksContent = () => {
       // Keep later section collapsed by default
     }
   }, [activeTaskIds, laterTaskIds, cameFromBrainDump, isProcessing, isTransitioning, laterTasksExpanded]);
+
+  // Fetch collection data on mount
+  useEffect(() => {
+    const fetchCollectionData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Get all collections
+        const { data: collections, error: collectionError } = await supabase
+          .from('card_collections')
+          .select('*')
+          .order('display_order');
+
+        if (collectionError || !collections || collections.length === 0) {
+          console.error('Error loading collections:', collectionError);
+          return;
+        }
+
+        // Get all earned cards for the user
+        const { data: earnedCardsData, error: earnedCardsError } = await supabase
+          .from('tasks')
+          .select(`
+            id,
+            collection_card_id,
+            task_status,
+            collection_cards (
+              id,
+              card_number,
+              image_url,
+              collection_id
+            )
+          `)
+          .eq('user_id', user.id)
+          .in('task_status', ['complete', 'made_progress'])
+          .not('collection_card_id', 'is', null);
+
+        if (earnedCardsError) {
+          console.error('Error loading earned cards:', earnedCardsError);
+          return;
+        }
+
+        // Process all collections
+        const processedCollections = await Promise.all(collections.map(async (collection) => {
+          // Filter cards for this specific collection
+          const cardsForThisCollection = earnedCardsData
+            ?.filter(task => task.collection_cards?.collection_id === collection.id)
+            .sort((a, b) => (a.collection_cards?.card_number || 0) - (b.collection_cards?.card_number || 0)) || [];
+          
+          // Get all card images for the collection (including unearned ones)
+          const { data: allCollectionCards } = await supabase
+            .from('collection_cards')
+            .select('card_number, image_url')
+            .eq('collection_id', collection.id)
+            .order('card_number')
+            .limit(6);
+          
+          // Create array of card images, preserving order
+          const cardImages = allCollectionCards?.map(card => card.image_url) || [];
+
+          return {
+            id: collection.id,
+            name: collection.name,
+            totalCards: collection.total_cards,
+            earnedCards: cardsForThisCollection.length,
+            cardImages: cardImages,
+            displayOrder: collection.display_order
+          };
+        }));
+
+        setAllCollections(processedCollections);
+        if (processedCollections.length > 0) {
+          setCurrentCollection(processedCollections[0]);
+          setCurrentCollectionIndex(0);
+        }
+      } catch (error) {
+        console.error('Error fetching collection data:', error);
+      }
+    };
+
+    fetchCollectionData();
+  }, []); // Empty dependency array to run only on mount
+
+  // Remove the adaptive positioning - we'll use fixed positions relative to card top
+  // This useEffect is no longer needed since we're positioning relative to the card
 
   // Clear input and collapse gently
   const clearInputGently = () => {
@@ -2223,10 +2345,69 @@ const TasksContent = () => {
             
             {/* Card Gallery Icon */}
             <GalleryIcon onOpenGallery={handleOpenGallery} refreshTrigger={galleryRefreshTrigger} />
-            <Card 
+            
+            {/* Card and Collection Progress Container */}
+            <div className="relative w-full max-w-[750px]">
+              {/* Collection Progress - Positioned relative to Card top */}
+              {currentCollection && (
+                <div 
+                  className={`hidden lg:block absolute left-1/2 -translate-x-1/2 transition-all duration-1000 ease-in-out cursor-pointer ${
+                    isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                  }`}
+                  style={{
+                    width: isContainerCollapsed ? '368px' : '100%',
+                    maxWidth: isContainerCollapsed ? '368px' : '750px',
+                    top: collectionExpanded ? '-100px' : '0px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!collectionExpanded) {
+                      e.currentTarget.style.top = '-10px';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!collectionExpanded) {
+                      e.currentTarget.style.top = '0px';
+                    }
+                  }}
+                  onClick={() => {
+                    setCollectionExpanded(!collectionExpanded);
+                    // Reset to current collection when collapsing
+                    if (collectionExpanded) {
+                      // Find the first collection with progress
+                      const currentIndex = allCollections.findIndex(c => c.earnedCards > 0);
+                      if (currentIndex >= 0) {
+                        setCurrentCollectionIndex(currentIndex);
+                        setCurrentCollection(allCollections[currentIndex]);
+                      } else if (allCollections.length > 0) {
+                        // If no progress, default to first collection
+                        setCurrentCollectionIndex(0);
+                        setCurrentCollection(allCollections[0]);
+                      }
+                    }
+                  }}
+                >
+                  {currentCollection && (
+                    <CollectionProgress 
+                      collectionNumber={currentCollection.displayOrder}
+                      collectionTitle={currentCollection.name}
+                      totalCards={currentCollection.totalCards}
+                      collectedCards={currentCollection.earnedCards}
+                      cardImages={currentCollection.cardImages}
+                      className=""
+                      onOpenGallery={() => handleOpenGallery(currentCollection.id)}
+                      onPrevious={handlePreviousCollection}
+                      onNext={handleNextCollection}
+                      hasPrevious={currentCollectionIndex > 0}
+                      hasNext={currentCollectionIndex < allCollections.length - 1}
+                    />
+                  )}
+                </div>
+              )}
+            
+              <Card 
               ref={cardRef}
               id="main-task-container"
-              className={`border-0 flex flex-col transition-all duration-[1500ms] ease-out backdrop-blur-md ${
+              className={`border-0 flex flex-col transition-all duration-[1500ms] ease-out backdrop-blur-md mt-12 relative z-20 ${
                 isContainerCollapsed 
                   ? 'w-[368px]' 
                   : 'w-full max-w-[750px] h-full sm:h-auto'
@@ -2237,7 +2418,7 @@ const TasksContent = () => {
                 zIndex: 2,
                 boxShadow: isContainerCollapsed 
                   ? '0 0 40px 20px var(--blur-overlay-bg)'
-                  : '0 0 80px 40px var(--blur-overlay-bg), 0 0 120px 60px var(--blur-overlay-bg)',
+                  : '0 -10px 25px -10px rgba(0, 0, 0, 0.08), 0 0 80px 40px var(--blur-overlay-bg), 0 0 120px 60px var(--blur-overlay-bg)',
                 borderRadius: '20px',
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)',
@@ -2248,7 +2429,7 @@ const TasksContent = () => {
               isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}>
               {/* Unified input */}
-              <div ref={taskListContentRef} className="flex flex-col h-full max-h-[700px] min-h-[400px] relative">
+              <div ref={taskListContentRef} className="flex flex-col h-full max-h-[600px] min-h-[400px] relative">
                   
                   {/* Unified expandable input */}
                   <div className="flex-shrink-0 pb-3" style={{ marginTop: '12px' }}>
@@ -2772,9 +2953,10 @@ const TasksContent = () => {
             )}
             
             </Card>
+            </div>
             
-            {/* Timeline */}
-            {(listTasks.length > 0 || activeTaskIds.length > 0) && (
+            {/* Timeline - TEMPORARILY HIDDEN */}
+            {false && (listTasks.length > 0 || activeTaskIds.length > 0) && (
               <div 
                 className={`hidden lg:block absolute w-64 overflow-y-auto transition-all duration-1000 ease-in-out cursor-pointer group ${
                   isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
