@@ -650,7 +650,8 @@ const TasksContent = () => {
   const [hoveredTaskIndex, setHoveredTaskIndex] = useState<number | undefined>(undefined);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const [collectionExpanded, setCollectionExpanded] = useState(false);
-  const [autoCollapseTimer, setAutoCollapseTimer] = useState<NodeJS.Timeout | null>(null);
+  const autoCollapseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasManuallyInteracted, setHasManuallyInteracted] = useState(false);
   const [currentCollection, setCurrentCollection] = useState<{
     id: string;
     name: string;
@@ -982,39 +983,40 @@ const TasksContent = () => {
 
   // Auto-expand collection progress when no active tasks and auto-collapse after 30s
   useEffect(() => {
-    // If there are no active tasks and collection exists
-    if (activeTaskIds.length === 0 && currentCollection && !isContainerCollapsed) {
-      // Expand the collection progress
+    // Only handle auto-expand/collapse when there are no active tasks
+    if (activeTaskIds.length === 0 && currentCollection && !isContainerCollapsed && !hasManuallyInteracted) {
+      // Clear any existing timer
+      if (autoCollapseTimerRef.current) {
+        clearTimeout(autoCollapseTimerRef.current);
+        autoCollapseTimerRef.current = null;
+      }
+      
+      // Auto-expand
       setCollectionExpanded(true);
       
-      // Clear any existing timer
-      if (autoCollapseTimer) {
-        clearTimeout(autoCollapseTimer);
-      }
-      
-      // Set a new timer to collapse after 30 seconds
-      const timer = setTimeout(() => {
+      // Set timer to auto-collapse
+      autoCollapseTimerRef.current = setTimeout(() => {
         setCollectionExpanded(false);
-        setAutoCollapseTimer(null);
+        setHasManuallyInteracted(false); // Reset for next time
+        autoCollapseTimerRef.current = null;
       }, 30000); // 30 seconds
-      
-      setAutoCollapseTimer(timer);
-    } else if (activeTaskIds.length > 0) {
-      // If tasks are added, clear timer and collapse
-      if (autoCollapseTimer) {
-        clearTimeout(autoCollapseTimer);
-        setAutoCollapseTimer(null);
-      }
-      setCollectionExpanded(false);
     }
     
     // Cleanup timer on unmount
     return () => {
-      if (autoCollapseTimer) {
-        clearTimeout(autoCollapseTimer);
+      if (autoCollapseTimerRef.current) {
+        clearTimeout(autoCollapseTimerRef.current);
       }
     };
-  }, [activeTaskIds.length, currentCollection, isContainerCollapsed]);
+  }, [activeTaskIds.length, currentCollection?.id, isContainerCollapsed, hasManuallyInteracted]);
+
+  // Reset manual interaction flag when going from tasks to no tasks
+  useEffect(() => {
+    if (activeTaskIds.length === 0) {
+      // Reset the flag when all tasks are cleared
+      setHasManuallyInteracted(false);
+    }
+  }, [activeTaskIds.length]);
 
   // Clear input and collapse gently
   const clearInputGently = () => {
@@ -2405,10 +2407,13 @@ const TasksContent = () => {
                   }}
                   onClick={() => {
                     // Clear any existing auto-collapse timer
-                    if (autoCollapseTimer) {
-                      clearTimeout(autoCollapseTimer);
-                      setAutoCollapseTimer(null);
+                    if (autoCollapseTimerRef.current) {
+                      clearTimeout(autoCollapseTimerRef.current);
+                      autoCollapseTimerRef.current = null;
                     }
+                    
+                    // Mark as manually interacted
+                    setHasManuallyInteracted(true);
                     
                     setCollectionExpanded(!collectionExpanded);
                     // Reset to current collection when collapsing
