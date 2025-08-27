@@ -104,7 +104,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
     
     const moveCharacter = () => {
       setCharacterX(prev => {
-        const pickupX = 320; // Mine entrance location
+        const pickupX = 290; // Mine entrance location
         const placementX = 40; // Left side placement area
         
         // Character speed adapts to task urgency
@@ -154,7 +154,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   // Handle block pickup when character reaches pickup area
   useEffect(() => {
     // If character reaches mine entrance and there's a block waiting
-    if (characterX >= 315 && !blockBeingCarried && availableBlockAtPickup) {
+    if (characterX >= 285 && !blockBeingCarried && availableBlockAtPickup) {
       setBlockBeingCarried(true);
       setAvailableBlockAtPickup(false); // Block is now taken
     }
@@ -241,7 +241,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
         style={{ 
           height: `${GROUND_HEIGHT}px`,
           background: '#90EE90',
-          clipPath: 'polygon(0% 0%, 75% 0%, 85% 50%, 100% 50%, 100% 100%, 0% 100%)'
+          clipPath: 'polygon(0% 0%, 65% 0%, 80% 50%, 100% 50%, 100% 100%, 0% 100%)'
         }}
       />
       {/* Mine area (stepped down) - temporarily hidden to debug overlay */}
@@ -315,7 +315,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
       <div 
         className="absolute"
         style={{
-          bottom: characterX >= 280 ? `${GROUND_HEIGHT - 18}px` : `${GROUND_HEIGHT}px`, // Lower when in mine
+          bottom: characterX >= 240 ? `${GROUND_HEIGHT - 18}px` : `${GROUND_HEIGHT}px`, // Lower when in mine
           left: `${characterX}px`,
           width: `${CHARACTER_SIZE}px`,
           height: `${CHARACTER_SIZE}px`,
