@@ -220,6 +220,21 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
         zIndex: 20
       }}
     >
+      {/* Pause overlay - covers entire card area */}
+      {isPaused && (
+        <div 
+          className="absolute pointer-events-none"
+          style={{
+            top: `-${GROUND_HEIGHT + 46}px`, // Extend up to cover entire card (90px card - 44px ground = 46px)
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 5 // Lower than text (zIndex 10) but covers the animation
+          }}
+        />
+      )}
       {/* Ground line with mine step */}
       <div 
         className="absolute bottom-0 left-0 right-0" 
@@ -372,12 +387,15 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
       {taskTitle && (
         <div 
           className="absolute bottom-0 left-0 right-0 flex items-center pl-6 pr-4 pb-1"
-          style={{ height: `${GROUND_HEIGHT}px` }}
+          style={{ 
+            height: `${GROUND_HEIGHT}px`,
+            zIndex: 10 // Above the pause overlay
+          }}
         >
           <span 
             className="font-medium text-base w-full" 
             style={{ 
-              color: '#7C7C7C'
+              color: isPaused ? '#FFFFFF' : '#7C7C7C'
             }}
           >
             {isPaused ? (() => {

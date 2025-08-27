@@ -694,7 +694,7 @@ export const TaskCard = ({
         <div className="absolute z-30 w-[110px]" style={{ position: 'absolute', top: '12px', right: '16px' }}>
           {/* Time display - visible when not hovering */}
           <div className={`absolute right-0 flex items-center justify-end w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-0' : 'opacity-100'}`}>
-            <div className="font-medium whitespace-nowrap [&>span]:!text-xs" style={{ color: 'hsl(220 10% 50%)' }}>
+            <div className="font-medium whitespace-nowrap [&>span]:!text-xs" style={{ color: isPaused ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>
               {hasStartTime ? (
                 <TaskTimeDisplay
                   taskId={task.id}
@@ -703,17 +703,21 @@ export const TaskCard = ({
                   isActiveCommitted={isActiveCommitted}
                   isUltraCompact={true}
                   totalPausedTime={pausedTime * 60000}
+                  isPaused={isPaused}
                 />
               ) : (
-                <span style={{ color: 'hsl(220 10% 50%)' }}>--:-- → --:--</span>
+                <span style={{ color: isPaused ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>--:-- → --:--</span>
               )}
             </div>
           </div>
           
           {/* Timer + Play/Pause + Chevron container - visible on hover */}
-          <div className={`absolute right-0 flex items-center justify-end gap-0.5 w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-100' : 'opacity-0'}`}>
+          <div 
+            className={`absolute right-0 flex items-center justify-end gap-0.5 w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-100' : 'opacity-0'}`}
+            style={{ zIndex: isPaused ? 40 : 10 }} // Higher z-index when paused to stay above overlay
+          >
             {/* Timer */}
-            <div className="font-medium whitespace-nowrap text-xs mr-2" style={{ color: 'hsl(220 10% 50%)' }}>
+            <div className="font-medium whitespace-nowrap text-xs mr-2" style={{ color: isPaused ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>
               {(() => {
                 const timerState = taskTimers.get(task.id);
                 if (!timerState) return '0:00';
@@ -768,9 +772,9 @@ export const TaskCard = ({
                 }
                 
                 return (isPaused || sessionElapsedMs < 1000) ? (
-                  <Play className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
+                  <Play className={`w-3 h-3 flex-shrink-0 group-hover:text-white transition-colors duration-300 relative z-10 ${isPaused ? 'text-white' : 'text-gray-600'}`} fill="currentColor" />
                 ) : (
-                  <Pause className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
+                  <Pause className={`w-3 h-3 flex-shrink-0 group-hover:text-white transition-colors duration-300 relative z-10 ${isPaused ? 'text-white' : 'text-gray-600'}`} fill="currentColor" />
                 );
               })()}
             </button>
@@ -791,10 +795,11 @@ export const TaskCard = ({
               }}
             >
               <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
-              <Maximize2 className="w-3 h-3 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" strokeWidth={2.5} />
+              <Maximize2 className={`w-3 h-3 flex-shrink-0 group-hover:text-white transition-colors duration-300 relative z-10 ${isPaused ? 'text-white' : 'text-gray-600'}`} strokeWidth={2.5} />
             </button>
           </div>
         </div>
+
       </Card>
     );
   }
@@ -871,7 +876,7 @@ export const TaskCard = ({
             </div>
             
             
-            <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px', color: 'hsl(220 10% 50%)' }}>
+            <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px', color: isPaused ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>
               {taskStartTimes[task.id] ? (
                 <TaskTimeDisplay
                   taskId={task.id}
@@ -879,6 +884,7 @@ export const TaskCard = ({
                   estimatedTime={task.estimated_time}
                   isActiveCommitted={isActiveCommitted}
                   totalPausedTime={pausedTime * 60000}
+                  isPaused={isPaused}
                 />
               ) : (
                 <>
