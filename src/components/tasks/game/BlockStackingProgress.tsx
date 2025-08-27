@@ -6,9 +6,10 @@ interface BlockStackingProgressProps {
   isOvertime: boolean;
   taskTitle?: string;
   estimatedTime?: string;
+  pausedStartTime?: number | null; // Timestamp when pause started
 }
 
-export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitle, estimatedTime }: BlockStackingProgressProps) => {
+export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitle, estimatedTime, pausedStartTime }: BlockStackingProgressProps) => {
   const BLOCK_SIZE = 6;
   const CHARACTER_SIZE = 12;
   const CONTAINER_HEIGHT = 32; // Increased height for taller towers
@@ -57,6 +58,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   const [availableBlockAtPickup, setAvailableBlockAtPickup] = useState(true); // Pre-loaded block waiting
   
   const lastBlockCountRef = useRef(0);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   
   // Block color based on state
   const getBlockColor = () => {
@@ -200,6 +202,14 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
       return () => clearInterval(interval);
     }
   }, [characterState, isPaused]);
+  
+  // Update current time every second for pause timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
   
   return (
     <div 
@@ -370,7 +380,13 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
               color: '#7C7C7C'
             }}
           >
-            {isPaused ? `Paused for XX:XX` : taskTitle}
+            {isPaused ? (() => {
+              if (!pausedStartTime) return 'Paused';
+              const pausedDuration = Math.max(0, Math.floor((currentTime - pausedStartTime) / 1000));
+              const minutes = Math.floor(pausedDuration / 60);
+              const seconds = pausedDuration % 60;
+              return `Paused for ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            })() : taskTitle}
           </span>
         </div>
       )}

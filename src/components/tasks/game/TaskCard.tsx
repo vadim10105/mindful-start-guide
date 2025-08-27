@@ -686,6 +686,7 @@ export const TaskCard = ({
             })()}
             taskTitle={task.title}
             estimatedTime={task.estimated_time}
+            pausedStartTime={pauseTimestamps.get(task.id) || null}
           />
         )}
       
