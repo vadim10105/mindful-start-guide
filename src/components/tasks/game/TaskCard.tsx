@@ -453,11 +453,190 @@ export const TaskCard = ({
     return (
       <Card 
         className="h-[90px] w-[368px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg"
+        style={{ backgroundColor: '#B0E0E6' }}
         onMouseEnter={() => setIsUltraCompactHovered(true)}
         onMouseLeave={() => setIsUltraCompactHovered(false)}
       >
-        {/* Off-white background layer to match main card */}
-        <div className="absolute inset-0" style={{ backgroundColor: '#FFFFF7' }} />
+        {/* Floating Mario-style block clouds */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Cloud 1 */}
+          <div 
+            className="absolute"
+            style={{
+              top: '8px',
+              left: '60px',
+              opacity: 0.9,
+              animation: 'float 8s ease-in-out infinite, move 20s linear infinite'
+            }}
+          >
+            <div className="grid grid-cols-4 gap-0">
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: 'transparent'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+            </div>
+          </div>
+          {/* Cloud 2 */}
+          <div 
+            className="absolute"
+            style={{
+              top: '18px',
+              left: '180px',
+              opacity: 0.7,
+              animation: 'float 12s ease-in-out infinite reverse, move 25s linear infinite reverse'
+            }}
+          >
+            <div className="grid grid-cols-5 gap-0">
+              <div style={{width: '3px', height: '3px', background: 'transparent'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: 'transparent'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: 'transparent'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: 'transparent'}}></div>
+            </div>
+          </div>
+          {/* Cloud 3 */}
+          <div 
+            className="absolute"
+            style={{
+              top: '12px',
+              left: '280px',
+              opacity: 0.8,
+              animation: 'float 10s ease-in-out infinite, move 30s linear infinite'
+            }}
+          >
+            <div className="grid grid-cols-3 gap-0">
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: '#FFFFFF'}}></div>
+              <div style={{width: '4px', height: '4px', background: 'transparent'}}></div>
+            </div>
+          </div>
+          {/* Cloud 4 */}
+          <div 
+            className="absolute"
+            style={{
+              top: '25px',
+              left: '40px',
+              opacity: 0.5,
+              animation: 'float 15s ease-in-out infinite, move 35s linear infinite reverse'
+            }}
+          >
+            <div className="grid grid-cols-2 gap-0">
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+            </div>
+          </div>
+          {/* Cloud 5 */}
+          <div 
+            className="absolute"
+            style={{
+              top: '6px',
+              left: '320px',
+              opacity: 0.6,
+              animation: 'float 9s ease-in-out infinite reverse, move 45s linear infinite'
+            }}
+          >
+            <div className="grid grid-cols-3 gap-0">
+              <div style={{width: '3px', height: '3px', background: 'transparent'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: 'transparent'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+            </div>
+          </div>
+          {/* Cloud 6 */}
+          <div 
+            className="absolute"
+            style={{
+              top: '22px',
+              left: '120px',
+              opacity: 0.4,
+              animation: 'float 18s ease-in-out infinite, move 60s linear infinite reverse'
+            }}
+          >
+            <div className="grid grid-cols-4 gap-0">
+              <div style={{width: '3px', height: '3px', background: 'transparent'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: 'transparent'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+              <div style={{width: '3px', height: '3px', background: '#FFFFFF'}}></div>
+            </div>
+          </div>
+          {/* Cloud 7 */}
+          <div 
+            className="absolute"
+            style={{
+              top: '14px',
+              left: '240px',
+              opacity: 0.5,
+              animation: 'float 22s ease-in-out infinite reverse, move 55s linear infinite'
+            }}
+          >
+            <div className="grid grid-cols-4 gap-0">
+              <div style={{width: '2px', height: '2px', background: 'transparent'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: 'transparent'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+            </div>
+          </div>
+          {/* Cloud 8 */}
+          <div 
+            className="absolute"
+            style={{
+              top: '4px',
+              left: '10px',
+              opacity: 0.3,
+              animation: 'float 25s ease-in-out infinite, move 70s linear infinite'
+            }}
+          >
+            <div className="grid grid-cols-4 gap-0">
+              <div style={{width: '2px', height: '2px', background: 'transparent'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: 'transparent'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+              <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
+            </div>
+          </div>
+        </div>
+        <style jsx>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+          }
+          @keyframes move {
+            0% { transform: translateX(0px); }
+            100% { transform: translateX(400px); }
+          }
+        `}</style>
         
         {/* Progress background - fills from left dynamically */}
         {!useBlockStackingProgress && (

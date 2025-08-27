@@ -60,9 +60,9 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   
   // Block color based on state
   const getBlockColor = () => {
-    if (isPaused) return 'rgba(251, 191, 36, 0.4)';
+    if (isPaused) return '#fbbf24';
     if (isOvertime) return '#f59e0b';
-    return 'rgb(251 191 36)';
+    return '#fbbf24';
   };
   
   const addBlock = useCallback(() => {
@@ -206,7 +206,8 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
       className="absolute bottom-0 left-0 right-0" 
       style={{ 
         height: `${CONTAINER_HEIGHT}px`,
-        pointerEvents: 'none' 
+        pointerEvents: 'none',
+        zIndex: 20
       }}
     >
       {/* Ground line with mine step */}
@@ -214,7 +215,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
         className="absolute bottom-0 left-0 right-0" 
         style={{ 
           height: `${GROUND_HEIGHT}px`,
-          background: 'rgba(0, 0, 0, 0.1)',
+          background: '#90EE90',
           clipPath: 'polygon(0% 0%, 75% 0%, 85% 50%, 100% 50%, 100% 100%, 0% 100%)'
         }}
       />
