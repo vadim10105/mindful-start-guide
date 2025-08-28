@@ -453,7 +453,66 @@ export const TaskCard = ({
     return (
       <Card 
         className="h-[90px] w-[368px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg"
-        style={{ backgroundColor: '#8FD5EA' }}
+        style={{ 
+          background: (() => {
+            const estimatedMinutes = parseTimeToMinutes(task.estimated_time || '');
+            if (estimatedMinutes <= 0) return '#8FD5EA'; // No estimated time, stay blue
+            
+            const timerState = taskTimers.get(task.id);
+            const sessionElapsedMs = timerState?.currentSessionStart 
+              ? (timerState.baseElapsedMs - timerState.sessionStartElapsedMs) + (ultraCompactTime - timerState.currentSessionStart)
+              : (timerState?.baseElapsedMs || 0) - (timerState?.sessionStartElapsedMs || 0);
+            const elapsedMinutes = sessionElapsedMs / 60000;
+            
+            // Fixed timing: 100% = sunset, +5min = night (regardless of task duration)
+            const estimatedTimeMs = estimatedMinutes * 60000;
+            const overtimeMs = sessionElapsedMs - estimatedTimeMs;
+            
+            // Phase 1: Blue sky (0% - 50% of estimated time)
+            if (sessionElapsedMs < estimatedTimeMs * 0.5) {
+              return '#8FD5EA'; // Original blue sky
+            }
+            // Phase 2: Blue to Sunset transition (50% - 100% of estimated time)
+            else if (sessionElapsedMs < estimatedTimeMs) {
+              const sunsetProgress = (sessionElapsedMs - estimatedTimeMs * 0.5) / (estimatedTimeMs * 0.5); // 0 to 1
+              const blueR = 143, blueG = 213, blueB = 234;
+              const sunsetTopR = 255, sunsetTopG = 228, sunsetTopB = 179;
+              const sunsetBottomR = 255, sunsetBottomG = 179, sunsetBottomB = 102;
+              
+              const topR = Math.round(blueR + (sunsetTopR - blueR) * sunsetProgress);
+              const topG = Math.round(blueG + (sunsetTopG - blueG) * sunsetProgress);
+              const topB = Math.round(blueB + (sunsetTopB - blueB) * sunsetProgress);
+              
+              const bottomR = Math.round(blueR + (sunsetBottomR - blueR) * sunsetProgress);
+              const bottomG = Math.round(blueG + (sunsetBottomG - blueG) * sunsetProgress);
+              const bottomB = Math.round(blueB + (sunsetBottomB - blueB) * sunsetProgress);
+              
+              return `linear-gradient(to bottom, rgb(${topR}, ${topG}, ${topB}), rgb(${bottomR}, ${bottomG}, ${bottomB}))`;
+            }
+            // Phase 3: Sunset to Night transition (100% to +5 minutes overtime)
+            else if (overtimeMs < 300000) { // 5 minutes = 300,000ms
+              const nightProgress = overtimeMs / 300000; // 0 to 1 over 5 minutes
+              const sunsetTopR = 255, sunsetTopG = 228, sunsetTopB = 179;
+              const sunsetBottomR = 255, sunsetBottomG = 179, sunsetBottomB = 102;
+              const nightTopR = 25, nightTopG = 25, nightTopB = 112; // Dark blue
+              const nightBottomR = 72, nightBottomG = 61, nightBottomB = 139; // Dark purple
+              
+              const topR = Math.round(sunsetTopR + (nightTopR - sunsetTopR) * nightProgress);
+              const topG = Math.round(sunsetTopG + (nightTopG - sunsetTopG) * nightProgress);
+              const topB = Math.round(sunsetTopB + (nightTopB - sunsetTopB) * nightProgress);
+              
+              const bottomR = Math.round(sunsetBottomR + (nightBottomR - sunsetBottomR) * nightProgress);
+              const bottomG = Math.round(sunsetBottomG + (nightBottomG - sunsetBottomG) * nightProgress);
+              const bottomB = Math.round(sunsetBottomB + (nightBottomB - sunsetBottomB) * nightProgress);
+              
+              return `linear-gradient(to bottom, rgb(${topR}, ${topG}, ${topB}), rgb(${bottomR}, ${bottomG}, ${bottomB}))`;
+            }
+            // Phase 4: Full night sky (5+ minutes overtime)
+            else {
+              return 'linear-gradient(to bottom, #191970, #483d8b)'; // Night gradient: dark blue to dark purple
+            }
+          })()
+        }}
         onMouseEnter={() => setIsUltraCompactHovered(true)}
         onMouseLeave={() => setIsUltraCompactHovered(false)}
       >

@@ -178,7 +178,7 @@ export async function getNextSequentialCard(userId: string, collectionId?: strin
       const { data: collections } = await supabase
         .from('card_collections')
         .select('id')
-        .order('created_at')
+        .order('display_order')
         .limit(1);
       
       if (!collections?.length) {
@@ -212,12 +212,12 @@ export async function getNextSequentialCard(userId: string, collectionId?: strin
       const { data: collections } = await supabase
         .from('card_collections')
         .select('id')
-        .order('created_at')
-        .gt('created_at', (await supabase
+        .order('display_order')
+        .gt('display_order', (await supabase
           .from('card_collections')
-          .select('created_at')
+          .select('display_order')
           .eq('id', targetCollectionId)
-          .single()).data?.created_at || '')
+          .single()).data?.display_order || 0)
         .limit(1);
 
       if (collections?.length) {

@@ -27,9 +27,15 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   // Calculate work pace based on task duration
   const parseTimeToMinutes = (timeStr: string): number => {
     if (!timeStr) return 30;
-    const match = timeStr.match(/(\d+)(?:\s*(?:min|minute|minutes|hrs?|hours?))/i);
+    
+    // More flexible regex to catch various formats
+    const match = timeStr.match(/(\d+)(?:\s*(?:min|minute|minutes|hrs?|hour|hours?))?/i);
+    
     const num = match ? parseInt(match[1]) : 30;
-    return timeStr.toLowerCase().includes('h') ? num * 60 : num;
+    const isHours = timeStr.toLowerCase().includes('h');
+    const result = isHours ? num * 60 : num;
+    
+    return result;
   };
   
   const taskMinutes = parseTimeToMinutes(estimatedTime || '30min');
@@ -69,26 +75,47 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   };
   
   const addBlock = useCallback(() => {
-    console.log('🧱 AddBlock called');
     setPlacedBlocks(prev => {
-      console.log('📊 Current columns:', prev);
       const newColumns = [...prev];
-      const lastColumn = newColumns[newColumns.length - 1];
       
-      if (!lastColumn || lastColumn.height >= MAX_BLOCKS_PER_COLUMN) {
-        // Start new column
-        console.log('🏗️ Starting new column');
-        newColumns.push({ height: 1, isNew: true });
-      } else {
-        // Add to existing column
-        console.log('⬆️ Adding to existing column');
-        newColumns[newColumns.length - 1] = { 
-          height: lastColumn.height + 1, 
-          isNew: true 
-        };
+      // For short tasks, just place more blocks per trip
+      const taskMinutes = parseTimeToMinutes(estimatedTime || '30min');
+      const currentBlocks = newColumns.reduce((sum, col) => sum + col.height, 0);
+      
+      // Simple rules based on tested behavior
+      let blocksPerTrip = 1; // default for >5 minute tasks
+      if (taskMinutes <= 5) {
+        blocksPerTrip = 3; // Tested: works well, just needs small rest
       }
       
-      console.log('📊 New columns:', newColumns);
+      // Don't place more blocks than we need total
+      const remainingBlocks = TOTAL_BLOCKS - currentBlocks;
+      blocksPerTrip = Math.min(blocksPerTrip, remainingBlocks);
+      
+      // Just show the key info once per placement
+      if (blocksPerTrip > 1 || taskMinutes <= 10) {
+        const estimatedFinishTime = ((TOTAL_BLOCKS - currentBlocks) / blocksPerTrip) * 10; // seconds
+        console.log(`🧱 ${taskMinutes}min task: Placing ${blocksPerTrip} blocks (${currentBlocks}/${TOTAL_BLOCKS} total) - Est. finish in ${Math.round(estimatedFinishTime)}s`);
+      }
+      
+      // Add multiple blocks for short tasks
+      let blocksAdded = 0;
+      for (let i = 0; i < blocksPerTrip && blocksAdded < blocksPerTrip; i++) {
+        const lastColumn = newColumns[newColumns.length - 1];
+        
+        if (!lastColumn || lastColumn.height >= MAX_BLOCKS_PER_COLUMN) {
+          // Start new column
+          newColumns.push({ height: 1, isNew: true });
+          blocksAdded++;
+        } else if (lastColumn.height < MAX_BLOCKS_PER_COLUMN) {
+          // Add to existing column
+          newColumns[newColumns.length - 1] = { 
+            height: lastColumn.height + 1, 
+            isNew: true 
+          };
+          blocksAdded++;
+        }
+      }
       
       // Clear isNew flag after animation
       setTimeout(() => {
@@ -97,7 +124,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
       
       return newColumns;
     });
-  }, [MAX_BLOCKS_PER_COLUMN]);
+  }, [MAX_BLOCKS_PER_COLUMN, estimatedTime, TOTAL_BLOCKS]);
   
   // Continuous character movement - always slowly walking
   useEffect(() => {
@@ -151,10 +178,12 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
     setPlacedBlocks(columns);
     lastBlockCountRef.current = blocksToShow;
     
-    // Initialize block supply pile with 4 blocks
+    // Initialize block supply pile with 4 blocks only if task is not completed
     const initialSupply = [];
-    for (let i = 0; i < 4; i++) {
-      initialSupply.push({ id: blockIdCounter.current++ });
+    if (progress < 100) {
+      for (let i = 0; i < 4; i++) {
+        initialSupply.push({ id: blockIdCounter.current++ });
+      }
     }
     setBlockSupplyPile(initialSupply);
   }, []); // Only on mount
@@ -186,20 +215,38 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
     
     if (characterX <= currentTowerX + 10 && blockBeingCarried && !hasPlacedBlock.current) {
       hasPlacedBlock.current = true;
+      
+      // Calculate rest time based on task duration
+      const taskMinutes = parseTimeToMinutes(estimatedTime || '30min');
+      let restTimeMs = 0;
+      if (taskMinutes <= 5) {
+        restTimeMs = 1000; // 1 second rest for very short tasks
+      } else if (taskMinutes > 10) {
+        // For longer tasks, add wait time to stretch completion to match estimated time
+        const totalTripsNeeded = TOTAL_BLOCKS / 1; // 1 block per trip
+        const availableTimeSeconds = taskMinutes * 60;
+        const desiredTripTime = availableTimeSeconds / totalTripsNeeded;
+        const baseTripTime = 12; // ~12 seconds base trip time
+        const extraWaitTime = Math.max(0, desiredTripTime - baseTripTime);
+        restTimeMs = extraWaitTime * 1000; // Convert to milliseconds
+      }
+      // 5-10 minute tasks use no extra rest (natural pace works well)
+      
       setTimeout(() => {
         // Add block to towers immediately for visual feedback
         addBlock();
         setBlockBeingCarried(false);
         hasPlacedBlock.current = false;
-      }, placementDelay); // Adaptive placement timing
+      }, placementDelay + restTimeMs);
     }
   }, [characterX, blockBeingCarried, addBlock]);
 
   // Generate new block at pickup when progress increases
   useEffect(() => {
     const currentBlockCount = blocksToShow;
+    const totalPlacedBlocks = placedBlocks.reduce((sum, col) => sum + col.height, 0);
     
-    if (currentBlockCount > lastBlockCountRef.current) {
+    if (currentBlockCount > lastBlockCountRef.current && totalPlacedBlocks < TOTAL_BLOCKS) {
       // Add new block that slides in from the back
       setBlockSupplyPile(prev => {
         if (prev.length >= 4) return prev; // Keep max 4 blocks
@@ -219,7 +266,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
       
       lastBlockCountRef.current = currentBlockCount;
     }
-  }, [blocksToShow, blockBeingCarried]);
+  }, [blocksToShow, blockBeingCarried, placedBlocks, TOTAL_BLOCKS]);
   
   // Walk animation
   useEffect(() => {
@@ -268,8 +315,58 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
         className="absolute bottom-0 left-0 right-0" 
         style={{ 
           height: `${GROUND_HEIGHT}px`,
-          background: '#90EE90',
-          clipPath: 'polygon(0% 0%, 65% 0%, 80% 50%, 100% 50%, 100% 100%, 0% 100%)'
+          background: (() => {
+            // For completed tasks, use darker ground
+            if (progress >= 100) return '#558c55'; // Darker but not too dark green for completed tasks
+            
+            const estimatedMinutes = parseTimeToMinutes(estimatedTime || '');
+            if (estimatedMinutes <= 0) return '#90EE90'; // No estimated time, stay light green
+            
+            // Use current time to calculate elapsed time (approximation)
+            const currentTime = Date.now();
+            const pausedDuration = pausedStartTime ? Math.max(0, currentTime - pausedStartTime) : 0;
+            
+            // Rough approximation of elapsed time based on progress
+            // This is imperfect but matches the sky timing approach
+            const estimatedTimeMs = estimatedMinutes * 60000;
+            const approximateElapsedMs = (progress / 100) * estimatedTimeMs;
+            const overtimeMs = Math.max(0, approximateElapsedMs - estimatedTimeMs);
+            
+            // Phase 1: Light green ground (0% - 50% of estimated time)
+            if (approximateElapsedMs < estimatedTimeMs * 0.5) {
+              return '#90EE90'; // Original light green
+            }
+            // Phase 2: Green to darker green transition (50% - 100% of estimated time)
+            else if (approximateElapsedMs < estimatedTimeMs) {
+              const sunsetProgress = (approximateElapsedMs - estimatedTimeMs * 0.5) / (estimatedTimeMs * 0.5); // 0 to 1
+              const lightR = 144, lightG = 238, lightB = 144; // Light green
+              const darkR = 120, darkG = 190, darkB = 120; // Medium green
+              
+              const r = Math.round(lightR + (darkR - lightR) * sunsetProgress);
+              const g = Math.round(lightG + (darkG - lightG) * sunsetProgress);
+              const b = Math.round(lightB + (darkB - lightB) * sunsetProgress);
+              
+              return `rgb(${r}, ${g}, ${b})`;
+            }
+            // Phase 3: Medium green to darker transition (100% to +5 minutes overtime)
+            else if (overtimeMs < 300000) { // 5 minutes = 300,000ms
+              const nightProgress = overtimeMs / 300000; // 0 to 1 over 5 minutes
+              const darkR = 120, darkG = 190, darkB = 120; // Medium green
+              const veryDarkR = 85, veryDarkG = 140, veryDarkB = 85; // Darker green
+              
+              const r = Math.round(darkR + (veryDarkR - darkR) * nightProgress);
+              const g = Math.round(darkG + (veryDarkG - darkG) * nightProgress);
+              const b = Math.round(darkB + (veryDarkB - darkB) * nightProgress);
+              
+              return `rgb(${r}, ${g}, ${b})`;
+            }
+            // Phase 4: Full dark ground (5+ minutes overtime)
+            else {
+              return '#558c55'; // Darker but not too dark green for night
+            }
+          })(),
+          clipPath: 'polygon(0% 0%, 65% 0%, 80% 50%, 100% 50%, 100% 100%, 0% 100%)',
+          transition: 'background 1s ease-in-out'
         }}
       />
       {/* Mine area (stepped down) - temporarily hidden to debug overlay */}
@@ -394,19 +491,19 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
             height="2" 
             fill="#718096"
           />
-          {/* Legs - animate for walking */}
+          {/* Legs - animate for walking and carrying */}
           <rect 
             x="4" 
             y="8" 
             width="2" 
-            height={characterState === 'walking' && walkFrame === 0 ? "3" : "2"} 
+            height={(characterState === 'walking' || characterState === 'carrying') && walkFrame === 0 ? "3" : "2"} 
             fill="#4a5568"
           />
           <rect 
             x="6" 
             y="8" 
             width="2" 
-            height={characterState === 'walking' && walkFrame === 1 ? "3" : "2"} 
+            height={(characterState === 'walking' || characterState === 'carrying') && walkFrame === 1 ? "3" : "2"} 
             fill="#4a5568"
           />
         </svg>
