@@ -81,7 +81,7 @@ export const TaskTimeDisplay = ({
   // If no estimated time, show simple start time
   if (!estimatedTime || !adjustedEstimatedFinishTimeFormatted) {
     return (
-      <span className="text-xs" style={{ color: isPaused ? '#FFFFFF' : '#7C7C7C' }}>
+      <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#7C7C7C' }}>
         {startTimeFormatted}
       </span>
     );
@@ -90,7 +90,7 @@ export const TaskTimeDisplay = ({
   // Normal state: show start → adjusted estimated finish (accounts for paused time)
   if (!isOvertime) {
     return (
-      <span className="text-xs" style={{ color: isPaused ? '#FFFFFF' : '#7C7C7C' }}>
+      <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#7C7C7C' }}>
         {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
       </span>
     );
@@ -115,13 +115,13 @@ export const TaskTimeDisplay = ({
       <div className="flex flex-col items-end text-xs">
         <span 
           style={{ 
-            color: isPaused ? '#FFFFFF' : 'hsl(220 10% 40%)',
+            color: (isUltraCompact || isPaused) ? '#FFFFFF' : 'hsl(220 10% 40%)',
             fontSize: '10px'
           }}
         >
           {overtimeDisplay}
         </span>
-        <span style={{ color: isPaused ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>
+        <span style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>
           {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
         </span>
       </div>
@@ -130,12 +130,12 @@ export const TaskTimeDisplay = ({
 
   // Normal view: inline overtime
   return (
-    <span className="text-xs" style={{ color: isPaused ? '#FFFFFF' : '#7C7C7C' }}>
+    <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#7C7C7C' }}>
       {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
-      <span style={{ color: isPaused ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>  </span>
+      <span style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>  </span>
       <span 
         style={{ 
-          color: isPaused ? '#FFFFFF' : 'hsl(220 10% 45%)', 
+          color: (isUltraCompact || isPaused) ? '#FFFFFF' : 'hsl(220 10% 45%)', 
           opacity: 0.6
         }}
       >

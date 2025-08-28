@@ -2454,7 +2454,7 @@ const TasksContent = () => {
               id="main-task-container"
               className={`border-0 flex flex-col transition-all duration-[1500ms] ease-out backdrop-blur-md mt-12 relative z-20 ${
                 isContainerCollapsed 
-                  ? 'w-[368px]' 
+                  ? 'w-[368px] mx-auto h-auto' 
                   : 'w-full max-w-[750px] h-full sm:h-auto'
               }`}
               style={{ 
@@ -2467,7 +2467,7 @@ const TasksContent = () => {
                 borderRadius: '20px',
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)',
-                aspectRatio: isContainerCollapsed ? '63/88' : 'auto',
+                height: isContainerCollapsed ? '514px' : 'auto',
                 maxWidth: isContainerCollapsed ? '368px' : undefined
               }}>
             <CardContent ref={cardContentRef} className={`flex-1 sm:flex-none flex flex-col px-8 sm:px-10 pt-8 pb-5 sm:pt-10 sm:pb-5 transition-all duration-500 ease-out ${
@@ -3007,7 +3007,7 @@ const TasksContent = () => {
                   isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
                 style={{
-                  top: 'calc(50% + 0px)', // Offset for title
+                  top: 'calc(50% + 26px)', // Offset for title - lowered by 26px
                   height: cardRef.current?.offsetHeight || '700px',
                   transform: `translateY(-50%) ${!timelineExpanded ? 'translateX(0)' : 'translateX(0)'}`,
                   right: timelineExpanded ? '-6rem' : '10rem',

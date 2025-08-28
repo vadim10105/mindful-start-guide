@@ -19,7 +19,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   const MAX_BLOCKS_PER_COLUMN = 4; // Taller towers that feel more substantial
   const TOWER_START_X = 40;
   const TOWER_END_X = 220; // Stop before timer container
-  const TOWER_SPACING = BLOCK_SIZE + 4; // 10px spacing
+  const TOWER_SPACING = BLOCK_SIZE; // No gaps between columns
   const MAX_TOWERS = Math.floor((TOWER_END_X - TOWER_START_X) / TOWER_SPACING); // ~18 towers
   const TOTAL_BLOCKS = MAX_TOWERS * MAX_BLOCKS_PER_COLUMN; // Fill entire available space
   const blocksToShow = Math.floor((progress / 100) * TOTAL_BLOCKS);
@@ -41,7 +41,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   
   // Character speed to complete trips at required rate
   const tripDistance = 520; // pixels round trip
-  const workSpeed = Math.max(0.3, Math.min(2.0, (tripDistance / roundTripTime) / 60)); // pixels per frame
+  const workSpeed = Math.max(0.15, Math.min(1.0, (tripDistance / roundTripTime) / 60)); // pixels per frame
   
   // Minimize delays when time is short - no time for breaks!
   const urgencyFactor = Math.min(1.0, 5 / taskMinutes); // More urgent for shorter tasks
@@ -149,6 +149,13 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
     
     setPlacedBlocks(columns);
     lastBlockCountRef.current = blocksToShow;
+    
+    // Ensure character animation state matches actual progress
+    // If all blocks are already placed, don't make new blocks available
+    const totalPlacedBlocks = columns.reduce((sum, col) => sum + col.height, 0);
+    if (totalPlacedBlocks >= blocksToShow) {
+      setAvailableBlockAtPickup(false);
+    }
   }, []); // Only on mount
   
   // Handle block pickup when character reaches pickup area
@@ -395,7 +402,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
           <span 
             className="font-medium text-base w-full" 
             style={{ 
-              color: isPaused ? '#FFFFFF' : '#7C7C7C'
+              color: isPaused ? '#FFFFFF' : '#354239'
             }}
           >
             {isPaused ? (() => {

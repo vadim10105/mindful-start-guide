@@ -1,18 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const placeholderMessages = [
-  "Sure, just add everything you forgot last week.",
-  "Go ahead, overwhelm me. I'm built for this.",
-  "Is that a to-do or a plot twist? Either way, write it down.",
-  "Another distraction? Fantastic. Let's capture it.",
-  "Creative chaos? Sounds about right.",
-  "Typing is cheaper than a coffee break, right?",
-  "Remember: perfection is so last year.",
-  "This is your brain's secret stash. Reveal away.",
-  "Don't worry, I'm cool with your typos.",
-  "Procrastination fuel? Let's get it on paper.",
-  "Stay focused on your current task.",
-  "One step closer to 'done' — or at least closer than before."
+  "What would feel good to start today?",
+  "Let your thoughts land here, however they arrive",
+  "What wants to become real today?",
+  "Don't know what to prioritise? Share it all first",
+  "Lot to do today? Let's untangle it together",
+  "Brain full? Pour it out gently...",
+  "Already have a list? Drop a photo here",
+  "Everything feels urgent? Pour it out, we'll sort it",
+  "Big day ahead? We can break it down gently",
+  "Handwritten chaos? Photo it, we'll organise it",
+  "Every half-thought counts, drop them in",
+  "Share what you're dreaming of today...",
+  "Let it all drift out, messy is perfect",
+  "Blank page? Share thoughts, we'll find the tasks",
+  "Too many options? Pour them out, we'll choose together",
+  "Everything and nothing to do? Let it all out…"
 ];
 
 export const useTypewriter = () => {
