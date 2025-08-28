@@ -55,7 +55,8 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   const [placedBlocks, setPlacedBlocks] = useState<Array<{ height: number; isNew?: boolean }>>([]);
   const [blockBeingCarried, setBlockBeingCarried] = useState(false);
   const [characterDirection, setCharacterDirection] = useState<'left' | 'right'>('right');
-  const [availableBlockAtPickup, setAvailableBlockAtPickup] = useState(true); // Pre-loaded block waiting
+  const [blockSupplyPile, setBlockSupplyPile] = useState<Array<{ id: number; isShifting?: boolean; isNew?: boolean }>>([]);
+  const blockIdCounter = useRef(0);
   
   const lastBlockCountRef = useRef(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -118,8 +119,8 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
           const currentTowerIndex = Math.max(0, placedBlocks.length - 1);
           const currentTowerX = TOWER_START_X + currentTowerIndex * TOWER_SPACING;
           return Math.max(currentTowerX, prev - speed); // Stop at current tower, not beginning
-        } else if (availableBlockAtPickup) {
-          // Not carrying and block is available, move towards pickup
+        } else if (blockSupplyPile.length > 0) {
+          // Not carrying and blocks are available, move towards pickup
           setCharacterDirection('right');
           setCharacterState('walking');
           return Math.min(pickupX, prev + speed);
@@ -134,7 +135,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
     // Start continuous movement at 60fps
     const interval = setInterval(moveCharacter, 16); // ~60fps
     return () => clearInterval(interval);
-  }, [isPaused, blockBeingCarried, availableBlockAtPickup]);
+  }, [isPaused, blockBeingCarried, blockSupplyPile.length]);
   
   // Initialize placed blocks on mount only
   useEffect(() => {
@@ -150,22 +151,30 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
     setPlacedBlocks(columns);
     lastBlockCountRef.current = blocksToShow;
     
-    // Ensure character animation state matches actual progress
-    // If all blocks are already placed, don't make new blocks available
-    const totalPlacedBlocks = columns.reduce((sum, col) => sum + col.height, 0);
-    if (totalPlacedBlocks >= blocksToShow) {
-      setAvailableBlockAtPickup(false);
+    // Initialize block supply pile with 4 blocks
+    const initialSupply = [];
+    for (let i = 0; i < 4; i++) {
+      initialSupply.push({ id: blockIdCounter.current++ });
     }
+    setBlockSupplyPile(initialSupply);
   }, []); // Only on mount
   
   // Handle block pickup when character reaches pickup area
   useEffect(() => {
-    // If character reaches mine entrance and there's a block waiting
-    if (characterX >= 285 && !blockBeingCarried && availableBlockAtPickup) {
+    // If character reaches mine entrance and there are blocks waiting
+    if (characterX >= 285 && !blockBeingCarried && blockSupplyPile.length > 0) {
       setBlockBeingCarried(true);
-      setAvailableBlockAtPickup(false); // Block is now taken
+      
+      // Remove the front block, others automatically move to new positions
+      setBlockSupplyPile(prev => {
+        if (prev.length === 0) return prev;
+        
+        // Simply remove the first block - remaining blocks will automatically 
+        // be at new indices (positions) in the array
+        return prev.slice(1);
+      });
     }
-  }, [characterX, blockBeingCarried, availableBlockAtPickup]);
+  }, [characterX, blockBeingCarried, blockSupplyPile.length]);
 
   // Handle block placement when character reaches placement area  
   const hasPlacedBlock = useRef(false);
@@ -191,14 +200,26 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
     const currentBlockCount = blocksToShow;
     
     if (currentBlockCount > lastBlockCountRef.current) {
-      // Only make block available if there isn't one already and character isn't carrying
-      if (!availableBlockAtPickup && !blockBeingCarried) {
-        setAvailableBlockAtPickup(true);
-      }
+      // Add new block that slides in from the back
+      setBlockSupplyPile(prev => {
+        if (prev.length >= 4) return prev; // Keep max 4 blocks
+        
+        // Add new block at the back that will slide in
+        const newPile = [...prev, { id: blockIdCounter.current++, isNew: true }];
+        
+        // Clear the isNew flag after slide-in animation completes
+        setTimeout(() => {
+          setBlockSupplyPile(current => 
+            current.map(block => ({ ...block, isNew: false }))
+          );
+        }, 400);
+        
+        return newPile;
+      });
       
       lastBlockCountRef.current = currentBlockCount;
     }
-  }, [blocksToShow, availableBlockAtPickup, blockBeingCarried]);
+  }, [blocksToShow, blockBeingCarried]);
   
   // Walk animation
   useEffect(() => {
@@ -228,20 +249,20 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
       }}
     >
       {/* Pause overlay - covers entire card area */}
-      {isPaused && (
-        <div 
-          className="absolute pointer-events-none"
-          style={{
-            top: `-${GROUND_HEIGHT + 46}px`, // Extend up to cover entire card (90px card - 44px ground = 46px)
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(2px)',
-            zIndex: 5 // Lower than text (zIndex 10) but covers the animation
-          }}
-        />
-      )}
+      <div 
+        className="absolute pointer-events-none"
+        style={{
+          top: `-${GROUND_HEIGHT + 46}px`, // Extend up to cover entire card (90px card - 44px ground = 46px)
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(2px)',
+          opacity: isPaused ? 1 : 0,
+          transition: 'opacity 0.5s ease-in-out, backdrop-filter 0.5s ease-in-out',
+          zIndex: 5 // Lower than text (zIndex 10) but covers the animation
+        }}
+      />
       {/* Ground line with mine step */}
       <div 
         className="absolute bottom-0 left-0 right-0" 
@@ -301,22 +322,37 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
         );
       })}
       
-      {/* Block available in mine */}
-      {availableBlockAtPickup && (
-        <div
-          className="absolute"
-          style={{
-            bottom: `${GROUND_HEIGHT * 0.5}px`, // In the stepped-down mine area
-            right: '30px', // Inside the mine area
-            width: `${BLOCK_SIZE}px`,
-            height: `${BLOCK_SIZE}px`,
-            background: getBlockColor(),
-            border: '1px solid rgba(0, 0, 0, 0.2)',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-            opacity: 0.8
-          }}
-        />
-      )}
+      {/* Block supply pile in mine */}
+      {blockSupplyPile.map((block, index) => {
+        let transform = 'translateX(0px)';
+        
+        if (block.isNew) {
+          // New block slides in from deep in the mine to the back position
+          transform = 'translateX(40px)';
+        }
+        
+        return (
+          <div
+            key={block.id}
+            className="absolute"
+            style={{
+              bottom: `${GROUND_HEIGHT * 0.5}px`, // In the stepped-down mine area
+              right: `${30 + (index * 8)}px`, // Position based on index - blocks automatically move forward
+              width: `${BLOCK_SIZE}px`,
+              height: `${BLOCK_SIZE}px`,
+              background: getBlockColor(),
+              border: '1px solid rgba(0, 0, 0, 0.2)',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+              opacity: block.isNew ? 0.6 : 0.8, // Slightly transparent when sliding in
+              transform: transform,
+              transition: isPaused 
+                ? 'transform 0.6s ease-in-out, opacity 0.6s ease-in-out, right 0.5s ease-in-out'
+                : 'transform 0.4s ease-out, opacity 0.4s ease-out, right 0.3s ease-out',
+              zIndex: 4 - index // Front blocks appear on top, but under pause overlay (z-index 5)
+            }}
+          />
+        );
+      })}
 
       {/* Character */}
       <div 
@@ -326,9 +362,12 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
           left: `${characterX}px`,
           width: `${CHARACTER_SIZE}px`,
           height: `${CHARACTER_SIZE}px`,
-          transition: 'left 0.1s linear, bottom 0.2s ease-out',
+          transition: isPaused 
+            ? 'left 0.8s ease-out, bottom 0.8s ease-out, transform 0.8s ease-out, opacity 0.5s ease-in-out' 
+            : 'left 0.1s linear, bottom 0.2s ease-out, transform 0.2s ease-out, opacity 0.3s ease-in-out',
           transform: characterDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
-          zIndex: 10
+          opacity: isPaused ? 0.6 : 1.0,
+          zIndex: 6 // Above pause overlay (z-index 5) so character is visible but dimmed
         }}
       >
         {/* Simple pixel character */}
@@ -383,7 +422,10 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
               background: getBlockColor(),
               border: '1px solid rgba(0, 0, 0, 0.2)',
               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-              transition: 'top 0.2s ease-out',
+              opacity: isPaused ? 0.6 : 1.0,
+              transition: isPaused 
+                ? 'top 0.6s ease-in-out, opacity 0.5s ease-in-out, transform 0.6s ease-in-out'
+                : 'top 0.2s ease-out, opacity 0.3s ease-in-out, transform 0.2s ease-out',
               transform: characterDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)'
             }}
           />
