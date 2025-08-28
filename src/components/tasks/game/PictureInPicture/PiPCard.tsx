@@ -169,8 +169,14 @@ export const PiPCard = ({
     isDragging.current = false;
   };
 
+  // Check if in ultra compact mode
+  const isUltraCompact = pipWindow?.innerHeight && pipWindow.innerHeight <= 150;
+
   // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Disable drag navigation in ultra compact mode
+    if (isUltraCompact) return;
+    
     // Don't interfere with input elements or buttons
     const target = e.target as HTMLElement;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true' || target.tagName === 'BUTTON' || target.closest('button'))) {
@@ -182,6 +188,9 @@ export const PiPCard = ({
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
+    // Disable drag navigation in ultra compact mode
+    if (isUltraCompact) return;
+    
     // Don't interfere with input elements or buttons
     const target = e.target as HTMLElement;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true' || target.tagName === 'BUTTON' || target.closest('button'))) {
@@ -193,6 +202,9 @@ export const PiPCard = ({
 
   // Touch events
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Disable drag navigation in ultra compact mode
+    if (isUltraCompact) return;
+    
     // Don't interfere with input elements or buttons
     const target = e.target as HTMLElement;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true' || target.tagName === 'BUTTON' || target.closest('button'))) {
@@ -204,6 +216,9 @@ export const PiPCard = ({
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    // Disable drag navigation in ultra compact mode
+    if (isUltraCompact) return;
+    
     // Don't interfere with input elements or buttons
     const target = e.target as HTMLElement;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true' || target.tagName === 'BUTTON' || target.closest('button'))) {
@@ -217,6 +232,9 @@ export const PiPCard = ({
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Disable keyboard navigation in ultra compact mode
+      if (isUltraCompact) return;
+      
       // Don't interfere with input elements
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true')) {
@@ -245,7 +263,7 @@ export const PiPCard = ({
     const targetWindow = pipWindow || window;
     targetWindow.addEventListener('keydown', handleKeyDown);
     return () => targetWindow.removeEventListener('keydown', handleKeyDown);
-  }, [currentCardIndex, gameState.activeCommittedIndex, gameState.hasCommittedToTask, gameState.completedTasks, pipWindow, goToPreviousCard, goToNextCard]);
+  }, [currentCardIndex, gameState.activeCommittedIndex, gameState.hasCommittedToTask, gameState.completedTasks, pipWindow, goToPreviousCard, goToNextCard, isUltraCompact]);
 
 
   // Use main window handlers directly

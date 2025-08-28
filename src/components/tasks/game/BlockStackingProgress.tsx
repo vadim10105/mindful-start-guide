@@ -390,29 +390,64 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
         )}
       </div>
       
-      {/* Static task title in ground area */}
+      {/* Scrolling task title in ground area */}
       {taskTitle && (
         <div 
-          className="absolute bottom-0 left-0 right-0 flex items-center pl-6 pr-4 pb-1"
+          className="absolute bottom-0 left-0 flex items-center pl-6 pr-4 pb-1"
           style={{ 
             height: `${GROUND_HEIGHT}px`,
+            width: '260px', // Shorter container width
             zIndex: 10 // Above the pause overlay
           }}
         >
-          <span 
-            className="font-medium text-base w-full" 
-            style={{ 
-              color: isPaused ? '#FFFFFF' : '#354239'
-            }}
-          >
-            {isPaused ? (() => {
+          {(() => {
+            const displayText = isPaused ? (() => {
               if (!pausedStartTime) return 'Paused';
               const pausedDuration = Math.max(0, Math.floor((currentTime - pausedStartTime) / 1000));
               const minutes = Math.floor(pausedDuration / 60);
               const seconds = pausedDuration % 60;
               return `Paused for ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            })() : taskTitle}
-          </span>
+            })() : taskTitle;
+            
+            // Only scroll if text is longer than ~25 characters (fits in 260px container)
+            const shouldScroll = displayText.length > 25;
+            
+            if (shouldScroll) {
+              return (
+                <div 
+                  className="overflow-hidden whitespace-nowrap"
+                  style={{
+                    maskImage: 'linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)',
+                    WebkitMaskImage: 'linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent)'
+                  }}
+                >
+                  <div className="inline-flex">
+                    <span 
+                      className="inline-block font-medium text-base animate-scroll-text" 
+                      style={{ 
+                        color: isPaused ? '#FFFFFF' : '#354239',
+                        animationDuration: `${Math.max(15, displayText.length * 0.6)}s`
+                      }}
+                    >
+                      {displayText}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{displayText}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    </span>
+                  </div>
+                </div>
+              );
+            } else {
+              return (
+                <span 
+                  className="font-medium text-base" 
+                  style={{ 
+                    color: isPaused ? '#FFFFFF' : '#354239'
+                  }}
+                >
+                  {displayText}
+                </span>
+              );
+            }
+          })()}
+          
         </div>
       )}
       
