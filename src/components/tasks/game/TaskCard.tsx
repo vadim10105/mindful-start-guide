@@ -916,10 +916,10 @@ export const TaskCard = ({
                 />
               ) : (
                 <>
-                  <span className="text-sm">
+                  <span className="text-xs">
                     {index + 1}
                   </span>
-                  <span className="text-sm">
+                  <span className="text-xs">
                     of {totalTasks}
                   </span>
                 </>
