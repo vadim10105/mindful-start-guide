@@ -47,12 +47,15 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
   
   // Character speed to complete trips at required rate
   const tripDistance = 520; // pixels round trip
-  const workSpeed = Math.max(0.15, Math.min(1.0, (tripDistance / roundTripTime) / 60)); // pixels per frame
+  // Use faster pixel speed for tasks under 10 minutes, slower for longer tasks (all at 30fps)
+  const workSpeed = taskMinutes < 10 
+    ? Math.max(0.3, Math.min(2.0, (tripDistance / roundTripTime) / 30)) // Fast pixel speed at 30fps
+    : Math.max(0.1, Math.min(0.6, (tripDistance / roundTripTime) / 30));  // Slow pixel speed at 30fps
   
   // Minimize delays when time is short - no time for breaks!
   const urgencyFactor = Math.min(1.0, 5 / taskMinutes); // More urgent for shorter tasks
-  const pickupDelay = Math.max(50, 200 * (1 - urgencyFactor)); // Almost instant when urgent
-  const placementDelay = Math.max(50, 200 * (1 - urgencyFactor)); // Almost instant when urgent
+  const pickupDelay = Math.max(30, 120 * (1 - urgencyFactor)); // Almost instant when urgent
+  const placementDelay = Math.max(30, 120 * (1 - urgencyFactor)); // Almost instant when urgent
   
   // Character state
   const [characterX, setCharacterX] = useState(20);
@@ -159,8 +162,8 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
       });
     };
     
-    // Start continuous movement at 60fps
-    const interval = setInterval(moveCharacter, 16); // ~60fps
+    // Start continuous movement at 30fps
+    const interval = setInterval(moveCharacter, 33); // ~30fps
     return () => clearInterval(interval);
   }, [isPaused, blockBeingCarried, blockSupplyPile.length]);
   
@@ -226,7 +229,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
         const totalTripsNeeded = TOTAL_BLOCKS / 1; // 1 block per trip
         const availableTimeSeconds = taskMinutes * 60;
         const desiredTripTime = availableTimeSeconds / totalTripsNeeded;
-        const baseTripTime = 12; // ~12 seconds base trip time
+        const baseTripTime = 17; // ~17 seconds base trip time (adjusted for slower walking)
         const extraWaitTime = Math.max(0, desiredTripTime - baseTripTime);
         restTimeMs = extraWaitTime * 1000; // Convert to milliseconds
       }
