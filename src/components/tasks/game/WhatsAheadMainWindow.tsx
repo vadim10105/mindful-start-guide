@@ -18,10 +18,9 @@ export const WhatsAheadMainWindow = ({
       
       <div className="flex-1 flex items-center justify-center p-8 relative z-[95]">
         <div className="rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden backdrop-blur-md" style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        border: '1px solid rgba(255, 255, 255, 0.2)'
+        backgroundColor: 'rgba(255, 255, 255, 0.1)'
       }}>
-        <div className="overflow-y-auto max-h-[80vh] p-4">
+        <div className="overflow-y-auto max-h-[80vh] p-6">
           <div className="space-y-2">
             {tasks.map((task, index) => {
               const isCompleted = gameState.completedTasks.has(task.id);
