@@ -117,7 +117,7 @@ export const TaskTimeDisplay = ({
           style={{ 
             color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#7C7C7C',
             backgroundColor: (isUltraCompact || isPaused) ? 'rgba(255, 193, 7, 0.3)' : 'rgba(255, 193, 7, 0.6)',
-            padding: '1px 6px',
+            padding: '3px 6px',
             borderRadius: '2px',
             fontWeight: '600',
             fontSize: '10px'

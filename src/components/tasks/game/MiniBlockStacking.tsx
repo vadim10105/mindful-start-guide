@@ -156,7 +156,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
     
     const moveCharacter = () => {
       setCharacterX(prev => {
-        const pickupX = 260; // Walk all the way to the blocks
+        const pickupX = 300; // Walk all the way to the blocks
         const placementX = TOWER_START_X;
         
         if (blockBeingCarried) {
@@ -220,7 +220,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
   
   // Block pickup logic (same as BlockStackingProgress)
   useEffect(() => {
-    if (characterX >= 255 && !blockBeingCarried && blockSupplyPile.length > 0) {
+    if (characterX >= 295 && !blockBeingCarried && blockSupplyPile.length > 0) {
       setBlockBeingCarried(true);
       
       // Remove the front block
