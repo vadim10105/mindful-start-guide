@@ -59,6 +59,57 @@ export const playPingSound = () => {
   }
 };
 
+export const playClickSound = () => {
+  try {
+    // Create a simple but realistic "thock" sound for block placement
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Two-tone approach: higher frequency for initial "tap" + lower for "thock"
+    const highTone = audioContext.createOscillator();
+    const lowTone = audioContext.createOscillator();
+    
+    const highGain = audioContext.createGain();
+    const lowGain = audioContext.createGain();
+    
+    // Connect oscillators
+    highTone.connect(highGain);
+    lowTone.connect(lowGain);
+    highGain.connect(audioContext.destination);
+    lowGain.connect(audioContext.destination);
+    
+    // Frequencies for a wooden block sound
+    highTone.frequency.setValueAtTime(400, audioContext.currentTime); // Initial tap
+    lowTone.frequency.setValueAtTime(150, audioContext.currentTime);  // Wooden thock
+    
+    // Use square wave for more "blocky" character, but not too harsh
+    highTone.type = 'triangle';
+    lowTone.type = 'triangle';
+    
+    const now = audioContext.currentTime;
+    const duration = 0.12; // Slightly longer for audibility
+    
+    // High tone - quick sharp attack and fast decay (the "tap")
+    highGain.gain.setValueAtTime(0.15, now);
+    highGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04); // Fades in 40ms
+    
+    // Low tone - softer attack, longer sustain (the "thock")
+    lowGain.gain.setValueAtTime(0.12, now);
+    lowGain.gain.linearRampToValueAtTime(0.15, now + 0.01); // Small attack
+    lowGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    
+    // Start both
+    highTone.start(now);
+    lowTone.start(now);
+    
+    // Stop both
+    highTone.stop(now + duration);
+    lowTone.stop(now + duration);
+    
+  } catch (error) {
+    console.warn('Could not play block sound:', error);
+  }
+};
+
 // Add more sounds here as needed:
 // export const playSuccessSound = () => { ... }
 // export const playWarningSound = () => { ... }

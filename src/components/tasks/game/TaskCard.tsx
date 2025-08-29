@@ -6,6 +6,7 @@ import { TaskActions } from "./TaskActions";
 import { TaskProgressManagerHook, taskTimers } from "./TaskProgressManager";
 import { TaskTimeDisplay } from "./TaskTimeDisplay";
 import { BlockStackingProgress } from "./BlockStackingProgress";
+import { MiniBlockStacking } from "./MiniBlockStacking";
 
 // Global pause timestamps to persist across navigation and PiP
 const pauseTimestamps = new Map<string, number>();
@@ -18,6 +19,7 @@ import { parseTimeToMinutes } from '@/utils/timeUtils';
 const balanceText = (text: string, maxLines: number = 3): string => {
   return text; // No text balancing rules
 };
+
 
 interface TaskCardData {
   id: string;
@@ -925,7 +927,7 @@ export const TaskCard = ({
                 </>
               )}
             </div>
-            <CardTitle className="text-2xl leading-tight tracking-wide whitespace-pre-line" style={{ color: '#7C7C7C' }}>
+            <CardTitle className="text-xl leading-tight tracking-wide whitespace-pre-line" style={{ color: '#7C7C7C', fontSize: '22px' }}>
               {balanceText(task.title, 2)}
             </CardTitle>
           </CardHeader>
@@ -952,6 +954,17 @@ export const TaskCard = ({
                   }
                 }}
               /> */}
+
+              {/* Mini Block Stacking Animation */}
+              <div style={{ marginBottom: '-1.46rem' }}>
+                <MiniBlockStacking 
+                  progress={0} // Not used - calculated internally
+                  isPaused={isPaused}
+                  isActiveCommitted={isActiveCommitted}
+                  estimatedTime={task.estimated_time}
+                  taskId={task.id}
+                />
+              </div>
 
               {/* Notes Section */}
               <div className="flex-1 flex flex-col min-h-0">
