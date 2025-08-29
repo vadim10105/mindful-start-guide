@@ -19,17 +19,16 @@ export const WhatsAheadOverlay = ({
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in-0 duration-200"
+      className="fixed top-0 left-0 right-0 bottom-0 bg-black/85 backdrop-blur-sm z-[100] flex items-center justify-center p-8 animate-in fade-in-0 duration-200"
       onMouseUp={onClose}
       onTouchEnd={onClose}
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
     >
       <div className="rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden backdrop-blur-md" style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        border: '1px solid rgba(255, 255, 255, 0.2)'
+        backgroundColor: 'rgba(255, 255, 255, 0.1)'
       }}>
         {/* Scrollable Content */}
-        <div className="overflow-y-auto max-h-[80vh] p-4">
+        <div className="overflow-y-auto max-h-[80vh] p-6">
           <div className="space-y-2">
             {tasks.map((task, index) => {
               const isCompleted = gameState.completedTasks.has(task.id);
@@ -44,7 +43,7 @@ export const WhatsAheadOverlay = ({
                 <div key={task.id}>
                   {/* Task Item */}
                   <div
-                    className={`group py-4 px-6 transition-all duration-200 hover:bg-opacity-80 rounded-lg ${
+                    className={`group py-4 px-6 transition-all duration-200 rounded-lg ${
                       !isActive ? 'opacity-50' : 'opacity-100'
                     }`}
                     style={{ 
@@ -89,8 +88,7 @@ export const WhatsAheadOverlay = ({
                                 className="px-2 py-1 rounded text-xs font-medium"
                                 style={{ 
                                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                  color: 'rgba(255, 255, 255, 0.7)',
-                                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                                  color: 'rgba(255, 255, 255, 0.7)'
                                 }}
                               >
                                 {task.estimated_time}

@@ -14,7 +14,7 @@ export const WhatsAheadMainWindow = ({
   return (
     <>
       {/* Dark overlay background */}
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[90]" />
+      <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90]" />
       
       <div className="flex-1 flex items-center justify-center p-8 relative z-[95]">
         <div className="rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden backdrop-blur-md" style={{ 
@@ -73,8 +73,7 @@ export const WhatsAheadMainWindow = ({
                                 className="px-2 py-1 rounded text-xs font-medium"
                                 style={{ 
                                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                  color: 'rgba(255, 255, 255, 0.7)',
-                                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                                  color: 'rgba(255, 255, 255, 0.7)'
                                 }}
                               >
                                 {task.estimated_time}
