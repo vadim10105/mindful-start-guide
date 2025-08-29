@@ -16,38 +16,7 @@ import { parseTimeToMinutes } from '@/utils/timeUtils';
 
 // Function to balance text across lines (bottom-heavy preferred)
 const balanceText = (text: string, maxLines: number = 3): string => {
-  const words = text.split(' ');
-  if (words.length <= 4) return text; // Short text doesn't need balancing
-  
-  const totalWords = words.length;
-  const lines: string[] = [];
-  
-  if (maxLines === 2) {
-    // For 2 lines: try to balance, but prefer bottom if odd number
-    const firstLineWords = Math.floor(totalWords / 2);
-    lines.push(words.slice(0, firstLineWords).join(' '));
-    lines.push(words.slice(firstLineWords).join(' '));
-  } else {
-    // For 3+ lines: distribute with preference for bottom being heavier
-    const baseWordsPerLine = Math.floor(totalWords / maxLines);
-    const remainder = totalWords % maxLines;
-    
-    let currentIndex = 0;
-    for (let i = 0; i < maxLines; i++) {
-      let wordsInThisLine = baseWordsPerLine;
-      // Add extra words to later lines (bottom-heavy)
-      if (i >= maxLines - remainder) {
-        wordsInThisLine++;
-      }
-      
-      if (currentIndex < totalWords) {
-        lines.push(words.slice(currentIndex, currentIndex + wordsInThisLine).join(' '));
-        currentIndex += wordsInThisLine;
-      }
-    }
-  }
-  
-  return lines.join('\n');
+  return text; // No text balancing rules
 };
 
 interface TaskCardData {
@@ -935,7 +904,7 @@ export const TaskCard = ({
             </div>
             
             
-            <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px', color: isPaused ? '#FFFFFF' : 'hsl(220 10% 50%)' }}>
+            <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px', color: isPaused ? '#FFFFFF' : '#989898' }}>
               {taskStartTimes[task.id] ? (
                 <TaskTimeDisplay
                   taskId={task.id}
@@ -961,7 +930,7 @@ export const TaskCard = ({
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="flex-1 flex flex-col justify-between px-4 pb-4 overflow-hidden">
+          <CardContent className="flex-1 flex flex-col justify-between px-6 pb-4 overflow-hidden">
 
             {/* Progress Bar + Notes Section Combined */}
             <div className="flex-1 flex flex-col space-y-2">

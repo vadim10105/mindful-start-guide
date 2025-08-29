@@ -578,6 +578,7 @@ const TasksContent = () => {
   const [tasksById, setTasksById] = useState<Record<string, Task>>({});
   // Gallery refresh trigger for when tasks are completed
   const [galleryRefreshTrigger, setGalleryRefreshTrigger] = useState(0);
+  const [collectionRefreshTrigger, setCollectionRefreshTrigger] = useState(0);
   const [activeTaskIds, setActiveTaskIds] = useState<string[]>([]);
   const [laterTaskIds, setLaterTaskIds] = useState<string[]>([]);
   const [taskTagsById, setTaskTagsById] = useState<Record<string, { isLiked: boolean; isUrgent: boolean; isQuick: boolean }>>({});
@@ -899,9 +900,8 @@ const TasksContent = () => {
     }
   }, [activeTaskIds, laterTaskIds, cameFromBrainDump, isProcessing, isTransitioning, laterTasksExpanded]);
 
-  // Fetch collection data on mount
-  useEffect(() => {
-    const fetchCollectionData = async () => {
+  // Collection data fetcher
+  const fetchCollectionData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -978,6 +978,8 @@ const TasksContent = () => {
       }
     };
 
+  // Fetch collection data on mount
+  useEffect(() => {
     fetchCollectionData();
   }, []); // Empty dependency array to run only on mount
 
@@ -2433,6 +2435,7 @@ const TasksContent = () => {
                 >
                   {currentCollection && (
                     <CollectionProgress 
+                      key={`collection-${currentCollection.id}-${collectionRefreshTrigger}`}
                       collectionNumber={currentCollection.displayOrder}
                       collectionTitle={currentCollection.name}
                       totalCards={currentCollection.totalCards}
@@ -3353,6 +3356,9 @@ const TasksContent = () => {
               console.log('Task completed:', taskId);
               // Refresh gallery progress counter
               setGalleryRefreshTrigger(prev => prev + 1);
+              // Refresh collections data and force CollectionProgress remount
+              fetchCollectionData();
+              setCollectionRefreshTrigger(prev => prev + 1);
             }}
           />
           </>

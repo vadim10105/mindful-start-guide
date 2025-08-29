@@ -567,7 +567,25 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
                     <span 
                       className="inline-block font-medium text-base animate-scroll-text" 
                       style={{ 
-                        color: isPaused ? '#FFFFFF' : '#354239',
+                        color: (() => {
+                          if (isPaused) return '#FFFFFF';
+                          
+                          // Use same sunset logic as ground color
+                          const estimatedMinutes = parseTimeToMinutes(estimatedTime || '');
+                          if (estimatedMinutes <= 0) return '#354239'; // No estimated time
+                          
+                          const currentTime = Date.now();
+                          const pausedDuration = pausedStartTime ? Math.max(0, currentTime - pausedStartTime) : 0;
+                          const estimatedTimeMs = estimatedMinutes * 60000;
+                          const approximateElapsedMs = (progress / 100) * estimatedTimeMs;
+                          
+                          // Turn white at sunset (50% of estimated time)
+                          if (approximateElapsedMs >= estimatedTimeMs * 0.5) {
+                            return '#FFFFFF';
+                          }
+                          
+                          return '#354239'; // Default dark color
+                        })(),
                         animationDuration: `${Math.max(15, displayText.length * 0.6)}s`
                       }}
                     >
@@ -581,7 +599,25 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
                 <span 
                   className="font-medium text-base" 
                   style={{ 
-                    color: isPaused ? '#FFFFFF' : '#354239'
+                    color: (() => {
+                      if (isPaused) return '#FFFFFF';
+                      
+                      // Use same sunset logic as ground color
+                      const estimatedMinutes = parseTimeToMinutes(estimatedTime || '');
+                      if (estimatedMinutes <= 0) return '#354239'; // No estimated time
+                      
+                      const currentTime = Date.now();
+                      const pausedDuration = pausedStartTime ? Math.max(0, currentTime - pausedStartTime) : 0;
+                      const estimatedTimeMs = estimatedMinutes * 60000;
+                      const approximateElapsedMs = (progress / 100) * estimatedTimeMs;
+                      
+                      // Turn white at sunset (50% of estimated time)
+                      if (approximateElapsedMs >= estimatedTimeMs * 0.5) {
+                        return '#FFFFFF';
+                      }
+                      
+                      return '#354239'; // Default dark color
+                    })()
                   }}
                 >
                   {displayText}
