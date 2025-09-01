@@ -15,7 +15,7 @@ interface CollectionProgressProps {
   hasNext?: boolean;
 }
 
-export function CollectionProgress({
+export function CollectionProgress_HIDDEN({
   collectionNumber,
   collectionTitle,
   totalCards,

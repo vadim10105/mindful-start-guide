@@ -24,7 +24,7 @@ import { ImmersiveGallery } from "@/components/tasks/collection/ImmersiveGallery
 import { GalleryIcon } from "@/components/tasks/collection/GalleryIcon";
 import { CloudIframeBackground } from "@/components/background/CloudIframeBackground";
 import { ShuffleAnimation } from "@/components/tasks/game/ShuffleAnimation";
-import { CollectionProgress } from "@/components/tasks/task-capture/CollectionProgress";
+// import { CollectionProgress } from "@/components/tasks/task-capture/CollectionProgress";
 import {
   DndContext,
   closestCenter,
@@ -2434,20 +2434,21 @@ const TasksContent = () => {
                   }}
                 >
                   {currentCollection && (
-                    <CollectionProgress 
-                      key={`collection-${currentCollection.id}-${collectionRefreshTrigger}`}
-                      collectionNumber={currentCollection.displayOrder}
-                      collectionTitle={currentCollection.name}
-                      totalCards={currentCollection.totalCards}
-                      collectedCards={currentCollection.earnedCards}
-                      cardImages={currentCollection.cardImages}
-                      className=""
-                      onOpenGallery={() => handleOpenGallery(currentCollection.id)}
-                      onPrevious={handlePreviousCollection}
-                      onNext={handleNextCollection}
-                      hasPrevious={currentCollectionIndex > 0}
-                      hasNext={currentCollectionIndex < allCollections.length - 1}
-                    />
+                    <div></div>
+                    // <CollectionProgress 
+                    //   key={`collection-${currentCollection.id}-${collectionRefreshTrigger}`}
+                    //   collectionNumber={currentCollection.displayOrder}
+                    //   collectionTitle={currentCollection.name}
+                    //   totalCards={currentCollection.totalCards}
+                    //   collectedCards={currentCollection.earnedCards}
+                    //   cardImages={currentCollection.cardImages}
+                    //   className=""
+                    //   onOpenGallery={() => handleOpenGallery(currentCollection.id)}
+                    //   onPrevious={handlePreviousCollection}
+                    //   onNext={handleNextCollection}
+                    //   hasPrevious={currentCollectionIndex > 0}
+                    //   hasNext={currentCollectionIndex < allCollections.length - 1}
+                    // />
                   )}
                 </div>
               )}
@@ -2934,7 +2935,7 @@ const TasksContent = () => {
                   </div>
                   
                   {/* Fixed buttons at bottom */}
-                  <div className="flex-shrink-0 pt-4 pb-4">
+                  <div className="flex-shrink-0 pt-8 pb-4">
                     {/* Action Buttons - Show appropriate buttons based on state */}
                   {true ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">

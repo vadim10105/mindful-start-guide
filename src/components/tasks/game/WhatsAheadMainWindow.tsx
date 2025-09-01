@@ -14,11 +14,11 @@ export const WhatsAheadMainWindow = ({
   return (
     <>
       {/* Dark overlay background */}
-      <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90]" />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]" />
       
       <div className="flex-1 flex items-center justify-center p-8 relative z-[95]">
         <div className="rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden backdrop-blur-md" style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.1)'
+        backgroundColor: 'rgba(255, 255, 255, 0.05)'
       }}>
         <div className="overflow-y-auto max-h-[80vh] p-6">
           <div className="space-y-2">
