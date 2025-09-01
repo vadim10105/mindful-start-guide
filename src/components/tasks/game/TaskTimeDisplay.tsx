@@ -10,6 +10,7 @@ interface TaskTimeDisplayProps {
   pausedTasks?: Map<string, number>;
   totalPausedTime?: number; // Total time this task has been paused (in ms)
   isPaused?: boolean;
+  timeSpentMinutes?: number; // Time spent from database
 }
 
 export const TaskTimeDisplay = ({ 
@@ -20,7 +21,8 @@ export const TaskTimeDisplay = ({
   isUltraCompact = false,
   pausedTasks,
   totalPausedTime = 0,
-  isPaused = false
+  isPaused = false,
+  timeSpentMinutes = 0
 }: TaskTimeDisplayProps) => {
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -66,6 +68,27 @@ export const TaskTimeDisplay = ({
     // Add total paused time to extend the finish time
     return originalFinishTime + totalPausedTime;
   };
+
+  // Helper function to format elapsed time duration
+  const formatElapsedTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${remainingMinutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
+  // If task is not active but has time spent, show elapsed time
+  if (!isActiveCommitted && timeSpentMinutes > 0) {
+    return (
+      <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#989898' : '#989898' }}>
+        {formatElapsedTime(timeSpentMinutes)} spent
+      </span>
+    );
+  }
 
   // Check if we're in overtime (1 minute past adjusted estimated finish time)
   const originalEstimatedFinishTime = getOriginalEstimatedFinishTime();

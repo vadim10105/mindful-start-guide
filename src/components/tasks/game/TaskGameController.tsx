@@ -208,12 +208,47 @@ export const TaskGameController = ({
   }, [setOnPiPClose, refreshTasksFromDB]);
 
   // Define handleCommitToCurrentTask first since other hooks need it
-  const handleCommitToCurrentTask = useCallback(() => {
+  const handleCommitToCurrentTask = useCallback(async () => {
     // Don't allow action if already committed to avoid conflicts with PiP
     if (gameState.hasCommittedToTask && pipManager.isPiPActive) return;
     
     const currentTask = tasks[gameState.currentViewingIndex];
     if (!currentTask) return;
+    
+    // Save time for previously active task before switching
+    if (gameState.activeCommittedIndex >= 0 && gameState.activeCommittedIndex !== gameState.currentViewingIndex) {
+      const previousTask = tasks[gameState.activeCommittedIndex];
+      if (previousTask && gameState.taskStartTimes[previousTask.id]) {
+        const timeSpentMs = Date.now() - gameState.taskStartTimes[previousTask.id];
+        const timeSpentMinutes = Math.round(timeSpentMs / 60000);
+        
+        if (timeSpentMinutes > 0) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase
+                .from('tasks')
+                .update({ 
+                  time_spent_minutes: timeSpentMinutes,
+                  task_status: 'incomplete'
+                })
+                .eq('id', previousTask.id);
+                
+              // Update local task data with saved time
+              setTasks(prevTasks => 
+                prevTasks.map(task => 
+                  task.id === previousTask.id 
+                    ? { ...task, time_spent_minutes: timeSpentMinutes }
+                    : task
+                )
+              );
+            }
+          } catch (error) {
+            console.error('Error saving time for previous task:', error);
+          }
+        }
+      }
+    }
     
     // Check if this task was previously paused
     const pausedTime = gameState.pausedTasks.get(currentTask.id) || 0;

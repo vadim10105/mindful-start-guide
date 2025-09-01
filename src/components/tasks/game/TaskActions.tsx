@@ -113,24 +113,7 @@ export const TaskActions = ({
     return null;
   }
 
-  // Check if this paused card should show "Pause Card to View" instead of regular buttons
-  if (!isActiveCommitted && hasCommittedToTask && activeCommittedIndex >= 0) {
-    return (
-      <div className="flex gap-2 justify-center">
-        <button
-          onClick={onBackToActive}
-          className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-gray-600/50 hover:bg-gray-600 hover:shadow-lg overflow-hidden"
-          style={{ backgroundColor: 'transparent' }}
-        >
-          <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
-          <Pause className="w-4 h-4 flex-shrink-0 text-white group-hover:text-white transition-colors duration-300 relative z-10" />
-          <span className="max-w-0 group-hover:max-w-[150px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
-            Pause Card to View
-          </span>
-        </button>
-      </div>
-    );
-  }
+  // Removed "Pause Card to View" logic - always show normal buttons
 
   if (!isCurrentTask) {
     return (
@@ -146,7 +129,7 @@ export const TaskActions = ({
       onCarryOn(task.id);
     } else if (isActiveCommitted) {
       onMoveOn(task.id);
-    } else if (isCurrentTask && !hasCommittedToTask) {
+    } else if (isCurrentTask) {
       onCommit();
     }
   };
@@ -220,8 +203,8 @@ export const TaskActions = ({
         </span>
       </button>
 
-      {/* Made Progress Button - Hidden when paused or when there's any paused task or completed task (but not if this task is currently active) */}
-      {!isPaused && !hasAnyPausedTask && (!hasAnyCompletedTask || isActiveCommitted) && (
+      {/* Made Progress Button - Only show when this card is actively committed */}
+      {!isPaused && isActiveCommitted && (
         <button
           onClick={() => onMadeProgress(task.id)}
           className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-amber-400/50 hover:shadow-lg overflow-hidden"
@@ -235,8 +218,8 @@ export const TaskActions = ({
         </button>
       )}
 
-      {/* Complete Button - Hidden when paused or when there's any paused task or completed task (but not if this task is currently active) */}
-      {!isPaused && !hasAnyPausedTask && (!hasAnyCompletedTask || isActiveCommitted) && (
+      {/* Complete Button - Only show when this card is actively committed */}
+      {!isPaused && isActiveCommitted && (
         <button
           onClick={() => onComplete(task.id)}
           className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-green-500/50 hover:shadow-lg overflow-hidden"
@@ -250,8 +233,8 @@ export const TaskActions = ({
         </button>
       )}
 
-      {/* Break it down Button - Hidden when paused or when there's any paused task or completed task (but not if this task is currently active) */}
-      {!isPaused && !hasAnyPausedTask && (!hasAnyCompletedTask || isActiveCommitted) && (
+      {/* Break it down Button - Only show when this card is actively committed */}
+      {!isPaused && isActiveCommitted && (
         <button
           onClick={() => onBreakdown?.()}
           disabled={isGenerating}

@@ -731,15 +731,16 @@ export const TaskCard = ({
           {/* Time display - visible when not hovering */}
           <div className={`absolute right-0 flex items-center justify-end w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-0' : 'opacity-100'}`}>
             <div className="font-medium whitespace-nowrap [&>span]:!text-xs" style={{ color: '#989898' }}>
-              {hasStartTime ? (
+              {hasStartTime || (task.time_spent_minutes && task.time_spent_minutes > 0) ? (
                 <TaskTimeDisplay
                   taskId={task.id}
-                  startTime={taskStartTimes[task.id]}
+                  startTime={taskStartTimes[task.id] || Date.now()}
                   estimatedTime={task.estimated_time}
                   isActiveCommitted={isActiveCommitted}
                   isUltraCompact={true}
                   totalPausedTime={pausedTime * 60000}
                   isPaused={isPaused}
+                  timeSpentMinutes={task.time_spent_minutes || 0}
                 />
               ) : (
                 <span style={{ color: '#989898' }}>--:-- → --:--</span>
@@ -857,20 +858,36 @@ export const TaskCard = ({
         backgroundColor: '#FFFFF7',
         color: 'hsl(220 10% 20%)'
       }}>
-        {/* Overlay Logic */}
+        {/* Overlay Logic - Keep paused overlay, remove others */}
         <>
-          {/* Blur layer */}
-          <div className={`absolute inset-0 backdrop-blur-sm rounded-2xl z-20 pointer-events-none transition-all duration-500 ${
-            ((!isActiveCommitted && !hasAnyPausedTask && (!hasAnyCompletedTask || hasCommittedToTask)) || isPaused) 
-              ? (isPaused ? 'opacity-100' : (isPlayHovered ? 'opacity-0' : 'opacity-100'))
-              : 'opacity-0'
-          }`} />
-          {/* Dark overlay layer */}
-          <div className={`absolute inset-0 bg-black/25 rounded-2xl z-20 pointer-events-none transition-all duration-500 ${
-            ((!isActiveCommitted && !hasAnyPausedTask && (!hasAnyCompletedTask || hasCommittedToTask)) || isPaused)
-              ? (isPaused ? 'opacity-100' : (isPlayHovered ? 'opacity-0' : 'opacity-100'))
-              : 'opacity-0'
-          }`} />
+          {/* Blur and dark overlay for paused cards only */}
+          {isPaused && (
+            <>
+              <div className="absolute inset-0 backdrop-blur-sm rounded-2xl z-20 pointer-events-none transition-all duration-500 opacity-100" />
+              <div className="absolute inset-0 bg-black/25 rounded-2xl z-20 pointer-events-none transition-all duration-500 opacity-100" />
+            </>
+          )}
+          
+          {/* Paused Timer Overlay - only for this specific paused card */}
+          {isPaused && pausedStartTime && (
+            <div className={`absolute inset-0 flex items-center justify-center z-30 pointer-events-none transition-all duration-500 ease-out ${
+              pausedOverlayVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
+            }`}>
+              <div className={`bg-black/40 backdrop-blur-md rounded-2xl px-6 py-4 w-[240px] transition-all duration-500 ease-out transform ${
+                pausedOverlayVisible ? 'scale-100' : 'scale-90'
+              }`}>
+                <p className="text-white text-xl font-medium text-center">
+                  Paused for {(() => {
+                    if (!pausedStartTime) return '00:00';
+                    const pausedDuration = Math.max(0, Math.floor((currentTime - pausedStartTime) / 1000));
+                    const minutes = Math.floor(pausedDuration / 60);
+                    const seconds = pausedDuration % 60;
+                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  })()}
+                </p>
+              </div>
+            </div>
+          )}
           
           {/* Paused Timer Overlay - only for this specific paused card */}
           {isPaused && pausedStartTime && (
@@ -914,14 +931,15 @@ export const TaskCard = ({
             
             
             <div className="flex items-center justify-center gap-1" style={{ marginBottom: '16px', color: isPaused ? '#FFFFFF' : '#989898' }}>
-              {taskStartTimes[task.id] ? (
+              {taskStartTimes[task.id] || (task.time_spent_minutes && task.time_spent_minutes > 0) ? (
                 <TaskTimeDisplay
                   taskId={task.id}
-                  startTime={taskStartTimes[task.id]}
+                  startTime={taskStartTimes[task.id] || Date.now()}
                   estimatedTime={task.estimated_time}
                   isActiveCommitted={isActiveCommitted}
                   totalPausedTime={pausedTime * 60000}
                   isPaused={isPaused}
+                  timeSpentMinutes={task.time_spent_minutes || 0}
                 />
               ) : (
                 <>
