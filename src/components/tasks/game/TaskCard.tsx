@@ -422,12 +422,18 @@ export const TaskCard = ({
   {/* ========== ULTRA-COMPACT PIP VIEW START ========== */}
   if (isUltraCompact && pipWindow) {
     return (
-      <Card 
+      <>
+        <style jsx>{`
+          .text-custom-gray {
+            color: #989898;
+          }
+        `}</style>
+        <Card 
         className="h-[90px] w-[368px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg"
         style={{ 
           background: (() => {
             const estimatedMinutes = parseTimeToMinutes(task.estimated_time || '');
-            if (estimatedMinutes <= 0) return '#8FD5EA'; // No estimated time, stay blue
+            if (estimatedMinutes <= 0) return 'rgb(255, 255, 247)'; // No estimated time, off-white
             
             const timerState = taskTimers.get(task.id);
             const sessionElapsedMs = timerState?.currentSessionStart 
@@ -439,9 +445,9 @@ export const TaskCard = ({
             const estimatedTimeMs = estimatedMinutes * 60000;
             const overtimeMs = sessionElapsedMs - estimatedTimeMs;
             
-            // Phase 1: Blue sky (0% - 50% of estimated time)
+            // Phase 1: Off-white background (0% - 50% of estimated time)
             if (sessionElapsedMs < estimatedTimeMs * 0.5) {
-              return '#8FD5EA'; // Original blue sky
+              return 'rgb(255, 255, 247)'; // Off-white to match ground
             }
             // Phase 2: Blue to Sunset transition (50% - 100% of estimated time)
             else if (sessionElapsedMs < estimatedTimeMs) {
@@ -487,8 +493,8 @@ export const TaskCard = ({
         onMouseEnter={() => setIsUltraCompactHovered(true)}
         onMouseLeave={() => setIsUltraCompactHovered(false)}
       >
-        {/* Floating Mario-style block clouds */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Floating Mario-style block clouds - TEMPORARILY HIDDEN */}
+        {false && <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Cloud 1 */}
           <div 
             className="absolute"
@@ -656,7 +662,7 @@ export const TaskCard = ({
               <div style={{width: '2px', height: '2px', background: '#FFFFFF'}}></div>
             </div>
           </div>
-        </div>
+        </div>}
         <style jsx>{`
           @keyframes float {
             0%, 100% { transform: translateY(0px); }
@@ -724,7 +730,7 @@ export const TaskCard = ({
         <div className="absolute z-30 w-[110px]" style={{ position: 'absolute', top: '12px', right: '16px' }}>
           {/* Time display - visible when not hovering */}
           <div className={`absolute right-0 flex items-center justify-end w-full transition-opacity duration-300 ${isUltraCompactHovered ? 'opacity-0' : 'opacity-100'}`}>
-            <div className="font-medium whitespace-nowrap [&>span]:!text-xs" style={{ color: '#FFFFFF' }}>
+            <div className="font-medium whitespace-nowrap [&>span]:!text-xs" style={{ color: '#989898' }}>
               {hasStartTime ? (
                 <TaskTimeDisplay
                   taskId={task.id}
@@ -736,7 +742,7 @@ export const TaskCard = ({
                   isPaused={isPaused}
                 />
               ) : (
-                <span style={{ color: '#FFFFFF' }}>--:-- → --:--</span>
+                <span style={{ color: '#989898' }}>--:-- → --:--</span>
               )}
             </div>
           </div>
@@ -747,7 +753,7 @@ export const TaskCard = ({
             style={{ zIndex: isPaused ? 40 : 10 }} // Higher z-index when paused to stay above overlay
           >
             {/* Timer */}
-            <div className="font-medium whitespace-nowrap text-xs mr-2" style={{ color: '#FFFFFF' }}>
+            <div className="font-medium whitespace-nowrap text-xs mr-2" style={{ color: '#989898' }}>
               {(() => {
                 const timerState = taskTimers.get(task.id);
                 if (!timerState) return '0:00';
@@ -773,7 +779,7 @@ export const TaskCard = ({
             
             {/* Play/Pause button */}
             <button
-              className="group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border border-gray-200/50 hover:border-yellow-400/50 hover:shadow-sm overflow-hidden flex-shrink-0"
+              className={`group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border ${isPaused ? 'border-white/80' : 'border-gray-200/50'} hover:border-yellow-400/50 hover:shadow-sm overflow-hidden flex-shrink-0`}
               style={{ backgroundColor: 'transparent' }}
               onClick={() => {
                 // Same logic as progress bar play/pause
@@ -802,16 +808,16 @@ export const TaskCard = ({
                 }
                 
                 return (isPaused || sessionElapsedMs < 1000) ? (
-                  <Play className="w-3 h-3 flex-shrink-0 text-white group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
+                  <Play className={`w-3 h-3 flex-shrink-0 ${isPaused ? 'text-white' : 'text-custom-gray'} group-hover:text-white transition-colors duration-300 relative z-10`} fill="currentColor" />
                 ) : (
-                  <Pause className="w-3 h-3 flex-shrink-0 text-white group-hover:text-white transition-colors duration-300 relative z-10" fill="currentColor" />
+                  <Pause className={`w-3 h-3 flex-shrink-0 ${isPaused ? 'text-white' : 'text-custom-gray'} group-hover:text-white transition-colors duration-300 relative z-10`} fill="currentColor" />
                 );
               })()}
             </button>
             
             {/* Expand chevron */}
             <button
-              className="group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border border-gray-200/50 hover:border-gray-600/50 hover:shadow-sm overflow-hidden flex-shrink-0"
+              className={`group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border ${isPaused ? 'border-white/80' : 'border-gray-200/50'} hover:border-gray-600/50 hover:shadow-sm overflow-hidden flex-shrink-0`}
               style={{ backgroundColor: 'transparent' }}
               onClick={() => {
                 setIsUltraCompact(false);
@@ -825,12 +831,13 @@ export const TaskCard = ({
               }}
             >
               <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
-              <Maximize2 className="w-3 h-3 flex-shrink-0 text-white group-hover:text-white transition-colors duration-300 relative z-10" strokeWidth={2.5} />
+              <Maximize2 className={`w-3 h-3 flex-shrink-0 ${isPaused ? 'text-white' : 'text-custom-gray'} group-hover:text-white transition-colors duration-300 relative z-10`} strokeWidth={2.5} />
             </button>
           </div>
         </div>
 
       </Card>
+      </>
     );
   }
   {/* ========== ULTRA-COMPACT PIP VIEW END ========== */}

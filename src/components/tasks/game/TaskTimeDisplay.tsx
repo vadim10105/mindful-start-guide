@@ -81,7 +81,7 @@ export const TaskTimeDisplay = ({
   // If no estimated time, show simple start time
   if (!estimatedTime || !adjustedEstimatedFinishTimeFormatted) {
     return (
-      <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#989898' }}>
+      <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#989898' : '#989898' }}>
         {startTimeFormatted}
       </span>
     );
@@ -90,7 +90,7 @@ export const TaskTimeDisplay = ({
   // Normal state: show start → adjusted estimated finish (accounts for paused time)
   if (!isOvertime) {
     return (
-      <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#989898' }}>
+      <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#989898' : '#989898' }}>
         {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
       </span>
     );
@@ -115,7 +115,7 @@ export const TaskTimeDisplay = ({
       <div className="flex flex-col items-end text-xs">
         <span 
           style={{ 
-            color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#7C7C7C',
+            color: (isUltraCompact || isPaused) ? '#989898' : '#7C7C7C',
             backgroundColor: (isUltraCompact || isPaused) ? 'rgba(255, 193, 7, 0.3)' : 'rgba(255, 193, 7, 0.6)',
             padding: '3px 6px',
             borderRadius: '2px',
@@ -125,7 +125,7 @@ export const TaskTimeDisplay = ({
         >
           {overtimeDisplay}
         </span>
-        <span style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#989898' }}>
+        <span style={{ color: (isUltraCompact || isPaused) ? '#989898' : '#989898' }}>
           {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
         </span>
       </div>
@@ -134,12 +134,12 @@ export const TaskTimeDisplay = ({
 
   // Normal view: inline overtime
   return (
-    <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#7C7C7C' }}>
+    <span className="text-xs" style={{ color: (isUltraCompact || isPaused) ? '#989898' : '#7C7C7C' }}>
       {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
-      <span style={{ color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#989898' }}>  </span>
+      <span style={{ color: (isUltraCompact || isPaused) ? '#989898' : '#989898' }}>  </span>
       <span 
         style={{ 
-          color: (isUltraCompact || isPaused) ? '#FFFFFF' : '#7C7C7C',
+          color: (isUltraCompact || isPaused) ? '#989898' : '#7C7C7C',
           backgroundColor: (isUltraCompact || isPaused) ? 'rgba(255, 193, 7, 0.3)' : 'rgba(255, 193, 7, 0.6)',
           padding: '1px 6px',
           borderRadius: '2px',

@@ -179,7 +179,13 @@ export const TaskActions = ({
   };
 
   return (
-    <div className="flex gap-2 justify-center">
+    <>
+      <style jsx>{`
+        .text-custom-gray {
+          color: #989898;
+        }
+      `}</style>
+      <div className="flex gap-2 justify-center">
       {/* Play/Pause Button */}
       <button
         onClick={handlePlayPause}
@@ -205,9 +211,9 @@ export const TaskActions = ({
       >
         <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/0 to-yellow-500/0 group-hover:from-yellow-400 group-hover:to-yellow-500 transition-all duration-500 ease-out opacity-90" />
         {shouldShowPlay ? (
-          <Play className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-gray-600'} group-hover:text-white transition-colors duration-300 relative z-10`} />
+          <Play className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-custom-gray'} group-hover:text-white transition-colors duration-300 relative z-10`} />
         ) : (
-          <Pause className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-gray-600'} group-hover:text-white transition-colors duration-300 relative z-10`} />
+          <Pause className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-custom-gray'} group-hover:text-white transition-colors duration-300 relative z-10`} />
         )}
         <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
           {shouldShowPlay ? 'Start' : formatElapsedTime(sessionElapsedMs || 0)}
@@ -222,7 +228,7 @@ export const TaskActions = ({
           style={{ backgroundColor: 'transparent' }}
         >
           <div className="absolute inset-0 bg-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
-          <TrendingUp className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
+          <TrendingUp className="w-4 h-4 flex-shrink-0 text-custom-gray group-hover:text-white transition-colors duration-300 relative z-10" />
           <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
             Progress
           </span>
@@ -237,7 +243,7 @@ export const TaskActions = ({
           style={{ backgroundColor: 'transparent' }}
         >
           <div className="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
-          <Check className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
+          <Check className="w-4 h-4 flex-shrink-0 text-custom-gray group-hover:text-white transition-colors duration-300 relative z-10" />
           <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
             Finish
           </span>
@@ -254,9 +260,9 @@ export const TaskActions = ({
         >
           <div className="absolute inset-0 bg-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
           {isGenerating ? (
-            <Loader2 className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" style={{ animation: 'spin 2s linear infinite' }} />
+            <Loader2 className="w-4 h-4 flex-shrink-0 text-custom-gray group-hover:text-white transition-colors duration-300 relative z-10" style={{ animation: 'spin 2s linear infinite' }} />
           ) : (
-            <Wand2 className="w-4 h-4 flex-shrink-0 text-gray-600 group-hover:text-white transition-colors duration-300 relative z-10" />
+            <Wand2 className="w-4 h-4 flex-shrink-0 text-custom-gray group-hover:text-white transition-colors duration-300 relative z-10" />
           )}
           <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
             Split
@@ -275,14 +281,15 @@ export const TaskActions = ({
       >
         <div className="absolute inset-0 bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
         {pipWindow ? (
-          <Minimize2 className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-gray-600'} group-hover:text-white transition-colors duration-300 relative z-10`} />
+          <Minimize2 className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-custom-gray'} group-hover:text-white transition-colors duration-300 relative z-10`} />
         ) : (
-          <ExternalLink className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-gray-600'} group-hover:text-white transition-colors duration-300 relative z-10`} />
+          <ExternalLink className={`w-4 h-4 flex-shrink-0 ${isPaused ? 'text-white' : 'text-custom-gray'} group-hover:text-white transition-colors duration-300 relative z-10`} />
         )}
         <span className="max-w-0 group-hover:max-w-[100px] overflow-hidden whitespace-nowrap text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out relative z-10">
           {pipWindow ? 'Mini' : 'Focus'}
         </span>
       </button>
     </div>
+    </>
   );
 };

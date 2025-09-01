@@ -368,6 +368,17 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, taskTitl
           clipPath: 'polygon(0% 0%, 65% 0%, 80% 50%, 100% 50%, 100% 100%, 0% 100%)'
         }}
       />
+      {/* Ground outline - slightly larger element with same clipPath to create stroke effect */}
+      <div 
+        className="absolute left-0 right-0" 
+        style={{ 
+          bottom: '-1px',
+          height: `${GROUND_HEIGHT + 2}px`,
+          background: 'rgba(0, 0, 0, 0.1)', // Light gray
+          clipPath: 'polygon(0% 0%, 65% 0%, 80% 50%, 100% 50%, 100% 100%, 0% 100%)',
+          zIndex: 2 // Below the main ground
+        }}
+      />
       {/* Mine area (stepped down) - temporarily hidden to debug overlay */}
       <div 
         className="absolute" 
