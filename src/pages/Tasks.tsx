@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, Images, ExternalLink } from "lucide-react";
+import { Shuffle, ArrowRight, Check, Heart, Zap, ArrowLeft, AlertTriangle, Settings, Plus, Clock, ChevronDown, ChevronRight, Images, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { TaskGameController } from "@/components/tasks/game/TaskGameController";
@@ -2512,8 +2512,8 @@ const TasksContent = () => {
                           color: 'var(--text-primary)',
                           height: isInputExpanded 
                             ? (activeTaskIds.length === 0) 
-                              ? '180px' 
-                              : '120px' 
+                              ? '270px' 
+                              : '270px' 
                             : '56px',
                           transition: 'height 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}
@@ -2533,18 +2533,43 @@ const TasksContent = () => {
                           className="sr-only"
                           aria-label="Upload image"
                         />
-                        <div className={`p-2 ${
+                        <div className={`p-2 rounded-full transition-colors duration-200 ${
                           isProcessing || isTransitioning 
                             ? 'opacity-50 cursor-not-allowed' 
-                            : 'cursor-pointer'
+                            : 'cursor-pointer hover:bg-gray-100'
                         }`}>
-                          <Images className={`w-5 h-5 transition-colors duration-200 ${
+                          <Images className={`w-4 h-4 ${
                             isProcessing || isTransitioning 
+                              ? 'text-gray-400' 
+                              : 'text-gray-400'
+                          }`} />
+                        </div>
+                      </label>
+
+                      {/* Submit Arrow Icon - Bottom Right Corner (fades in when expanded) */}
+                      <button 
+                        onClick={handleBrainDumpSubmit}
+                        disabled={!inputText.trim() || isProcessing || isTransitioning}
+                        className={`absolute bottom-3 right-3 z-50 cursor-pointer transition-all duration-500 ease-out ${
+                          isInputExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+                        }`}
+                        aria-label="Submit input"
+                      >
+                        <div className={`p-2 rounded-full ${
+                          !inputText.trim() || isProcessing || isTransitioning 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : 'cursor-pointer'
+                        }`}
+                        style={{
+                          backgroundColor: 'white'
+                        }}>
+                          <ChevronRight className={`w-4 h-4 transition-colors duration-200 ${
+                            !inputText.trim() || isProcessing || isTransitioning 
                               ? 'text-gray-400' 
                               : 'text-gray-400 hover:text-gray-700'
                           }`} />
                         </div>
-                      </label>
+                      </button>
                     </div>
                   </div>
                   
@@ -2935,7 +2960,9 @@ const TasksContent = () => {
                   </div>
                   
                   {/* Fixed buttons at bottom */}
-                  <div className="flex-shrink-0 pt-8 pb-4">
+                  <div className={`flex-shrink-0 pt-8 pb-4 transition-opacity duration-500 ${
+                    isInputExpanded ? 'opacity-30' : 'opacity-100'
+                  }`}>
                     {/* Action Buttons - Show appropriate buttons based on state */}
                   {true ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
@@ -3004,8 +3031,8 @@ const TasksContent = () => {
             </Card>
             </div>
             
-            {/* Timeline - TEMPORARILY HIDDEN */}
-            {false && (listTasks.length > 0 || activeTaskIds.length > 0) && (
+            {/* Timeline */}
+            {true && (listTasks.length > 0 || activeTaskIds.length > 0) && (
               <div 
                 className={`hidden lg:block absolute w-64 overflow-y-auto transition-all duration-1000 ease-in-out cursor-pointer group ${
                   isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
