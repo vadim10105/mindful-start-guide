@@ -76,7 +76,7 @@ export const TaskSwiper = forwardRef<any, TaskSwiperProps>(({
             perSlideOffset: 8,
             perSlideRotate: 2,
             rotate: true,
-            slideShadows: false,
+            slideShadows: true,
           }}
           onSlideChange={(swiper) => {
             onSlideChange(swiper.activeIndex);

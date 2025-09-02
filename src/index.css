@@ -159,6 +159,10 @@ All colors MUST be HSL.
   max-height: calc(100% - 60px); /* Leave space for navigation */
 }
 
+.swiper-slide {
+  border-radius: 1rem; /* 16px - matches rounded-2xl */
+}
+
 #pip-react-root .swiper-slide {
   padding: 6px;
 }
