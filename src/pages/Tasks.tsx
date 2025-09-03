@@ -91,6 +91,7 @@ interface UserProfile {
   task_preferences?: any;
   peak_energy_time?: string;
   lowest_energy_time?: string;
+  target_hours?: number;
 }
 
 interface TaskListItemProps {
@@ -724,6 +725,28 @@ const TasksContent = () => {
     };
   }, [listTasks, currentStep]);
 
+  // Function to reload user profile
+  const reloadUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('task_start_preference, task_preferences, peak_energy_time, lowest_energy_time, target_hours')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (profile) {
+        setUserProfile({
+          ...profile,
+          target_hours: profile.target_hours || 3
+        });
+      }
+    } catch (error) {
+      console.error('Error reloading user profile:', error);
+    }
+  };
+
   // Enhanced user check with profile creation
   useEffect(() => {
     const getUser = async () => {
@@ -738,7 +761,7 @@ const TasksContent = () => {
       // Fetch user profile for prioritization
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('task_start_preference, task_preferences, peak_energy_time, lowest_energy_time')
+        .select('task_start_preference, task_preferences, peak_energy_time, lowest_energy_time, target_hours')
         .eq('user_id', user.id)
         .maybeSingle();
       
@@ -753,7 +776,10 @@ const TasksContent = () => {
       }
 
       if (profile) {
-        setUserProfile(profile);
+        setUserProfile({
+          ...profile,
+          target_hours: profile.target_hours || 3
+        });
       } else {
         // Create a default profile if one doesn't exist
         console.log('No profile found, creating default profile...');
@@ -784,7 +810,8 @@ const TasksContent = () => {
             task_start_preference: defaultProfile.task_start_preference,
             task_preferences: defaultProfile.task_preferences,
             peak_energy_time: defaultProfile.peak_energy_time,
-            lowest_energy_time: defaultProfile.lowest_energy_time
+            lowest_energy_time: defaultProfile.lowest_energy_time,
+            target_hours: 3
           });
           toast({
             title: "Profile Created",
@@ -2762,6 +2789,7 @@ const TasksContent = () => {
                                 ref={doLessBetterRef}
                                 user={user}
                                 activeTaskIds={activeTaskIds}
+                                laterTaskIds={laterTaskIds}
                                 tasksById={tasksById}
                                 taskTagsById={taskTagsById}
                                 taskTimeEstimatesById={taskTimeEstimatesById}
@@ -2769,6 +2797,8 @@ const TasksContent = () => {
                                 setLaterTaskIds={setLaterTaskIds}
                                 saveTaskAsLater={saveTaskAsLater}
                                 setLaterTasksExpanded={setLaterTasksExpanded}
+                                isProcessing={isProcessing}
+                                targetHours={userProfile?.target_hours || 3}
                               />
                             );
                           })()}
@@ -2908,9 +2938,97 @@ const TasksContent = () => {
                                 {activeTaskIds.length === 0 && !isProcessing && (
                                   <div className="flex items-center gap-4 py-6">
                                     <div className="flex-1 h-px bg-[#AAAAAA]/20"></div>
-                                    <span className="text-sm font-medium" style={{ color: '#AAAAAA', opacity: 0.4 }}>
-                                      Active (0)
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-sm font-medium" style={{ color: '#AAAAAA', opacity: 0.4 }}>
+                                        Active (0)
+                                      </span>
+                                      {laterTaskIds.length > 0 && (
+                                        <>
+                                          <span style={{ color: '#AAAAAA', opacity: 0.6 }}>•</span>
+                                          <button
+                                            onClick={async () => {
+                                              // Smart selection logic (same as DoLessBetter)
+                                              const calculateScore = (taskId: string) => {
+                                                const tags = taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false };
+                                                let tagScore = 0;
+                                                if (tags.isLiked) tagScore += 3;
+                                                if (tags.isQuick) tagScore += 2;
+                                                if (tags.isUrgent) tagScore += 1;
+                                                return tagScore;
+                                              };
+
+                                              const laterTasksWithScores = laterTaskIds.map(taskId => ({
+                                                taskId,
+                                                score: calculateScore(taskId),
+                                                timeMinutes: parseTimeToMinutes(taskTimeEstimatesById[taskId] || '') || 30,
+                                                tags: taskTagsById[taskId] || { isLiked: false, isUrgent: false, isQuick: false }
+                                              }));
+
+                                              const targetMinutes = (userProfile?.target_hours || 3) * 60;
+                                              const toMove: string[] = [];
+                                              const available = [...laterTasksWithScores];
+
+                                              // Prioritize liked, quick, urgent tasks
+                                              const likedTasks = available.filter(t => t.tags.isLiked).sort((a, b) => b.score - a.score);
+                                              if (likedTasks.length > 0) {
+                                                toMove.push(likedTasks[0].taskId);
+                                                const index = available.findIndex(t => t.taskId === likedTasks[0].taskId);
+                                                available.splice(index, 1);
+                                              }
+
+                                              const quickTasks = available.filter(t => t.tags.isQuick).sort((a, b) => b.score - a.score);
+                                              if (quickTasks.length > 0) {
+                                                toMove.push(quickTasks[0].taskId);
+                                                const index = available.findIndex(t => t.taskId === quickTasks[0].taskId);
+                                                available.splice(index, 1);
+                                              }
+
+                                              const urgentTasks = available.filter(t => t.tags.isUrgent).sort((a, b) => b.score - a.score);
+                                              if (urgentTasks.length > 0) {
+                                                toMove.push(urgentTasks[0].taskId);
+                                                const index = available.findIndex(t => t.taskId === urgentTasks[0].taskId);
+                                                available.splice(index, 1);
+                                              }
+
+                                              // Fill remaining with highest scoring tasks
+                                              const sorted = available.sort((a, b) => b.score - a.score);
+                                              let timeWithMustKeep = toMove.reduce((total, taskId) => {
+                                                const task = laterTasksWithScores.find(t => t.taskId === taskId);
+                                                return total + (task?.timeMinutes || 30);
+                                              }, 0);
+
+                                              for (const task of sorted) {
+                                                if (timeWithMustKeep + task.timeMinutes <= targetMinutes) {
+                                                  toMove.push(task.taskId);
+                                                  timeWithMustKeep += task.timeMinutes;
+                                                }
+                                              }
+
+                                              if (toMove.length > 0) {
+                                                setActiveTaskIds(toMove);
+                                                setLaterTaskIds(prev => prev.filter(id => !toMove.includes(id)));
+                                                
+                                                // Update database
+                                                for (const taskId of toMove) {
+                                                  try {
+                                                    await supabase
+                                                      .from('tasks')
+                                                      .update({ list_location: 'active' })
+                                                      .eq('id', taskId)
+                                                      .eq('user_id', user?.id);
+                                                  } catch (error) {
+                                                    console.error('Error moving task to active:', error);
+                                                  }
+                                                }
+                                              }
+                                            }}
+                                            className="text-sm font-medium text-yellow-500 hover:text-yellow-600 transition-colors"
+                                          >
+                                            Fill from Later
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
                                     <div className="flex-1 h-px bg-[#AAAAAA]/20"></div>
                                   </div>
                                 )}
@@ -2928,16 +3046,18 @@ const TasksContent = () => {
                                 }}
                               >
                                 <div className="flex-1 h-px bg-[#AAAAAA]/20 group-hover:bg-[#AAAAAA]/60 transition-colors"></div>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-sm font-medium transition-all group-hover:opacity-100" style={{ color: '#AAAAAA', opacity: 0.4 }}>
-                                    Later ({laterTaskIds.length})
-                                  </span>
-                                  <ChevronDown 
-                                    className={`h-4 w-4 transition-all duration-200 ${
-                                      laterTasksExpanded ? 'rotate-180' : ''
-                                    }`}
-                                    style={{ color: '#AAAAAA', opacity: 0.4 }} 
-                                  />
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-sm font-medium transition-all group-hover:opacity-100" style={{ color: '#AAAAAA', opacity: 0.4 }}>
+                                      Later ({laterTaskIds.length})
+                                    </span>
+                                    <ChevronDown 
+                                      className={`h-4 w-4 transition-all duration-200 ${
+                                        laterTasksExpanded ? 'rotate-180' : ''
+                                      }`}
+                                      style={{ color: '#AAAAAA', opacity: 0.4 }} 
+                                    />
+                                  </div>
                                 </div>
                                 <div className="flex-1 h-px bg-[#AAAAAA]/20 group-hover:bg-[#AAAAAA]/60 transition-colors"></div>
                               </div>
@@ -3513,6 +3633,7 @@ const TasksContent = () => {
       <SettingsModal
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
+        onSettingsSaved={reloadUserProfile}
       />
       </div>
     </>

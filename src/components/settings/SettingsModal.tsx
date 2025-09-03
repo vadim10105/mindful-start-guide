@@ -22,11 +22,13 @@ type UserProfile = {
   lowest_energy_time: string;
   task_start_preference: string;
   task_preferences: Record<string, string>;
+  target_hours: number;
 };
 
 interface SettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSettingsSaved?: () => void;
 }
 
 const timeOptions = [
@@ -54,7 +56,7 @@ const taskTypes = [
   { id: "technical_work", title: "Technical Work" }
 ];
 
-export const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
+export const SettingsModal = ({ open, onOpenChange, onSettingsSaved }: SettingsModalProps) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -68,7 +70,7 @@ export const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('display_name, peak_energy_time, lowest_energy_time, task_start_preference, task_preferences')
+        .select('display_name, peak_energy_time, lowest_energy_time, task_start_preference, task_preferences, target_hours')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -77,7 +79,8 @@ export const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
       if (data) {
         setProfile({
           ...data,
-          task_preferences: data.task_preferences as Record<string, string> || {}
+          task_preferences: data.task_preferences as Record<string, string> || {},
+          target_hours: data.target_hours || 3
         });
       }
     } catch (error) {
@@ -114,6 +117,7 @@ export const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
           lowest_energy_time: profile.lowest_energy_time,
           task_start_preference: profile.task_start_preference,
           task_preferences: profile.task_preferences,
+          target_hours: profile.target_hours,
         })
         .eq('user_id', user.id);
 
@@ -124,6 +128,7 @@ export const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
         description: "Your preferences have been updated successfully.",
       });
       onOpenChange(false);
+      onSettingsSaved?.(); // Notify parent that settings were saved
     } catch (error) {
       console.error('Error saving profile:', error);
       toast({
@@ -239,6 +244,30 @@ export const SettingsModal = ({ open, onOpenChange }: SettingsModalProps) => {
                     </div>
                   ))}
                 </RadioGroup>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Active List Target</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="target-hours">Target hours for active tasks</Label>
+                  <Input
+                    id="target-hours"
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={profile.target_hours}
+                    onChange={(e) => setProfile({ 
+                      ...profile, 
+                      target_hours: Math.max(1, Math.min(12, parseInt(e.target.value) || 3))
+                    })}
+                    className="w-24"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Tasks will be automatically managed to stay around {profile.target_hours} hour{profile.target_hours !== 1 ? 's' : ''} total
+                  </p>
+                </div>
               </div>
 
               <Separator />
