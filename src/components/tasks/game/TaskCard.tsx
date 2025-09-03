@@ -432,6 +432,9 @@ export const TaskCard = ({
         className="h-[90px] w-[368px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg"
         style={{ 
           background: (() => {
+            // In ultra-compact mode, always use off-white background
+            if (isUltraCompact) return 'rgb(255, 255, 247)';
+            
             const estimatedMinutes = parseTimeToMinutes(task.estimated_time || '');
             if (estimatedMinutes <= 0) return 'rgb(255, 255, 247)'; // No estimated time, off-white
             
@@ -711,6 +714,7 @@ export const TaskCard = ({
           <BlockStackingProgress 
             progress={getUltraCompactProgress()}
             isPaused={isPaused}
+            isActiveCommitted={isActiveCommitted}
             isOvertime={(() => {
               const estimatedMinutes = parseTimeToMinutes(task.estimated_time || '');
               const timerState = taskTimers.get(task.id);
@@ -723,6 +727,7 @@ export const TaskCard = ({
             taskTitle={task.title}
             estimatedTime={task.estimated_time}
             pausedStartTime={pauseTimestamps.get(task.id) || null}
+            taskId={task.id}
           />
         )}
       
