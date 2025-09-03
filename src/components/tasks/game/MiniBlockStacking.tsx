@@ -61,11 +61,11 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
   const TOWER_SPACING = BLOCK_SIZE;
   const MAX_TOWERS = Math.floor((TOWER_END_X - TOWER_START_X) / TOWER_SPACING);
   const TOTAL_BLOCKS = MAX_TOWERS * MAX_BLOCKS_PER_COLUMN;
-  const blocksToShow = Math.floor((calculatedProgress / 100) * TOTAL_BLOCKS);
+  const blocksToShow = Math.floor((Math.max(0, calculatedProgress) / 100) * TOTAL_BLOCKS);
   
   // Character state (same as BlockStackingProgress)
   const [characterX, setCharacterX] = useState(20);
-  const [characterState, setCharacterState] = useState<'idle' | 'walking' | 'carrying' | 'placing'>('idle');
+  const [characterState, setCharacterState] = useState<'walking' | 'carrying'>('walking');
   const [walkFrame, setWalkFrame] = useState(0);
   const [placedBlocks, setPlacedBlocks] = useState<Array<{ height: number; isNew?: boolean }>>([]);
   const [blockBeingCarried, setBlockBeingCarried] = useState(false);
@@ -74,6 +74,9 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
   const blockIdCounter = useRef(Math.floor(Math.random() * 10000)); // Unique starting point for each component
   const lastBlockCountRef = useRef(0);
   
+  // Track which columns have been "activated" by character placement
+  const [activatedColumns, setActivatedColumns] = useState(new Set<number>());
+  
   const taskMinutes = parseTimeToMinutes(estimatedTime || '30min');
   
   // Character speed logic - use constant slower speed for mini view
@@ -81,111 +84,114 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
 
   // Block color (same as BlockStackingProgress)
   const getBlockColor = () => {
+    if (!isActiveCommitted) return '#9ca3af'; // Gray when not actively playing
     if (isPaused) return '#fbbf24';
     const estimatedMinutes = parseTimeToMinutes(estimatedTime || '');
-    const isOvertime = estimatedMinutes > 0 && (calculatedProgress > 100);
+    const currentProgress = calculateProgress();
+    const isOvertime = estimatedMinutes > 0 && (currentProgress > 100);
     if (isOvertime) return '#f59e0b';
     return '#fbbf24';
   };
   
-  // Add block logic (simplified from BlockStackingProgress)
+  // Block placement - activates all available ghost columns at once
   const addBlock = useCallback(() => {
     // Play click sound when block is placed
     playClickSound();
     
-    setPlacedBlocks(prev => {
-      const newColumns = [...prev];
-      const lastColumn = newColumns[newColumns.length - 1];
-      let currentColumnIndex;
-      
-      if (!lastColumn || lastColumn.height >= MAX_BLOCKS_PER_COLUMN) {
-        newColumns.push({ height: 1, isNew: true });
-        currentColumnIndex = newColumns.length - 1;
-      } else {
-        newColumns[newColumns.length - 1] = { 
-          height: lastColumn.height + 1, 
-          isNew: true 
-        };
-        currentColumnIndex = newColumns.length - 1;
-      }
-      
-      // Activate ALL columns up to and including the current one
+    // Check if there are any ghost blocks to activate
+    const currentBlockCount = blocksToShow;
+    const totalActivatedBlocks = Array.from(activatedColumns).reduce((sum, colIndex) => {
+      const column = placedBlocks[colIndex];
+      return sum + (column ? column.height : 0);
+    }, 0);
+    
+    // Only activate if there are ghost blocks waiting
+    if (totalActivatedBlocks < currentBlockCount) {
+      // Activate ALL inactive columns that exist
       setActivatedColumns(activated => {
         const newActivated = new Set(activated);
-        for (let i = 0; i <= currentColumnIndex; i++) {
-          newActivated.add(i);
+        for (let i = 0; i < placedBlocks.length; i++) {
+          if (!activated.has(i)) {
+            newActivated.add(i);
+          }
         }
         return newActivated;
       });
-      
-      // Clear isNew flag after animation
-      setTimeout(() => {
-        setPlacedBlocks(cols => cols.map(col => ({ ...col, isNew: false })));
-      }, 300);
-      
-      return newColumns;
-    });
-  }, [MAX_BLOCKS_PER_COLUMN]);
+    }
+    // If no ghost blocks to activate, the placed block just disappears (no tower building)
+  }, [blocksToShow, activatedColumns, placedBlocks]);
   
-  // Character movement (same logic as BlockStackingProgress)
+  // Simplified character movement - continuous cycle
   useEffect(() => {
-    if (isPaused || !isActiveCommitted) return; // Stop movement when paused OR not actively playing
+    if (isPaused || !isActiveCommitted) return;
     
-    if (calculatedProgress >= 100) {
-      // Task complete - character should return to default position
-      const defaultPosition = 20; // Starting position
-      
-      if (blockBeingCarried) {
-        // Still carrying a block, finish placing it first
-        setCharacterDirection('left');
-        setCharacterState('carrying');
-        const currentTowerIndex = Math.max(0, placedBlocks.length - 1);
-        const currentTowerX = TOWER_START_X + currentTowerIndex * TOWER_SPACING;
-        setCharacterX(prev => Math.max(currentTowerX, prev - workSpeed));
-      } else if (characterX > defaultPosition) {
-        // No block being carried, return to default position
-        setCharacterDirection('left');
-        setCharacterState('walking');
-        setCharacterX(prev => Math.max(defaultPosition, prev - workSpeed));
+    // Check if task is 100% complete (not just current towers)
+    const allTowersComplete = calculatedProgress >= 100;
+    
+    if (allTowersComplete) {
+      // Walk character back to starting position when complete
+      const startPosition = 20; // Starting position
+      if (Math.abs(characterX - startPosition) > 5) {
+        const moveCharacterToStart = () => {
+          setCharacterX(prev => {
+            // Walk to start position
+            if (prev > startPosition) {
+              setCharacterDirection('left');
+              setCharacterState('walking');
+              return Math.max(startPosition, prev - workSpeed);
+            } else {
+              setCharacterDirection('right');
+              setCharacterState('walking');
+              return Math.min(startPosition, prev + workSpeed);
+            }
+          });
+        };
+        
+        // Use same framerate as normal movement
+        const interval = setInterval(moveCharacterToStart, 33);
+        return () => clearInterval(interval);
       } else {
-        // At default position, go idle
-        setCharacterState('idle');
+        // Character reached start position - stop moving and walking animation
+        setCharacterState('walking'); // Keep state but no movement
       }
-      return; // Skip normal movement logic when task complete
+      return;
     }
     
     const moveCharacter = () => {
       setCharacterX(prev => {
         const pickupX = 300; // Walk all the way to the blocks
-        const placementX = TOWER_START_X;
+        const currentTowerIndex = Math.max(0, placedBlocks.length - 1);
+        const currentTowerX = TOWER_START_X + currentTowerIndex * TOWER_SPACING;
         
         if (blockBeingCarried) {
           setCharacterDirection('left');
           setCharacterState('carrying');
           // Move to current tower position
-          const currentTowerIndex = Math.max(0, placedBlocks.length - 1);
-          const currentTowerX = TOWER_START_X + currentTowerIndex * TOWER_SPACING;
           return Math.max(currentTowerX, prev - workSpeed);
-        } else if (blockSupplyPile.length > 0) {
+        } else {
           setCharacterDirection('right');
           setCharacterState('walking');
+          // Always walk to pickup position
           return Math.min(pickupX, prev + workSpeed);
-        } else {
-          setCharacterState('idle');
-          return prev;
         }
       });
     };
     
-    // Same framerate as BlockStackingProgress
     const interval = setInterval(moveCharacter, 33); // ~30fps
     return () => clearInterval(interval);
-  }, [isPaused, isActiveCommitted, calculatedProgress, blockBeingCarried, blockSupplyPile.length, placedBlocks, workSpeed]);
+  }, [isPaused, isActiveCommitted, blockBeingCarried, placedBlocks.length, workSpeed, calculatedProgress, characterX]);
   
   // Initialize blocks based on current progress (for when switching views)
   useEffect(() => {
     // Reset block counter to ensure unique IDs per task
     blockIdCounter.current = Math.floor(Math.random() * 10000) + parseInt(taskId.slice(-3) || '0', 10) * 100;
+    
+    // Reset character state for each task
+    setCharacterX(20);
+    setCharacterState('walking');
+    setWalkFrame(0);
+    setBlockBeingCarried(false);
+    setCharacterDirection('right');
     
     const columns: Array<{ height: number; isNew?: boolean; isGhosted?: boolean }> = [];
     let remainingBlocks = blocksToShow;
@@ -236,18 +242,6 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
   const placementTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
-    // Don't place blocks if progress is complete
-    if (calculatedProgress >= 100) {
-      // Clear any pending placement and drop carried block immediately
-      if (placementTimeoutRef.current) {
-        clearTimeout(placementTimeoutRef.current);
-        placementTimeoutRef.current = null;
-      }
-      setBlockBeingCarried(false);
-      hasPlacedBlock.current = false;
-      return;
-    }
-    
     const currentTowerIndex = Math.max(0, placedBlocks.length - 1);
     const currentTowerX = TOWER_START_X + currentTowerIndex * TOWER_SPACING;
     
@@ -255,17 +249,14 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
       hasPlacedBlock.current = true;
       
       placementTimeoutRef.current = setTimeout(() => {
-        // Double-check progress hasn't completed while waiting - use fresh calculation
-        const currentProgress = calculateProgress();
-        if (currentProgress < 100) {
-          addBlock();
-        }
+        // Always place block (will activate ghost blocks if available, otherwise disappears)
+        addBlock();
         setBlockBeingCarried(false);
         hasPlacedBlock.current = false;
         placementTimeoutRef.current = null;
-      }, 100); // Shorter delay for card
+      }, 100);
     }
-  }, [characterX, blockBeingCarried, addBlock, placedBlocks, calculatedProgress]);
+  }, [characterX, blockBeingCarried, addBlock, placedBlocks]);
   
   // Cleanup placement timeout on unmount
   useEffect(() => {
@@ -276,9 +267,6 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
     };
   }, []);
   
-  // Track which columns have been "activated" by character placement
-  const [activatedColumns, setActivatedColumns] = useState(new Set<number>());
-
   // Keep towers in sync with real progress - this is the key progress indicator
   useEffect(() => {
     const currentBlockCount = blocksToShow;
@@ -301,45 +289,42 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
     lastBlockCountRef.current = currentBlockCount;
   }, [blocksToShow, MAX_BLOCKS_PER_COLUMN]);
 
-  // Keep supply pile stocked for character animation (simplified)
+  // Always maintain block supply for continuous animation
   useEffect(() => {
-    if (calculatedProgress >= 100) {
-      // Task complete - clear all supply blocks and stop character
+    if (!isActiveCommitted) return;
+    
+    // Check if task is 100% complete (not just current towers)
+    const allTowersComplete = calculatedProgress >= 100;
+    
+    if (allTowersComplete) {
+      // Clear supply pile when all towers are complete
       setBlockSupplyPile([]);
       setBlockBeingCarried(false);
-      setCharacterState('idle');
-    } else if (isActiveCommitted) {
-      // Only keep blocks in supply if actively playing this task
-      setBlockSupplyPile(prev => {
-        if (prev.length < 1) { // Keep at least 1 block
-          const newPile = [...prev];
-          while (newPile.length < 1) { // Fill up to just 1 block
-            newPile.push({ id: blockIdCounter.current++, isNew: true });
-          }
-          
-          // Clear new flags after animation
-          setTimeout(() => {
-            setBlockSupplyPile(current => 
-              current.map(block => ({ ...block, isNew: false }))
-            );
-          }, 400);
-          
-          return newPile;
-        }
-        return prev;
-      });
+      return;
     }
-  }, [calculatedProgress, isActiveCommitted]); // Update based on real progress and active state
+    
+    if (blockSupplyPile.length < 1) { // Always keep 1 block ready
+      const newBlock = { id: blockIdCounter.current++, isNew: true };
+      setBlockSupplyPile([newBlock]);
+      
+      // Clear new flag after animation
+      setTimeout(() => {
+        setBlockSupplyPile(current => 
+          current.map(block => ({ ...block, isNew: false }))
+        );
+      }, 400);
+    }
+  }, [isActiveCommitted, blockSupplyPile.length, calculatedProgress]);
   
-  // Walk animation (same as BlockStackingProgress)
+  // Walk animation - always active when not paused and committed
   useEffect(() => {
-    if ((characterState === 'walking' || characterState === 'carrying') && !isPaused && isActiveCommitted) {
+    if (!isPaused && isActiveCommitted) {
       const interval = setInterval(() => {
         setWalkFrame(prev => (prev + 1) % 2);
       }, 200);
       return () => clearInterval(interval);
     }
-  }, [characterState, isPaused, isActiveCommitted]);
+  }, [isPaused, isActiveCommitted]);
   
   return (
     <div 
@@ -387,7 +372,9 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
                     width: `${BLOCK_SIZE}px`,
                     height: `${BLOCK_SIZE}px`,
                     background: getBlockColor(),
-                    border: isTopBlock ? '1px solid rgba(0, 0, 0, 0.2)' : 'none',
+                    borderTop: isTopBlock ? '1px solid rgba(0, 0, 0, 0.2)' : 'none',
+                    borderLeft: isTopBlock ? '1px solid rgba(0, 0, 0, 0.2)' : 'none',
+                    borderRight: isTopBlock ? '1px solid rgba(0, 0, 0, 0.2)' : 'none',
                     borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
                     boxShadow: isTopBlock ? '0 1px 2px rgba(0, 0, 0, 0.1)' : 'none',
                     opacity: isGhosted ? 0.3 : 1, // Ghost blocks are transparent
@@ -459,32 +446,32 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
           <rect x="4" y="4" width="4" height="4" fill="#718096" />
           {/* Arms */}
           <rect 
-            x={characterState === 'carrying' || characterState === 'placing' ? "8" : "2"} 
+            x={characterState === 'carrying' ? "8" : "2"} 
             y="5" 
             width="2" 
             height="2" 
             fill="#718096"
           />
           <rect 
-            x={characterState === 'carrying' || characterState === 'placing' ? "2" : "8"} 
+            x={characterState === 'carrying' ? "2" : "8"} 
             y="5" 
             width="2" 
             height="2" 
             fill="#718096"
           />
-          {/* Legs - animate for walking and carrying */}
+          {/* Legs - always animate when active */}
           <rect 
             x="4" 
             y="8" 
             width="2" 
-            height={(characterState === 'walking' || characterState === 'carrying') && walkFrame === 0 ? "3" : "2"} 
+            height={walkFrame === 0 ? "3" : "2"} 
             fill="#4a5568"
           />
           <rect 
             x="6" 
             y="8" 
             width="2" 
-            height={(characterState === 'walking' || characterState === 'carrying') && walkFrame === 1 ? "3" : "2"} 
+            height={walkFrame === 1 ? "3" : "2"} 
             fill="#4a5568"
           />
         </svg>
@@ -493,7 +480,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
           <div
             className="absolute"
             style={{
-              top: characterState === 'placing' ? '-1px' : '-3px',
+              top: '-3px',
               left: characterDirection === 'right' ? '8px' : '-2px',
               width: `${BLOCK_SIZE}px`,
               height: `${BLOCK_SIZE}px`,

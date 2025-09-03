@@ -197,15 +197,29 @@ export const TaskTimeDisplay = ({
           onMouseLeave={() => setIsHovered(false)}
         >
           {timerDisplay} of {estimatedFormatted}
-          {isOvertime && (
-            <span style={{ 
-              color: '#f59e0b',
-              marginLeft: '4px',
-              fontWeight: '600'
-            }}>
-              (overtime)
-            </span>
-          )}
+          {isOvertime && (() => {
+            const overtimeMs = currentTime - adjustedEstimatedFinishTime!;
+            const overtimeMinutes = Math.floor(overtimeMs / 60000);
+            const overtimeHours = Math.floor(overtimeMinutes / 60);
+            const remainingMinutes = overtimeMinutes % 60;
+            
+            let overtimeDisplay = '';
+            if (overtimeHours > 0) {
+              overtimeDisplay = `+${overtimeHours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
+            } else {
+              overtimeDisplay = `+${overtimeMinutes}m`;
+            }
+            
+            return (
+              <span style={{ 
+                color: '#f59e0b',
+                marginLeft: '4px',
+                fontWeight: '600'
+              }}>
+                ({overtimeDisplay})
+              </span>
+            );
+          })()}
         </span>
       );
     } else {
@@ -221,15 +235,29 @@ export const TaskTimeDisplay = ({
           onMouseLeave={() => setIsHovered(false)}
         >
           {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
-          {isOvertime && (
-            <span style={{ 
-              color: '#f59e0b',
-              marginLeft: '4px',
-              fontWeight: '600'
-            }}>
-              (overtime)
-            </span>
-          )}
+          {isOvertime && (() => {
+            const overtimeMs = currentTime - adjustedEstimatedFinishTime!;
+            const overtimeMinutes = Math.floor(overtimeMs / 60000);
+            const overtimeHours = Math.floor(overtimeMinutes / 60);
+            const remainingMinutes = overtimeMinutes % 60;
+            
+            let overtimeDisplay = '';
+            if (overtimeHours > 0) {
+              overtimeDisplay = `+${overtimeHours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
+            } else {
+              overtimeDisplay = `+${overtimeMinutes}m`;
+            }
+            
+            return (
+              <span style={{ 
+                color: '#f59e0b',
+                marginLeft: '4px',
+                fontWeight: '600'
+              }}>
+                ({overtimeDisplay})
+              </span>
+            );
+          })()}
         </span>
       );
     }

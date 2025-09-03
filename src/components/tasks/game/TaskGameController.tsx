@@ -209,8 +209,8 @@ export const TaskGameController = ({
 
   // Define handleCommitToCurrentTask first since other hooks need it
   const handleCommitToCurrentTask = useCallback(async () => {
-    // Don't allow action if already committed to avoid conflicts with PiP
-    if (gameState.hasCommittedToTask && pipManager.isPiPActive) return;
+    // Don't allow action if already committed to the same task
+    if (gameState.hasCommittedToTask && gameState.activeCommittedIndex === gameState.currentViewingIndex) return;
     
     const currentTask = tasks[gameState.currentViewingIndex];
     if (!currentTask) return;
