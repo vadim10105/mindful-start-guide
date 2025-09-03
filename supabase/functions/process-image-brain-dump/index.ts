@@ -108,8 +108,13 @@ RULES:
 6. If you see lists, bullet points, or numbered items, treat each as a potential task
 7. Convert vague notes into specific tasks (e.g., "dentist" becomes "Schedule dentist appointment")
 8. Return ONLY a JSON array of task objects
-9. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'm' and 'h' (e.g., '15m', '2h', '1h 30m')"}
-10. If no clear tasks are found, create at least one task based on the general content`
+9. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'm' and 'h' (e.g., '15m', '2h', '1h 30m')", "is_urgent": boolean}
+10. If no clear tasks are found, create at least one task based on the general content
+11. Mark a task as urgent (is_urgent: true) ONLY when it contains:
+    - Explicit urgency words: "urgent", "ASAP", "immediately", "critical", "emergency"
+    - Blocking language: "blocking", "showstopper", "team waiting", "holding up"
+    - Overdue indicators: "overdue", "late", "past deadline", "should have been done"
+    - Otherwise, set is_urgent: false`
           },
           {
             role: 'user',

@@ -92,7 +92,7 @@ export function TaskTimeline({
       }}
     >
       {/* Timeline Blocks - Fit to available space */}
-      <div className="flex-1 flex flex-col pl-14 pr-4 py-4 gap-3">
+      <div className="flex-1 flex flex-col pl-12 pr-4 py-4 gap-3">
         {blocks.map((block, index) => {
           // Calculate proportional height based on duration
           const totalMinutes = blocks.reduce((sum, b) => sum + b.durationMinutes, 0);

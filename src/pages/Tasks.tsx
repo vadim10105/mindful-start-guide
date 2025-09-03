@@ -55,6 +55,7 @@ type FlowStep = 'input' | 'review' | 'prioritized' | 'game-cards';
 interface ExtractedTask {
   title: string;
   estimated_time: string;
+  is_urgent?: boolean;
 }
 
 interface Task {
@@ -1091,10 +1092,23 @@ const TasksContent = () => {
       
       // Save tasks to database immediately after extraction and categorization
       if (user) {
+        // Fetch user preferences to check for liked categories
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('task_preferences')
+          .eq('user_id', user.id)
+          .single();
+        
+        const taskPreferences = profileData?.task_preferences as Record<string, string> || {};
+        
         const tasksToSave = data.tasks.map((task: ExtractedTask, index: number) => {
           const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
           const category = taskCategories[task.title] || 'Admin Work';
           const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
+          // Convert category title to ID format for preference lookup
+          const categoryId = category.toLowerCase().replace(/ /g, '_');
+          const isLoved = taskPreferences[categoryId] === 'liked'; // Auto-apply loved tag if category is liked
+          const isUrgent = task.is_urgent || false; // Use AI-detected urgency
           
           return {
             title: task.title,
@@ -1104,7 +1118,9 @@ const TasksContent = () => {
             task_status: 'task_list' as const, // New tasks start in task list  
             category: category, // Save AI categorization
             estimated_minutes: estimatedMinutes, // Convert time estimate to minutes
-            is_quick: isQuick // Auto-apply quick tag if <= 20 minutes
+            is_quick: isQuick, // Auto-apply quick tag if <= 20 minutes
+            is_liked: isLoved, // Auto-apply loved tag if category is liked
+            is_urgent: isUrgent // Auto-apply urgent tag based on AI detection
           };
         });
 
@@ -1235,21 +1251,35 @@ const TasksContent = () => {
       const categorizedTasks = await categorizeTasks(taskTitles);
       console.log('Categorized tasks:', categorizedTasks);
       
+      // Fetch user preferences to check for liked categories
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('task_preferences')
+        .eq('user_id', user.id)
+        .single();
+      
+      const taskPreferences = profileData?.task_preferences as Record<string, string> || {};
+      
       // Prepare tasks for database insertion
       const tasksToInsert = data.tasks.map((task: ExtractedTask) => {
         const formattedTime = validateAndFormatTimeInput(task.estimated_time) || task.estimated_time;
         const estimatedMinutes = parseTimeToMinutes(formattedTime);
         const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
+        const category = categorizedTasks[task.title] || 'Technical Work';
+        // Convert category title to ID format for preference lookup
+        const categoryId = category.toLowerCase().replace(/ /g, '_');
+        const isLoved = taskPreferences[categoryId] === 'liked'; // Auto-apply loved tag if category is liked
+        const isUrgent = task.is_urgent || false; // Use AI-detected urgency
         
         return {
           title: task.title,
           user_id: user.id,
           list_location: 'active',
           task_status: 'task_list',
-          is_liked: false,
-          is_urgent: false,
+          is_liked: isLoved, // Auto-apply loved tag if category is liked
+          is_urgent: isUrgent, // Auto-apply urgent tag based on AI detection
           is_quick: isQuick, // Auto-apply quick tag if <= 20 minutes
-          category: categorizedTasks[task.title] || 'Technical Work',
+          category: category,
           estimated_minutes: estimatedMinutes
         };
       });
@@ -3034,11 +3064,11 @@ const TasksContent = () => {
             {/* Timeline */}
             {true && (listTasks.length > 0 || activeTaskIds.length > 0) && (
               <div 
-                className={`hidden lg:block absolute w-64 overflow-y-auto transition-all duration-1000 ease-in-out cursor-pointer group ${
+                className={`hidden lg:block absolute w-80 overflow-y-auto transition-all duration-1000 ease-in-out cursor-pointer group ${
                   isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
                 style={{
-                  top: 'calc(50% + 26px)', // Offset for title - lowered by 26px
+                  top: 'calc(50% + 24px)', // Offset for title - lowered by 24px
                   height: cardRef.current?.offsetHeight || '700px',
                   transform: `translateY(-50%) ${!timelineExpanded ? 'translateX(0)' : 'translateX(0)'}`,
                   right: timelineExpanded ? '-6rem' : '10rem',

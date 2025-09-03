@@ -102,7 +102,12 @@ RULES:
 4. If a complex item has multiple steps, break it into separate tasks
 5. PRESERVE THE ORIGINAL ORDER - extract tasks in the same sequence they appear in the text
 6. Return ONLY a JSON array of task objects
-7. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'm' and 'h' (e.g., '15m', '2h', '1h 30m')"}`
+7. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'm' and 'h' (e.g., '15m', '2h', '1h 30m')", "is_urgent": boolean}
+8. Mark a task as urgent (is_urgent: true) ONLY when it contains:
+   - Explicit urgency words: "urgent", "ASAP", "immediately", "critical", "emergency"
+   - Blocking language: "blocking", "showstopper", "team waiting", "holding up"
+   - Overdue indicators: "overdue", "late", "past deadline", "should have been done"
+   - Otherwise, set is_urgent: false`
           },
           {
             role: 'user',
