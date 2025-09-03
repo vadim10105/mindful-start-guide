@@ -98,7 +98,11 @@ export const TaskTimeDisplay = ({
     const remainingMinutes = minutes % 60;
     
     if (hours > 0) {
-      return `${hours}h ${remainingMinutes}m`;
+      if (remainingMinutes > 0) {
+        return `${hours}h ${remainingMinutes}m`;
+      } else {
+        return `${hours}h`;
+      }
     } else {
       return `${minutes}m`;
     }

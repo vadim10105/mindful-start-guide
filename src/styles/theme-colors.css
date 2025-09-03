@@ -189,6 +189,11 @@
   color: var(--tag-icon-inactive);
 }
 
+/* Task action icon default state */
+.task-action-icon {
+  color: #989898;
+}
+
 /* Tag hover colors - more specific to override inactive state */
 .tag-inactive.hover\:text-red-400:hover {
   color: #f87171 !important;
