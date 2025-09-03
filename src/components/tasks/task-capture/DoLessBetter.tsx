@@ -2,6 +2,7 @@ import { parseTimeToMinutes, formatMinutesToDisplay } from '@/utils/timeUtils';
 import { supabase } from "@/integrations/supabase/client";
 import { Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { forwardRef, useImperativeHandle, useState } from "react";
 
 interface Task {
   id: string;
@@ -29,18 +30,23 @@ interface DoLessBetterProps {
   setLaterTasksExpanded?: (expanded: boolean) => void;
 }
 
-export const DoLessBetter = ({
-  user,
-  activeTaskIds,
-  tasksById,
-  taskTagsById,
-  taskTimeEstimatesById,
-  setActiveTaskIds,
-  setLaterTaskIds,
-  saveTaskAsLater,
-  setLaterTasksExpanded
-}: DoLessBetterProps) => {
+export const DoLessBetter = forwardRef<
+  { shortenActiveList: () => Promise<void>; flashButton: () => void },
+  DoLessBetterProps
+>((props, ref) => {
+  const {
+    user,
+    activeTaskIds,
+    tasksById,
+    taskTagsById,
+    taskTimeEstimatesById,
+    setActiveTaskIds,
+    setLaterTaskIds,
+    saveTaskAsLater,
+    setLaterTasksExpanded
+  } = props;
   const { toast } = useToast();
+  const [isFlashing, setIsFlashing] = useState(false);
 
   const calculateTotalActiveTime = () => {
     return activeTaskIds.reduce((total, taskId) => {
@@ -148,6 +154,19 @@ export const DoLessBetter = ({
     }
   };
 
+  const flashButton = () => {
+    setIsFlashing(true);
+    setTimeout(() => {
+      setIsFlashing(false);
+    }, 600); // Flash duration
+  };
+
+  // Expose the shortenActiveList function via ref
+  useImperativeHandle(ref, () => ({
+    shortenActiveList,
+    flashButton
+  }));
+
   const totalMinutes = calculateTotalActiveTime();
   const totalTimeDisplay = formatMinutesToDisplay(totalMinutes);
   const shouldShowShortenSuggestion = totalMinutes > 180; // 3 hours
@@ -167,7 +186,11 @@ export const DoLessBetter = ({
             <span style={{ color: '#AAAAAA', opacity: 0.6 }}>•</span>
             <button
               onClick={shortenActiveList}
-              className="text-sm text-yellow-500 hover:text-yellow-600 font-medium transition-colors"
+              className={`text-sm font-medium transition-all duration-300 ${
+                isFlashing 
+                  ? 'text-yellow-400 bg-yellow-400/20 px-2 py-1 rounded-md scale-105 shadow-lg' 
+                  : 'text-yellow-500 hover:text-yellow-600'
+              }`}
             >
               Shorten List
             </button>
@@ -177,4 +200,6 @@ export const DoLessBetter = ({
       <div className="flex-1 h-px bg-[#AAAAAA]/40"></div>
     </div>
   );
-};
+});
+
+DoLessBetter.displayName = 'DoLessBetter';

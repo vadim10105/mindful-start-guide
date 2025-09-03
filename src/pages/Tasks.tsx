@@ -683,6 +683,7 @@ const TasksContent = () => {
   const cardRef = useRef<HTMLDivElement>(null);
   const cardContentRef = useRef<HTMLDivElement>(null);
   const taskListContentRef = useRef<HTMLDivElement>(null);
+  const doLessBetterRef = useRef<{ shortenActiveList: () => Promise<void>; flashButton: () => void }>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -1138,6 +1139,41 @@ const TasksContent = () => {
           // Refresh all tasks from database to include existing + new tasks
           await loadTasksById();
           
+          // Calculate total time from the tasks we just inserted
+          const newTasksTime = insertedTasks.reduce((total, task) => {
+            return total + (task.estimated_minutes || 0);
+          }, 0);
+          
+          // Add existing active tasks time
+          const existingActiveTime = activeTaskIds.reduce((total, taskId) => {
+            const timeEstimate = taskTimeEstimatesById[taskId];
+            const minutes = parseTimeToMinutes(timeEstimate || '') || 0;
+            return total + minutes;
+          }, 0);
+          
+          const totalActiveTime = newTasksTime + existingActiveTime;
+          console.log(`📊 Total active time: ${totalActiveTime} minutes (${Math.round(totalActiveTime/60*10)/10} hours)`);
+          
+          if (totalActiveTime > 180) { // 3 hours = 180 minutes
+            console.log('⏰ Active list exceeds 3 hours, auto-shortening...');
+            // Longer delay to show the UI state, then trigger button flash + shortening
+            setTimeout(async () => {
+              if (doLessBetterRef.current) {
+                // Flash the button first to show what's happening
+                if (doLessBetterRef.current.flashButton) {
+                  doLessBetterRef.current.flashButton();
+                }
+                // Then trigger shortening after button flash
+                setTimeout(async () => {
+                  if (doLessBetterRef.current) {
+                    await doLessBetterRef.current.shortenActiveList();
+                    console.log('✂️ Auto-shortening completed');
+                  }
+                }, 800); // Wait for button flash animation
+              }
+            }, 2000); // Longer initial delay to let user see the full list first
+          }
+          
           // Store just the new task IDs for the reviewed tasks
           const newTaskIds = insertedTasks.map(task => task.id);
           setReviewedTasks(newTaskIds); // Store IDs of newly added tasks
@@ -1299,6 +1335,41 @@ const TasksContent = () => {
       
       // Refresh tasks from database to show in UI
       await loadTasksById();
+      
+      // Calculate total time from the tasks we just inserted
+      const newTasksTime = insertedTasks.reduce((total, task) => {
+        return total + (task.estimated_minutes || 0);
+      }, 0);
+      
+      // Add existing active tasks time
+      const existingActiveTime = activeTaskIds.reduce((total, taskId) => {
+        const timeEstimate = taskTimeEstimatesById[taskId];
+        const minutes = parseTimeToMinutes(timeEstimate || '') || 0;
+        return total + minutes;
+      }, 0);
+      
+      const totalActiveTime = newTasksTime + existingActiveTime;
+      console.log(`📊 Total active time: ${totalActiveTime} minutes (${Math.round(totalActiveTime/60*10)/10} hours)`);
+      
+      if (totalActiveTime > 180) { // 3 hours = 180 minutes
+        console.log('⏰ Active list exceeds 3 hours, auto-shortening...');
+        // Longer delay to show the UI state, then trigger button flash + shortening
+        setTimeout(async () => {
+          if (doLessBetterRef.current) {
+            // Flash the button first to show what's happening
+            if (doLessBetterRef.current.flashButton) {
+              doLessBetterRef.current.flashButton();
+            }
+            // Then trigger shortening after button flash
+            setTimeout(async () => {
+              if (doLessBetterRef.current) {
+                await doLessBetterRef.current.shortenActiveList();
+                console.log('✂️ Auto-shortening completed');
+              }
+            }, 800); // Wait for button flash animation
+          }
+        }, 2000); // Longer initial delay to let user see the full list first
+      }
       
       // Also add task titles to listTasks to ensure buttons show correctly
       const newTaskTitles = insertedTasks.map(task => task.title);
@@ -1950,6 +2021,7 @@ const TasksContent = () => {
     }
   };
 
+
   // Function to update task estimated time in database
   const updateTaskEstimatedTime = async (taskId: string, newTime: string) => {
     if (!user) return;
@@ -2504,7 +2576,7 @@ const TasksContent = () => {
                 height: isContainerCollapsed ? '514px' : 'auto',
                 maxWidth: isContainerCollapsed ? '368px' : undefined
               }}>
-            <CardContent ref={cardContentRef} className={`flex-1 sm:flex-none flex flex-col px-8 sm:px-10 pt-8 pb-5 sm:pt-10 sm:pb-5 transition-all duration-500 ease-out ${
+            <CardContent ref={cardContentRef} className={`flex-1 sm:flex-none flex flex-col px-8 sm:px-10 pt-8 pb-5 sm:pt-10 sm:pb-5 transition-all duration-1000 ease-in-out ${
               isContainerCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}>
               {/* Unified input */}
@@ -2512,7 +2584,7 @@ const TasksContent = () => {
                   
                   {/* Unified expandable input */}
                   <div className="flex-shrink-0 pb-3" style={{ marginTop: '12px' }}>
-                    <div className={`relative transition-all duration-500 rounded-[20px] border border-transparent overflow-hidden ${
+                    <div className={`relative transition-all duration-800 ease-in-out rounded-[20px] border border-transparent overflow-hidden ${
                       activeTaskIds.length > 0 || isProcessing ? 'opacity-30 focus-within:opacity-100' : 'opacity-100'
                     }`}
                     style={{
@@ -2535,7 +2607,7 @@ const TasksContent = () => {
                           }
                         }}
                         placeholder=""
-                        className={`w-full resize-none text-lg font-normal leading-relaxed border-none bg-transparent outline-none px-6 ui-textarea transition-all duration-500 ease-out ${
+                        className={`w-full resize-none text-lg font-normal leading-relaxed border-none bg-transparent outline-none px-6 ui-textarea transition-all duration-800 ease-in-out ${
                           isInputExpanded ? 'py-4 pb-12' : 'py-4'
                         }`}
                         style={{ 
@@ -2552,7 +2624,7 @@ const TasksContent = () => {
                       <TypewriterPlaceholder isVisible={!inputText && !isInputExpanded} />
                       
                       {/* Image Upload Icon - Bottom Left Corner (fades in when expanded) */}
-                      <label className={`absolute bottom-3 left-3 z-50 cursor-pointer transition-all duration-500 ease-out ${
+                      <label className={`absolute bottom-3 left-3 z-50 cursor-pointer transition-all duration-800 ease-in-out ${
                         isInputExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
                       }`}>
                         <input
@@ -2580,7 +2652,7 @@ const TasksContent = () => {
                       <button 
                         onClick={handleBrainDumpSubmit}
                         disabled={!inputText.trim() || isProcessing || isTransitioning}
-                        className={`absolute bottom-3 right-3 z-50 cursor-pointer transition-all duration-500 ease-out ${
+                        className={`absolute bottom-3 right-3 z-50 cursor-pointer transition-all duration-800 ease-in-out ${
                           isInputExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
                         }`}
                         aria-label="Submit input"
@@ -2687,6 +2759,7 @@ const TasksContent = () => {
                           {(() => {
                             return (
                               <DoLessBetter
+                                ref={doLessBetterRef}
                                 user={user}
                                 activeTaskIds={activeTaskIds}
                                 tasksById={tasksById}
