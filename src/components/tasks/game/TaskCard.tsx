@@ -962,7 +962,7 @@ export const TaskCard = ({
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="flex-1 flex flex-col justify-between px-6 pb-4 overflow-hidden">
+          <CardContent className="flex-1 flex flex-col justify-between pb-4 overflow-hidden">
 
             {/* Progress Bar + Notes Section Combined */}
             <div className="flex-1 flex flex-col space-y-2">
@@ -1057,7 +1057,7 @@ export const TaskCard = ({
 
             {/* Task Actions */}
             {!hideTaskActions && (
-              <div className="px-4 pb-2 relative z-30">
+              <div className="pb-2 relative z-30">
                 <TaskActions
                 task={task}
                 isCompleted={isCompleted}
