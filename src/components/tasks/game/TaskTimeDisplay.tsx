@@ -184,6 +184,50 @@ export const TaskTimeDisplay = ({
     // Calculate opacity based on transition state
     const opacity = isTransitioning ? 0 : (isHovered ? 0.8 : 1);
     
+    // Calculate overtime display if needed
+    const overtimeInfo = isOvertime ? (() => {
+      const overtimeMs = currentTime - adjustedEstimatedFinishTime!;
+      const overtimeMinutes = Math.floor(overtimeMs / 60000);
+      const overtimeHours = Math.floor(overtimeMinutes / 60);
+      const remainingMinutes = overtimeMinutes % 60;
+      
+      let overtimeDisplay = '';
+      if (overtimeHours > 0) {
+        overtimeDisplay = `+${overtimeHours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
+      } else {
+        overtimeDisplay = `+${overtimeMinutes}m`;
+      }
+      return overtimeDisplay;
+    })() : null;
+    
+    if (isUltraCompact && isOvertime && overtimeInfo) {
+      // Ultra-compact mode: stack overtime below the main time element
+      return (
+        <div 
+          className="flex flex-col items-end text-xs cursor-pointer transition-opacity duration-300 ease-in-out"
+          style={{ opacity: opacity }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <span style={{ 
+            color: (isUltraCompact || isPaused) ? '#989898' : '#989898'
+          }}>
+            {shouldShowTimerFormat && estimatedMinutes 
+              ? `${timerDisplay} of ${estimatedFormatted}`
+              : `${startTimeFormatted} → ${adjustedEstimatedFinishTimeFormatted}`
+            }
+          </span>
+          <span style={{ 
+            color: '#f59e0b',
+            fontWeight: '600',
+            marginTop: '1px'
+          }}>
+            ({overtimeInfo})
+          </span>
+        </div>
+      );
+    }
+    
     if (shouldShowTimerFormat && estimatedMinutes) {
       // Show timer format: "3:45 of 30m"
       return (
@@ -197,29 +241,15 @@ export const TaskTimeDisplay = ({
           onMouseLeave={() => setIsHovered(false)}
         >
           {timerDisplay} of {estimatedFormatted}
-          {isOvertime && (() => {
-            const overtimeMs = currentTime - adjustedEstimatedFinishTime!;
-            const overtimeMinutes = Math.floor(overtimeMs / 60000);
-            const overtimeHours = Math.floor(overtimeMinutes / 60);
-            const remainingMinutes = overtimeMinutes % 60;
-            
-            let overtimeDisplay = '';
-            if (overtimeHours > 0) {
-              overtimeDisplay = `+${overtimeHours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
-            } else {
-              overtimeDisplay = `+${overtimeMinutes}m`;
-            }
-            
-            return (
-              <span style={{ 
-                color: '#f59e0b',
-                marginLeft: '4px',
-                fontWeight: '600'
-              }}>
-                ({overtimeDisplay})
-              </span>
-            );
-          })()}
+          {isOvertime && overtimeInfo && !isUltraCompact && (
+            <span style={{ 
+              color: '#f59e0b',
+              marginLeft: '4px',
+              fontWeight: '600'
+            }}>
+              ({overtimeInfo})
+            </span>
+          )}
         </span>
       );
     } else {
@@ -235,29 +265,15 @@ export const TaskTimeDisplay = ({
           onMouseLeave={() => setIsHovered(false)}
         >
           {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
-          {isOvertime && (() => {
-            const overtimeMs = currentTime - adjustedEstimatedFinishTime!;
-            const overtimeMinutes = Math.floor(overtimeMs / 60000);
-            const overtimeHours = Math.floor(overtimeMinutes / 60);
-            const remainingMinutes = overtimeMinutes % 60;
-            
-            let overtimeDisplay = '';
-            if (overtimeHours > 0) {
-              overtimeDisplay = `+${overtimeHours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
-            } else {
-              overtimeDisplay = `+${overtimeMinutes}m`;
-            }
-            
-            return (
-              <span style={{ 
-                color: '#f59e0b',
-                marginLeft: '4px',
-                fontWeight: '600'
-              }}>
-                ({overtimeDisplay})
-              </span>
-            );
-          })()}
+          {isOvertime && overtimeInfo && !isUltraCompact && (
+            <span style={{ 
+              color: '#f59e0b',
+              marginLeft: '4px',
+              fontWeight: '600'
+            }}>
+              ({overtimeInfo})
+            </span>
+          )}
         </span>
       );
     }
