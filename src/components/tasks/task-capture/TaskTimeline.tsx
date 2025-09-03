@@ -92,7 +92,7 @@ export function TaskTimeline({
       }}
     >
       {/* Timeline Blocks - Fit to available space */}
-      <div className="flex-1 flex flex-col px-4 py-4 gap-3">
+      <div className="flex-1 flex flex-col pl-14 pr-4 py-4 gap-3">
         {blocks.map((block, index) => {
           // Calculate proportional height based on duration
           const totalMinutes = blocks.reduce((sum, b) => sum + b.durationMinutes, 0);
@@ -140,13 +140,13 @@ function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplifi
         className="flex-1 px-4 py-4 transition-all duration-200 flex h-full"
         style={{
           borderRadius: '12px',
-          background: isHovered ? 'var(--timeline-task-hover-bg)' : 'var(--timeline-task-bg)',
-          backdropFilter: isHovered ? 'blur(5px)' : 'none',
-          border: isHovered ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent'
+          background: isHovered ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(8px)',
+          border: isHovered ? '2px solid rgba(255, 255, 255, 0.6)' : '2px solid transparent'
         }}
       >
         <div className="flex flex-col justify-center w-full h-full">
-          <div className="text-sm leading-tight font-normal" style={{ color: 'white', opacity: 0.7 }}>
+          <div className="text-sm leading-tight font-normal" style={{ color: 'var(--text-primary)' }}>
             {isLoadingSimplified ? (
               <div className="animate-pulse rounded h-4 w-20" style={{ background: 'rgba(255, 255, 255, 0.2)' }}></div>
             ) : (
@@ -158,11 +158,11 @@ function TimelineBlockItem({ block, isHovered, simplifiedName, isLoadingSimplifi
       
       {/* Time Marker */}
       <div className="w-12 flex-shrink-0 text-left flex flex-col justify-between h-full">
-        <div className="text-xs font-mono" style={{ color: 'white', opacity: 0.7 }}>
+        <div className="text-xs font-mono font-bold" style={{ color: 'white', opacity: 0.7 }}>
           {block.startTimeString}
         </div>
         {showEndTime && (
-          <div className="text-xs font-mono" style={{ color: 'white', opacity: 0.7 }}>
+          <div className="text-xs font-mono font-bold" style={{ color: 'white', opacity: 0.7 }}>
             {block.endTimeString}
           </div>
         )}
