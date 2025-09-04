@@ -24,6 +24,7 @@ interface RequestBody {
   lowestEnergyTime?: string;
   targetHours?: number;
   isShuffled: boolean;
+  clientFinishTime?: string;
 }
 
 function getCurrentEnergyState(peakEnergyTime?: string, lowestEnergyTime?: string): 'high' | 'low' {
@@ -62,7 +63,8 @@ async function generateExplanation(
   tasks: Task[],
   energyState: 'high' | 'low',
   userPreferences: Record<string, string>,
-  targetHours?: number
+  targetHours?: number,
+  clientFinishTime?: string
 ): Promise<string> {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
   if (!apiKey) {
@@ -112,36 +114,39 @@ async function generateExplanation(
       `Nice match for your usual ${targetHours}h focus time.`
     : '';
 
-  // Calculate finish time with breaks
-  const now = new Date();
-  const sessionHoursRounded = Math.round(totalMinutes/60);
-  
-  // Add breaks: roughly 10-15 min break per hour of work
-  const breakMinutes = sessionHoursRounded <= 1 ? 0 : 
-                      sessionHoursRounded <= 2 ? 15 :
-                      sessionHoursRounded <= 3 ? 30 :
-                      sessionHoursRounded <= 4 ? 45 :
-                      60; // For 4+ hour sessions
-  
-  const totalTimeWithBreaks = totalMinutes + breakMinutes;
-  const finishTime = new Date(now.getTime() + totalTimeWithBreaks * 60 * 1000);
-  
-  // Round to nearest half hour
-  const minutes = finishTime.getMinutes();
-  const roundedMinutes = Math.round(minutes / 30) * 30;
-  finishTime.setMinutes(roundedMinutes);
-  
-  // If rounding pushed us to the next hour, adjust
-  if (roundedMinutes === 60) {
-    finishTime.setMinutes(0);
-    finishTime.setHours(finishTime.getHours() + 1);
-  }
-  
-  const finishTimeString = finishTime.toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
-    minute: '2-digit',
-    hour12: true 
-  });
+  // Use client-provided finish time or calculate a fallback
+  const finishTimeString = clientFinishTime || (() => {
+    // Fallback calculation if client didn't provide time
+    const now = new Date();
+    const sessionHoursRounded = Math.round(totalMinutes/60);
+    
+    // Add breaks: roughly 10-15 min break per hour of work
+    const breakMinutes = sessionHoursRounded <= 1 ? 0 : 
+                        sessionHoursRounded <= 2 ? 15 :
+                        sessionHoursRounded <= 3 ? 30 :
+                        sessionHoursRounded <= 4 ? 45 :
+                        60; // For 4+ hour sessions
+    
+    const totalTimeWithBreaks = totalMinutes + breakMinutes;
+    const finishTime = new Date(now.getTime() + totalTimeWithBreaks * 60 * 1000);
+    
+    // Round to nearest half hour
+    const minutes = finishTime.getMinutes();
+    const roundedMinutes = Math.round(minutes / 30) * 30;
+    finishTime.setMinutes(roundedMinutes);
+    
+    // If rounding pushed us to the next hour, adjust
+    if (roundedMinutes === 60) {
+      finishTime.setMinutes(0);
+      finishTime.setHours(finishTime.getHours() + 1);
+    }
+    
+    return finishTime.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  })();
 
   const prompt = `Tasks ordered:
 ${taskDetails}
@@ -254,7 +259,7 @@ serve(async (req) => {
       });
     }
 
-    const { tasks, userPreferences = {}, peakEnergyTime, lowestEnergyTime, targetHours } = body;
+    const { tasks, userPreferences = {}, peakEnergyTime, lowestEnergyTime, targetHours, clientFinishTime } = body;
     
     if (!tasks || tasks.length === 0) {
       return new Response(JSON.stringify({ 
@@ -270,7 +275,7 @@ serve(async (req) => {
     const energyState = getCurrentEnergyState(peakEnergyTime, lowestEnergyTime);
     
     // Generate AI explanation
-    const explanation = await generateExplanation(tasks, energyState, userPreferences, targetHours);
+    const explanation = await generateExplanation(tasks, energyState, userPreferences, targetHours, clientFinishTime);
 
     return new Response(JSON.stringify({
       explanation,

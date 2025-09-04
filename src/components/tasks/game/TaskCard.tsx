@@ -335,22 +335,8 @@ export const TaskCard = ({
       
     } catch (error) {
       console.error('Error generating subtasks:', error);
-      // Fallback to simple breakdown
-      const fallbackSubtasks = [
-        "☐ Break down the task",
-        "☐ Complete the first step", 
-        "☐ Review progress",
-        "☐ Finish and wrap up"
-      ];
-      const generatedBreakdown = fallbackSubtasks.join('\n');
-      
-      // Preserve existing notes and append breakdown underneath
-      const newNotes = notes.trim() 
-        ? `${notes}\n\n${generatedBreakdown}`
-        : generatedBreakdown;
-      
-      setNotes(newNotes);
-      onNotesChange?.(task.id, newNotes);
+      // Don't add any fallback subtasks, just show error in console
+      // User can retry or manually add their own subtasks
     } finally {
       setIsGenerating(false);
     }

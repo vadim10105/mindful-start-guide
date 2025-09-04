@@ -214,19 +214,18 @@ export const TaskTimeDisplay = ({
           onMouseLeave={() => setIsHovered(false)}
         >
           <span style={{ 
-            color: (isUltraCompact || isPaused) ? '#989898' : '#989898'
+            backgroundColor: isOvertime ? 'rgba(251, 146, 60, 0.25)' : 'rgba(254, 240, 138, 0.5)',
+            color: isOvertime ? '#f97316' : '#a16207',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            fontWeight: '500',
+            display: 'inline-block'
           }}>
             {shouldShowTimerFormat && estimatedMinutes 
               ? `${timerDisplay} of ${estimatedFormatted}`
               : `${startTimeFormatted} → ${adjustedEstimatedFinishTimeFormatted}`
             }
-          </span>
-          <span style={{ 
-            color: '#f59e0b',
-            fontWeight: '600',
-            marginTop: '1px'
-          }}>
-            ({overtimeInfo})
+            {isOvertime && overtimeInfo && ` ${overtimeInfo}`}
           </span>
         </div>
       );
@@ -238,22 +237,19 @@ export const TaskTimeDisplay = ({
         <span 
           className="text-xs cursor-pointer transition-opacity duration-300 ease-in-out" 
           style={{ 
-            color: (isUltraCompact || isPaused) ? '#989898' : '#989898',
-            opacity: opacity
+            backgroundColor: isOvertime ? 'rgba(251, 146, 60, 0.25)' : 'rgba(254, 240, 138, 0.5)',
+            color: isOvertime ? '#f97316' : '#a16207',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            fontWeight: '500',
+            opacity: opacity,
+            display: 'inline-block'
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
           {timerDisplay} of {estimatedFormatted}
-          {isOvertime && overtimeInfo && !isUltraCompact && (
-            <span style={{ 
-              color: '#f59e0b',
-              marginLeft: '4px',
-              fontWeight: '600'
-            }}>
-              ({overtimeInfo})
-            </span>
-          )}
+          {isOvertime && overtimeInfo && !isUltraCompact && ` ${overtimeInfo}`}
         </span>
       );
     } else {
@@ -262,22 +258,19 @@ export const TaskTimeDisplay = ({
         <span 
           className="text-xs cursor-pointer transition-opacity duration-300 ease-in-out" 
           style={{ 
-            color: (isUltraCompact || isPaused) ? '#989898' : '#989898',
-            opacity: opacity
+            backgroundColor: isOvertime ? 'rgba(251, 146, 60, 0.25)' : 'rgba(254, 240, 138, 0.5)',
+            color: isOvertime ? '#f97316' : '#a16207',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            fontWeight: '500',
+            opacity: opacity,
+            display: 'inline-block'
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
           {startTimeFormatted} → {adjustedEstimatedFinishTimeFormatted}
-          {isOvertime && overtimeInfo && !isUltraCompact && (
-            <span style={{ 
-              color: '#f59e0b',
-              marginLeft: '4px',
-              fontWeight: '600'
-            }}>
-              ({overtimeInfo})
-            </span>
-          )}
+          {isOvertime && overtimeInfo && !isUltraCompact && ` ${overtimeInfo}`}
         </span>
       );
     }
@@ -314,11 +307,11 @@ export const TaskTimeDisplay = ({
       <div className="flex flex-col items-end text-xs">
         <span 
           style={{ 
-            color: (isUltraCompact || isPaused) ? '#989898' : '#7C7C7C',
-            backgroundColor: (isUltraCompact || isPaused) ? 'rgba(255, 193, 7, 0.3)' : 'rgba(255, 193, 7, 0.6)',
-            padding: '3px 6px',
-            borderRadius: '2px',
-            fontWeight: '600',
+            backgroundColor: 'rgba(34, 197, 94, 0.2)',
+            color: '#f59e0b',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            fontWeight: '500',
             fontSize: '10px'
           }}
         >
@@ -338,11 +331,11 @@ export const TaskTimeDisplay = ({
       <span style={{ color: (isUltraCompact || isPaused) ? '#989898' : '#989898' }}>  </span>
       <span 
         style={{ 
-          color: (isUltraCompact || isPaused) ? '#989898' : '#7C7C7C',
-          backgroundColor: (isUltraCompact || isPaused) ? 'rgba(255, 193, 7, 0.3)' : 'rgba(255, 193, 7, 0.6)',
-          padding: '1px 6px',
-          borderRadius: '2px',
-          fontWeight: '600'
+          backgroundColor: 'rgba(254, 240, 138, 0.5)',
+          color: '#a16207',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          fontWeight: '500'
         }}
       >
         {overtimeDisplay}

@@ -37,13 +37,14 @@ serve(async (req) => {
             content: `You are a task breakdown assistant that creates simple, bite-sized subtasks for neurodivergent individuals (especially those with ADHD).
 
 RULES:
-1. Break the task into 3-5 SIMPLE, actionable subtasks only
+1. Break the task into EXACTLY 3 subtasks (only use 4-5 if the task is genuinely complex and 3 would be insufficient)
 2. Each subtask should be 6-10 words maximum - keep it brief!
 3. Use simple, everyday language - avoid jargon or complexity
 4. Focus on the most essential actions only - skip minor details
 5. Start each subtask with a clear action verb
 6. Make steps feel quick and achievable, not overwhelming
-7. Return ONLY a JSON object with this structure:
+7. Prefer 3 subtasks over 4 or 5 - only expand if absolutely necessary
+8. Return ONLY a JSON object with this structure:
 
 {
   "subtasks": [
@@ -71,20 +72,7 @@ Context: ${context || "General task breakdown for productivity optimization"}`
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenAI API error:', response.status, errorText);
-      
-      // Return fallback breakdown
-      return new Response(JSON.stringify({
-        subtasks: [
-          { subtask: "Start with the first step" },
-          { subtask: "Continue with the main work" },
-          { subtask: "Review and refine" },
-          { subtask: "Complete and finalize" }
-        ],
-        breakdown_rationale: "AI service unavailable, using fallback breakdown",
-        fallback: true
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -103,19 +91,12 @@ Context: ${context || "General task breakdown for productivity optimization"}`
   } catch (error) {
     console.error('Task breakdown error:', error);
     
-    // Return fallback breakdown on any error
     return new Response(JSON.stringify({
-      subtasks: [
-        { subtask: "Begin the task preparation" },
-        { subtask: "Execute the main work" },
-        { subtask: "Review the results" },
-        { subtask: "Complete and wrap up" }
-      ],
-      breakdown_rationale: "Generated fallback breakdown due to processing error",
-      fallback: true
+      error: error.message || 'Failed to breakdown task',
+      details: 'Unable to generate subtasks at this time'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+      status: 500,
     });
   }
 });

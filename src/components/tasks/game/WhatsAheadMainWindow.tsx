@@ -38,6 +38,42 @@ export const WhatsAheadMainWindow = ({
     queryFn: async () => {
       if (!gameState.wasShuffled) return null;
       
+      // Calculate finish time on client side with user's timezone
+      const totalMinutes = tasks.reduce((sum, task) => {
+        const minutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) || 30 : 30;
+        return sum + minutes;
+      }, 0);
+      
+      const sessionHoursRounded = Math.round(totalMinutes/60);
+      
+      // Add breaks: roughly 10-15 min break per hour of work
+      const breakMinutes = sessionHoursRounded <= 1 ? 0 : 
+                          sessionHoursRounded <= 2 ? 15 :
+                          sessionHoursRounded <= 3 ? 30 :
+                          sessionHoursRounded <= 4 ? 45 :
+                          60; // For 4+ hour sessions
+      
+      const totalTimeWithBreaks = totalMinutes + breakMinutes;
+      const now = new Date();
+      const finishTime = new Date(now.getTime() + totalTimeWithBreaks * 60 * 1000);
+      
+      // Round to nearest half hour
+      const minutes = finishTime.getMinutes();
+      const roundedMinutes = Math.round(minutes / 30) * 30;
+      finishTime.setMinutes(roundedMinutes);
+      
+      // If rounding pushed us to the next hour, adjust
+      if (roundedMinutes === 60) {
+        finishTime.setMinutes(0);
+        finishTime.setHours(finishTime.getHours() + 1);
+      }
+      
+      const finishTimeString = finishTime.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+
       const { data, error } = await supabase.functions.invoke('explain-task-order', {
         body: {
           tasks: tasks.map((task, index) => ({
@@ -54,7 +90,8 @@ export const WhatsAheadMainWindow = ({
           peakEnergyTime: userProfile?.peak_energy_time,
           lowestEnergyTime: userProfile?.lowest_energy_time,
           targetHours: userProfile?.target_hours,
-          isShuffled: gameState.wasShuffled
+          isShuffled: gameState.wasShuffled,
+          clientFinishTime: finishTimeString // Pass calculated finish time
         }
       });
       
@@ -195,7 +232,7 @@ export const WhatsAheadMainWindow = ({
                         
                         {timeSpent > 0 && (
                           <div className="flex items-center gap-4 text-sm mb-1" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                            <div className="font-medium" style={{ color: 'rgba(147, 197, 253, 0.9)' }}>
+                            <div className="font-medium" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                               {timeSpent}min spent
                             </div>
                           </div>

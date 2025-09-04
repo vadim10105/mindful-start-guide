@@ -99,12 +99,12 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
   // Block color (same as card view)
   const getBlockColor = () => {
     if (!isActiveCommitted) return '#9ca3af'; // Gray when not actively playing
-    if (isPaused) return '#fbbf24';
+    if (isPaused) return '#fbbf24'; // Yellow when paused
     const estimatedMinutes = parseTimeToMinutes(estimatedTime || '');
     const currentProgress = calculateProgress();
     const isOvertime = estimatedMinutes > 0 && (currentProgress > 100);
-    if (isOvertime) return '#f59e0b';
-    return '#fbbf24';
+    if (isOvertime) return '#f59e0b'; // Orange when overtime
+    return '#fbbf24'; // Yellow by default
   };
   
   // Block placement - activates all available ghost columns at once
