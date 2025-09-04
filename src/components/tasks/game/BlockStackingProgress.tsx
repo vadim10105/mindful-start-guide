@@ -68,8 +68,8 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
   const calculatedProgress = calculateProgress();
   
   // Calculate blocks configuration based on available space
-  const MAX_BLOCKS_PER_COLUMN = 4; // Taller towers that feel more substantial
-  const TOWER_START_X = 40;
+  const MAX_BLOCKS_PER_COLUMN = 5; // Taller towers that feel more substantial
+  const TOWER_START_X = 20;
   const TOWER_END_X = 220; // Stop before timer container
   const TOWER_SPACING = BLOCK_SIZE; // No gaps between columns
   const MAX_TOWERS = Math.floor((TOWER_END_X - TOWER_START_X) / TOWER_SPACING); // ~18 towers
@@ -173,7 +173,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
     
     const moveCharacter = () => {
       setCharacterX(prev => {
-        const pickupX = 290; // Mine entrance location
+        const pickupX = 300; // Mine entrance location
         const currentTowerIndex = Math.max(0, placedBlocks.length - 1);
         const currentTowerX = TOWER_START_X + currentTowerIndex * TOWER_SPACING;
         
@@ -262,7 +262,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
   
   // Block pickup logic (same as card view)
   useEffect(() => {
-    if (characterX >= 285 && !blockBeingCarried && blockSupplyPile.length > 0) {
+    if (characterX >= 295 && !blockBeingCarried && blockSupplyPile.length > 0) {
       setBlockBeingCarried(true);
       
       // Remove the front block
@@ -410,14 +410,27 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
           width: `${TOWER_END_X - TOWER_START_X}px`,
           height: `${MAX_BLOCKS_PER_COLUMN * BLOCK_SIZE}px`,
           border: '1px dashed rgba(0, 0, 0, 0.2)',
-          borderRadius: '2px',
-          background: 'transparent', // Remove overlay background
+          borderRadius: '4px',
+          background: 'transparent',
           zIndex: 2
         }}
       />
 
-      {/* Placed blocks */}
-      {placedBlocks.map((column, colIndex) => {
+      {/* Block clipping container with rounded edges */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          bottom: `${GROUND_HEIGHT}px`,
+          left: `${TOWER_START_X}px`,
+          width: `${TOWER_END_X - TOWER_START_X}px`,
+          height: `${MAX_BLOCKS_PER_COLUMN * BLOCK_SIZE}px`,
+          borderRadius: '4px',
+          overflow: 'hidden',
+          zIndex: 3
+        }}
+      >
+        {/* Placed blocks */}
+        {placedBlocks.map((column, colIndex) => {
         const leftPosition = TOWER_START_X + colIndex * TOWER_SPACING;
         // Don't render towers that would overlap with timer container
         if (leftPosition > TOWER_END_X) return null;
@@ -426,7 +439,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
         const isGhosted = column.isGhosted && !isColumnActivated;
         
         return (
-        <div key={colIndex} className="absolute bottom-0" style={{ left: `${leftPosition}px` }}>
+        <div key={colIndex} className="absolute bottom-0" style={{ left: `${leftPosition - TOWER_START_X}px` }}>
           {Array.from({ length: column.height }).map((_, blockIndex) => {
             const isTopBlock = blockIndex === column.height - 1;
             const isNewBlock = isTopBlock && column.isNew;
@@ -436,7 +449,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
                 key={blockIndex}
                 className="absolute"
                 style={{
-                  bottom: `${GROUND_HEIGHT + blockIndex * BLOCK_SIZE}px`,
+                  bottom: `${blockIndex * BLOCK_SIZE}px`,
                   left: 0,
                   width: `${BLOCK_SIZE}px`,
                   height: `${BLOCK_SIZE}px`,
@@ -455,7 +468,8 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
           })}
         </div>
         );
-      })}
+        })}
+      </div>
       
       {/* Block supply pile in mine */}
       {blockSupplyPile.map((block, index) => {
@@ -493,7 +507,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
       <div 
         className="absolute"
         style={{
-          bottom: characterX >= 240 ? `${GROUND_HEIGHT - 18}px` : `${GROUND_HEIGHT}px`, // Lower when in mine
+          bottom: characterX >= 240 ? `${GROUND_HEIGHT - 15}px` : `${GROUND_HEIGHT}px`, // Lower when in mine
           left: `${characterX}px`,
           width: `${CHARACTER_SIZE}px`,
           height: `${CHARACTER_SIZE}px`,
@@ -570,7 +584,7 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
       {/* Scrolling task title in ground area */}
       {taskTitle && (
         <div 
-          className="absolute bottom-0 left-0 flex items-center pl-6 pr-4 pb-1"
+          className="absolute bottom-0 left-0 flex items-center pl-4 pr-4 pb-1"
           style={{ 
             height: `${GROUND_HEIGHT}px`,
             width: '260px', // Shorter container width

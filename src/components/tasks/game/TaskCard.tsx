@@ -69,6 +69,7 @@ interface TaskCardProps {
   onEnterPiP?: () => void;
   hasAnyPausedTask?: boolean;
   hasAnyCompletedTask?: boolean;
+  isPiP?: boolean;
 }
 
 export const TaskCard = ({
@@ -106,7 +107,8 @@ export const TaskCard = ({
   pipWindow,
   onEnterPiP,
   hasAnyPausedTask = false,
-  hasAnyCompletedTask = false
+  hasAnyCompletedTask = false,
+  isPiP = false
 }: TaskCardProps) => {
   const [notes, setNotes] = useState(task.notes || "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -295,7 +297,7 @@ export const TaskCard = ({
     if (isUltraCompact && pipWindow && !pipWindow.closed) {
       setIsUltraCompact(false);
       try {
-        pipWindow.resizeTo(368, 575);
+        pipWindow.resizeTo(331, 466);
       } catch (error) {
         console.warn('Failed to resize PiP window:', error);
       }
@@ -423,11 +425,6 @@ export const TaskCard = ({
   if (isUltraCompact && pipWindow) {
     return (
       <>
-        <style jsx>{`
-          .text-custom-gray {
-            color: #989898;
-          }
-        `}</style>
         <Card 
         className="h-[90px] w-[368px] relative overflow-hidden border-2 border-transparent rounded-2xl shadow-lg"
         style={{ 
@@ -666,16 +663,6 @@ export const TaskCard = ({
             </div>
           </div>
         </div>}
-        <style jsx>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-3px); }
-          }
-          @keyframes move {
-            0% { transform: translateX(0px); }
-            100% { transform: translateX(400px); }
-          }
-        `}</style>
         
         {/* Progress background - fills from left dynamically */}
         {!useBlockStackingProgress && (
@@ -826,10 +813,16 @@ export const TaskCard = ({
               className={`group relative w-6 h-6 rounded-full transition-all duration-300 ease-out flex items-center justify-center border ${isPaused ? 'border-white/80' : 'border-gray-200/50'} hover:border-gray-600/50 hover:shadow-sm overflow-hidden flex-shrink-0`}
               style={{ backgroundColor: 'transparent' }}
               onClick={() => {
+                console.log('Expand button clicked - resizing to 331x466');
                 setIsUltraCompact(false);
                 if (pipWindow && !pipWindow.closed) {
                   try {
-                    pipWindow.resizeTo(368, 575);
+                    console.log('Before resize - current size:', pipWindow.innerWidth, 'x', pipWindow.innerHeight);
+                    pipWindow.resizeTo(331, 466);
+                    console.log('Resize called: 331x466');
+                    setTimeout(() => {
+                      console.log('After resize - actual size:', pipWindow.innerWidth, 'x', pipWindow.innerHeight);
+                    }, 100);
                   } catch (error) {
                     console.warn('Failed to resize PiP window:', error);
                   }
@@ -916,7 +909,7 @@ export const TaskCard = ({
           )}
         </>
         <div className="h-full flex flex-col">
-          <CardHeader className="text-center pb-4 flex-shrink-0 relative overflow-visible px-8 py-6">
+          <CardHeader className={`text-center ${isPiP ? 'pb-2' : 'pb-4'} flex-shrink-0 relative overflow-visible px-8 ${isPiP ? 'py-4' : 'py-6'}`}>
             
             {/* Task Tags - Top Center */}
             <div className="absolute top-3 left-1/2 transform -translate-x-1/2 flex gap-1 hidden">
@@ -957,7 +950,7 @@ export const TaskCard = ({
                 </>
               )}
             </div>
-            <CardTitle className="text-xl leading-tight tracking-wide whitespace-pre-line" style={{ color: '#7C7C7C', fontSize: '22px' }}>
+            <CardTitle className={`${isPiP ? 'text-lg' : 'text-xl'} leading-tight tracking-wide whitespace-pre-line`} style={{ color: '#7C7C7C', fontSize: isPiP ? '20px' : '22px' }}>
               {balanceText(task.title, 2)}
             </CardTitle>
           </CardHeader>
@@ -993,6 +986,7 @@ export const TaskCard = ({
                   isActiveCommitted={isActiveCommitted}
                   estimatedTime={task.estimated_time}
                   taskId={task.id}
+                  isPiP={isPiP}
                 />
               </div>
 
@@ -1081,7 +1075,7 @@ export const TaskCard = ({
                     const newUltraCompact = !isUltraCompact;
                     setIsUltraCompact(newUltraCompact);
                     try {
-                      pipWindow.resizeTo(368, newUltraCompact ? 125 : 575);
+                      pipWindow.resizeTo(newUltraCompact ? 368 : 331, newUltraCompact ? 125 : 466);
                     } catch (error) {
                       console.warn('Failed to resize PiP window:', error);
                     }

@@ -9,14 +9,16 @@ interface MiniBlockStackingProps {
   isActiveCommitted: boolean;
   estimatedTime?: string;
   taskId: string;
+  isPiP?: boolean; // New prop to indicate if in PiP mode
 }
 
-export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estimatedTime, taskId }: MiniBlockStackingProps) => {
+export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estimatedTime, taskId, isPiP = false }: MiniBlockStackingProps) => {
   const [currentTime, setCurrentTime] = useState(Date.now());
-  // Use same dimensions as BlockStackingProgress
+  
+  // Different dimensions for PiP vs main window
   const BLOCK_SIZE = 6;
   const CHARACTER_SIZE = 12;
-  const CONTAINER_HEIGHT = 32;
+  const CONTAINER_HEIGHT = 36; // Increased height
   const GROUND_HEIGHT = 20; // Smaller ground for card view
   
   // Update timer for progress calculation
@@ -55,16 +57,16 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
   const calculatedProgress = calculateProgress();
   
   // Same configuration as BlockStackingProgress but scaled for card
-  const MAX_BLOCKS_PER_COLUMN = 4;
-  const TOWER_START_X = 40; // Even more left padding for optimal spacing
-  const TOWER_END_X = 280; // Increased to 280px for more columns
+  const MAX_BLOCKS_PER_COLUMN = 5; // Increased for taller towers
+  const TOWER_START_X = isPiP ? 20 : 40; // More left in PiP mode
+  const TOWER_END_X = isPiP ? 260 : 280;
   const TOWER_SPACING = BLOCK_SIZE;
   const MAX_TOWERS = Math.floor((TOWER_END_X - TOWER_START_X) / TOWER_SPACING);
   const TOTAL_BLOCKS = MAX_TOWERS * MAX_BLOCKS_PER_COLUMN;
   const blocksToShow = Math.floor((Math.max(0, calculatedProgress) / 100) * TOTAL_BLOCKS);
   
   // Character state (same as BlockStackingProgress)
-  const [characterX, setCharacterX] = useState(20);
+  const [characterX, setCharacterX] = useState(isPiP ? 0 : 20);
   const [characterState, setCharacterState] = useState<'walking' | 'carrying'>('walking');
   const [walkFrame, setWalkFrame] = useState(0);
   const [placedBlocks, setPlacedBlocks] = useState<Array<{ height: number; isNew?: boolean }>>([]);
@@ -130,7 +132,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
     
     if (allTowersComplete) {
       // Walk character back to starting position when complete
-      const startPosition = 20; // Starting position
+      const startPosition = isPiP ? 0 : 20; // Starting position
       if (Math.abs(characterX - startPosition) > 5) {
         const moveCharacterToStart = () => {
           setCharacterX(prev => {
@@ -159,7 +161,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
     
     const moveCharacter = () => {
       setCharacterX(prev => {
-        const pickupX = 300; // Walk all the way to the blocks
+        const pickupX = isPiP ? 270 : 300; // Walk all the way to the blocks
         const currentTowerIndex = Math.max(0, placedBlocks.length - 1);
         const currentTowerX = TOWER_START_X + currentTowerIndex * TOWER_SPACING;
         
@@ -187,7 +189,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
     blockIdCounter.current = Math.floor(Math.random() * 10000) + parseInt(taskId.slice(-3) || '0', 10) * 100;
     
     // Reset character state for each task
-    setCharacterX(20);
+    setCharacterX(isPiP ? 0 : 20);
     setCharacterState('walking');
     setWalkFrame(0);
     setBlockBeingCarried(false);
@@ -226,7 +228,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
   
   // Block pickup logic (same as BlockStackingProgress)
   useEffect(() => {
-    if (characterX >= 295 && !blockBeingCarried && blockSupplyPile.length > 0) {
+    if (characterX >= (isPiP ? 265 : 295) && !blockBeingCarried && blockSupplyPile.length > 0) {
       setBlockBeingCarried(true);
       
       // Remove the front block
@@ -328,7 +330,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
   
   return (
     <div 
-      className="relative mb-2 overflow-hidden" 
+      className="relative mb-2 overflow-hidden rounded-lg" 
       style={{ 
         height: `${CONTAINER_HEIGHT}px`,
         pointerEvents: 'none'
@@ -342,14 +344,27 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
           width: `${TOWER_END_X - TOWER_START_X}px`,
           height: `${MAX_BLOCKS_PER_COLUMN * BLOCK_SIZE}px`,
           border: '1px dashed rgba(0, 0, 0, 0.2)',
-          borderRadius: '2px',
+          borderRadius: '4px',
           background: 'rgba(0, 0, 0, 0.02)',
+          overflow: 'hidden',
           zIndex: 1
         }}
       />
 
-      {/* Placed blocks */}
-      {placedBlocks.map((column, colIndex) => {
+      {/* Block clipping container with rounded edges */}
+      <div
+        className="absolute bottom-0 pointer-events-none"
+        style={{
+          left: `${TOWER_START_X}px`,
+          width: `${TOWER_END_X - TOWER_START_X}px`,
+          height: `${MAX_BLOCKS_PER_COLUMN * BLOCK_SIZE}px`,
+          borderRadius: '4px',
+          overflow: 'hidden',
+          zIndex: 2
+        }}
+      >
+        {/* Placed blocks */}
+        {placedBlocks.map((column, colIndex) => {
         const leftPosition = TOWER_START_X + colIndex * TOWER_SPACING;
         if (leftPosition > TOWER_END_X) return null;
         
@@ -357,7 +372,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
         const isGhosted = column.isGhosted && !isColumnActivated;
         
         return (
-          <div key={colIndex} className="absolute bottom-0" style={{ left: `${leftPosition}px` }}>
+          <div key={colIndex} className="absolute bottom-0" style={{ left: `${leftPosition - TOWER_START_X}px` }}>
             {Array.from({ length: column.height }).map((_, blockIndex) => {
               const isTopBlock = blockIndex === column.height - 1;
               const isNewBlock = isTopBlock && column.isNew;
@@ -386,7 +401,8 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
             })}
           </div>
         );
-      })}
+        })}
+      </div>
       
       {/* Block supply pile */}
       {blockSupplyPile.map((block, index) => {
@@ -402,7 +418,7 @@ export const MiniBlockStacking = ({ progress, isPaused, isActiveCommitted, estim
             className="absolute"
             style={{
               bottom: `2px`,
-              right: `${20 + (index * 8)}px`,
+              right: `${isPiP ? 5 : 20 + (index * 8)}px`,
               width: `${BLOCK_SIZE}px`,
               height: `${BLOCK_SIZE}px`,
               background: getBlockColor(),

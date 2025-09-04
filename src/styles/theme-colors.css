@@ -194,6 +194,20 @@
   color: #989898;
 }
 
+.text-custom-gray {
+  color: #989898;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes move {
+  0% { transform: translateX(0px); }
+  100% { transform: translateX(400px); }
+}
+
 /* Tag hover colors - more specific to override inactive state */
 .tag-inactive.hover\:text-red-400:hover {
   color: #f87171 !important;

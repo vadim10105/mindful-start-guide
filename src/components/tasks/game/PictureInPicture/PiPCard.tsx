@@ -275,7 +275,7 @@ export const PiPCard = ({
     // Expand PiP window back to full size on completion
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(368, 575);
+        pipWindow.resizeTo(331, 466);
       } catch (error) {
         console.warn('Failed to resize PiP window on completion:', error);
       }
@@ -287,7 +287,7 @@ export const PiPCard = ({
     // Expand PiP window back to full size on progress
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(368, 575);
+        pipWindow.resizeTo(331, 466);
       } catch (error) {
         console.warn('Failed to resize PiP window on progress:', error);
       }
@@ -299,7 +299,7 @@ export const PiPCard = ({
     // Expand PiP window back to full size on breakdown
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(368, 575);
+        pipWindow.resizeTo(331, 466);
       } catch (error) {
         console.warn('Failed to resize PiP window on breakdown:', error);
       }
@@ -508,7 +508,7 @@ export const PiPCard = ({
         </div>
 
         {/* Navigation Dots for summary card */}
-        <div className="flex-shrink-0 py-6 flex items-center justify-center">
+        <div className="flex-shrink-0 py-4 flex items-center justify-center">
           <NavigationDots
             tasks={tasks}
             currentViewingIndex={gameState.currentViewingIndex}
@@ -516,6 +516,7 @@ export const PiPCard = ({
             hasCommittedToTask={gameState.hasCommittedToTask}
             completedTasks={gameState.completedTasks}
             pausedTasks={gameState.pausedTasks}
+            isPiP={true}
           />
         </div>
       </div>
@@ -577,6 +578,7 @@ export const PiPCard = ({
           isCurrentTask={currentCardIndex === gameState.currentViewingIndex}
           activeCommittedIndex={gameState.activeCommittedIndex}
           flowProgress={gameState.flowProgress}
+          isPiP={true}
           sunsetImageUrl={(() => {
             if (gameState.completedTasks.has(currentTask.id)) {
               // For completed tasks, use their earned card from todaysCompletedTasks
@@ -644,7 +646,7 @@ export const PiPCard = ({
       </div>
 
       {/* Navigation Dots - positioned below the card */}
-      <div className="flex-shrink-0 py-6 flex items-center justify-center">
+      <div className="flex-shrink-0 py-4 flex items-center justify-center">
         <NavigationDots
           tasks={tasks}
           currentViewingIndex={gameState.currentViewingIndex}
@@ -652,6 +654,7 @@ export const PiPCard = ({
           hasCommittedToTask={gameState.hasCommittedToTask}
           completedTasks={gameState.completedTasks}
           pausedTasks={gameState.pausedTasks}
+          isPiP={true}
         />
       </div>
 

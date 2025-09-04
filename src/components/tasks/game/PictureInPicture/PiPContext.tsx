@@ -26,7 +26,7 @@ interface PiPProviderProps {
   children: ReactNode;
 }
 
-const DEFAULT_PIP_SIZE = { width: 368, height: 540 };
+const DEFAULT_PIP_SIZE = { width: 331, height: 466 };
 
 export const PiPProvider: React.FC<PiPProviderProps> = ({ children }) => {
   const [isPiPActive, setIsPiPActive] = useState(false);
