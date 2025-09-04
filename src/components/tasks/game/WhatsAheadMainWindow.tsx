@@ -3,6 +3,7 @@ import { Heart, AlertTriangle, Zap, Sparkles } from "lucide-react";
 import { TaskCardData, GameStateType } from './GameState';
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { parseTimeToMinutes } from "@/utils/timeUtils";
 
 interface WhatsAheadMainWindowProps {
   tasks: TaskCardData[];
@@ -22,7 +23,7 @@ export const WhatsAheadMainWindow = ({
       if (user) {
         const { data } = await supabase
           .from('profiles')
-          .select('peak_energy_time, lowest_energy_time, task_preferences')
+          .select('peak_energy_time, lowest_energy_time, task_preferences, target_hours')
           .eq('user_id', user.id)
           .single();
         setUserProfile(data);
@@ -46,12 +47,13 @@ export const WhatsAheadMainWindow = ({
             is_liked: task.is_liked || false,
             is_urgent: task.is_urgent || false,
             is_quick: task.is_quick || false,
-            category: undefined, // We don't have category in TaskCardData
-            estimated_minutes: task.estimated_time ? parseInt(task.estimated_time) : 30
+            category: task.category,
+            estimated_minutes: task.estimated_time ? parseTimeToMinutes(task.estimated_time) || 30 : 30
           })),
           userPreferences: userProfile?.task_preferences || {},
           peakEnergyTime: userProfile?.peak_energy_time,
           lowestEnergyTime: userProfile?.lowest_energy_time,
+          targetHours: userProfile?.target_hours,
           isShuffled: gameState.wasShuffled
         }
       });
@@ -83,9 +85,15 @@ export const WhatsAheadMainWindow = ({
             }}>
               <div className="flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-yellow-400/80 flex-shrink-0 mt-0.5" />
-                <p className="text-white/90 text-base leading-relaxed">
-                  {explanation}
-                </p>
+                <div 
+                  className="text-white/90 text-base leading-relaxed"
+                  dangerouslySetInnerHTML={{ 
+                    __html: explanation
+                      .replace(/\*\*\[(\d+)\]\s*([^*]+)\*\*/g, 
+                        '<span style="background-color: rgba(251, 191, 36, 0.25); padding: 2px 6px; border-radius: 4px; font-weight: 500;">[$1] $2</span>')
+                      .replace(/\n/g, '<br />')
+                  }}
+                />
               </div>
             </div>
           )}

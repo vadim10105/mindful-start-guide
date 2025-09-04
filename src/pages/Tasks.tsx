@@ -1132,7 +1132,7 @@ const TasksContent = () => {
         const tasksToSave = data.tasks.map((task: ExtractedTask, index: number) => {
           const estimatedMinutes = task.estimated_time ? parseTimeToMinutes(task.estimated_time) : null;
           const category = taskCategories[task.title] || 'Admin Work';
-          const isQuick = estimatedMinutes !== null && estimatedMinutes <= 20;
+          const isQuick = estimatedMinutes !== null && estimatedMinutes <= 30;
           // Convert category title to ID format for preference lookup
           const categoryId = category.toLowerCase().replace(/ /g, '_');
           const isLoved = taskPreferences[categoryId] === 'liked'; // Auto-apply loved tag if category is liked
@@ -1146,7 +1146,7 @@ const TasksContent = () => {
             task_status: 'task_list' as const, // New tasks start in task list  
             category: category, // Save AI categorization
             estimated_minutes: estimatedMinutes, // Convert time estimate to minutes
-            is_quick: isQuick, // Auto-apply quick tag if <= 20 minutes
+            is_quick: isQuick, // Auto-apply quick tag if <= 30 minutes
             is_liked: isLoved, // Auto-apply loved tag if category is liked
             is_urgent: isUrgent // Auto-apply urgent tag based on AI detection
           };
@@ -1341,7 +1341,7 @@ const TasksContent = () => {
           task_status: 'task_list',
           is_liked: isLoved, // Auto-apply loved tag if category is liked
           is_urgent: isUrgent, // Auto-apply urgent tag based on AI detection
-          is_quick: isQuick, // Auto-apply quick tag if <= 20 minutes
+          is_quick: isQuick, // Auto-apply quick tag if <= 30 minutes
           category: category,
           estimated_minutes: estimatedMinutes
         };
@@ -1484,7 +1484,7 @@ const TasksContent = () => {
 
       // Convert time to minutes for database storage
       const minutes = parseTimeToMinutes(estimatedTime);
-      const isQuick = minutes !== null && minutes <= 20;
+      const isQuick = minutes !== null && minutes <= 30;
 
       // Update Supabase with time, category, and auto-apply quick tag
       const { error: updateError } = await supabase

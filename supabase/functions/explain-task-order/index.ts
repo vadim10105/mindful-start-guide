@@ -22,6 +22,7 @@ interface RequestBody {
   userPreferences?: Record<string, string>;
   peakEnergyTime?: string;
   lowestEnergyTime?: string;
+  targetHours?: number;
   isShuffled: boolean;
 }
 
@@ -60,7 +61,8 @@ function getCurrentEnergyState(peakEnergyTime?: string, lowestEnergyTime?: strin
 async function generateExplanation(
   tasks: Task[],
   energyState: 'high' | 'low',
-  userPreferences: Record<string, string>
+  userPreferences: Record<string, string>,
+  targetHours?: number
 ): Promise<string> {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
   if (!apiKey) {
@@ -75,33 +77,128 @@ async function generateExplanation(
   // Build task details for prompt
   const taskDetails = tasks.map((task, idx) => {
     const tags = [];
-    if (task.is_quick) tags.push('quick');
-    if (task.is_liked) tags.push('liked');
-    if (task.is_urgent) tags.push('urgent');
+    if (task.is_quick) tags.push('QUICK-TAG');
+    if (task.is_liked) tags.push('LIKED');
+    if (task.is_urgent) tags.push('URGENT');
     
     const minutes = task.estimated_minutes || 30;
-    const duration = minutes >= 60 ? `${Math.round(minutes/60)}h` : `${minutes}m`;
+    const duration = minutes >= 60 ? 
+      minutes % 60 === 0 ? 
+        `${minutes/60} hour${minutes/60 > 1 ? 's' : ''}` : 
+        `${Math.floor(minutes/60)}h ${minutes % 60}m` : 
+      `${minutes} minutes`;
     
-    return `${idx + 1}. "${task.title}" (${duration}${tags.length ? ', ' + tags.join(', ') : ''})`;
+    return `${idx + 1}. "${task.title}" - Duration: ${duration}${task.category ? ` - Category: ${task.category}` : ''}${tags.length ? ' - Tags: ' + tags.join(', ') : ''}`;
   }).join('\n');
+
+  // Let AI naturally consider breaks based on task flow and user needs
+
+  // Calculate session vs target comparison
+  const sessionHours = totalMinutes / 60;
+  
+  // Debug logging
+  console.log('Session calculation:', {
+    totalMinutes,
+    sessionHours,
+    targetHours,
+    comparison: sessionHours > targetHours
+  });
+  
+  const targetContext = targetHours ? 
+    sessionHours > targetHours ? 
+      `This is ${Math.round((sessionHours - targetHours) * 10) / 10}h more than your usual ${targetHours}h focus sessions.` :
+    sessionHours < targetHours * 0.7 ?
+      `Light session - well under your typical ${targetHours}h.` :
+      `Nice match for your usual ${targetHours}h focus time.`
+    : '';
+
+  // Calculate finish time with breaks
+  const now = new Date();
+  const sessionHoursRounded = Math.round(totalMinutes/60);
+  
+  // Add breaks: roughly 10-15 min break per hour of work
+  const breakMinutes = sessionHoursRounded <= 1 ? 0 : 
+                      sessionHoursRounded <= 2 ? 15 :
+                      sessionHoursRounded <= 3 ? 30 :
+                      sessionHoursRounded <= 4 ? 45 :
+                      60; // For 4+ hour sessions
+  
+  const totalTimeWithBreaks = totalMinutes + breakMinutes;
+  const finishTime = new Date(now.getTime() + totalTimeWithBreaks * 60 * 1000);
+  
+  // Round to nearest half hour
+  const minutes = finishTime.getMinutes();
+  const roundedMinutes = Math.round(minutes / 30) * 30;
+  finishTime.setMinutes(roundedMinutes);
+  
+  // If rounding pushed us to the next hour, adjust
+  if (roundedMinutes === 60) {
+    finishTime.setMinutes(0);
+    finishTime.setHours(finishTime.getHours() + 1);
+  }
+  
+  const finishTimeString = finishTime.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
 
   const prompt = `Tasks ordered:
 ${taskDetails}
 
 Energy: ${energyState === 'high' ? 'peak hours' : 'low energy'}
 Total session: ${Math.round(totalMinutes/60)}h ${totalMinutes % 60}m
+${targetContext}
+Estimated finish: around ${finishTimeString} (with breaks)
 
-Write a casual, authentic explanation (2-3 sentences) about why this task order makes sense. Use "we" and "you" but avoid corporate speak like "dive in", "tackle", "leverage", "optimize", etc. Keep it real and human. Focus on:
-- Why starting with this first task is smart
-- How the middle tasks naturally flow 
-- Why ending this way feels good
+Write a BRIEF explanation (60-80 words MAX) explaining WHY each task is positioned where it is to maximize completion probability. Focus on the strategic reasoning - momentum, energy matching, cognitive load, etc. ${targetContext ? `Note: ${targetContext}` : ''} Be specific about WHY this order helps you finish. NO SUMMARY. End with: "You'll wrap up around ${finishTimeString}." 
 
-Example vibes (but vary it):
-- "Starting with that quick email thing to get your brain going. Then we're doing the fun project while you're feeling good. Ending with some easy admin stuff so you don't finish stressed."
-- "We're kicking off with something small to warm up. After that comes the meaty stuff you actually care about. Wrapping up with lighter work so you end on a chill note."
-- "First up is a quick win to get you rolling. Then we hit the important stuff while you've got momentum. Closing out with easier tasks so you finish feeling good."
+As you describe the task flow, suggest breaks in a task-centered way (never time-specific):
+- For long tasks (1+ hours): "take a break halfway through" or "pause midway if needed"
+- Between very different types of tasks: "good time for a break" or "stretch your legs before..."
+- For multiple similar tasks: "take a break after the second one"
+- NEVER say specific times like "after 45 minutes" - always relate breaks to task completion or progress
+- AVOID corporate clichés like "breather", "switch gears", "pivot", etc.
 
-Use natural language. Mention specific task attributes (quick, liked, urgent) conversationally.`;
+FORMATTING RULES: 
+1. When mentioning a task by name, format it as: **[1] Task Name** or **[2] Task Name** etc. based on its position in the list.
+2. Add a line break (new paragraph) after discussing each task to create visual breathing room.
+3. Structure like: "Talk about task 1... [line break] Then task 2... [line break] Finally task 3..."
+
+Don't save all break mentions for the end - mention them AS you describe moving through the tasks.
+
+Focus on WHY the order works strategically:
+- Quick start: "Starting small builds momentum for bigger tasks ahead"
+- Energy matching: "Tackling complex work now while your focus is sharpest"
+- Category batching: "Staying in creative mode avoids mental context switching"
+- Urgent timing: "Getting this done early removes mental pressure"
+- Liked tasks: "Your enjoyment here will fuel energy for what follows"
+- End strong: "Finishing with something manageable ensures you complete the session"
+
+CRITICAL RULES - PAY ATTENTION TO TASK DURATIONS:
+1. Read the ACTUAL duration listed for each task. DO NOT make up times!
+   - If it says "Duration: 1 hour" → This will take AN HOUR, not "a minute"
+   - If it says "Duration: 30 minutes" → This is a half-hour task
+   - If it says "Duration: 15 minutes" → This is a short 15-minute task
+   
+2. Only call something "quick" if it has "QUICK-TAG" in its tags. A 15-minute task without QUICK-TAG is just "short", not "quick".
+
+3. BE REALISTIC about time:
+   - NEVER say "you'll get it done in a minute" for hour-long tasks
+   - NEVER minimize actual task durations
+   - If a task is 2 hours, acknowledge it's a "couple hours of work"
+
+4. Only mention LIKED, URGENT, or QUICK-TAG if you see those exact words in the task's tags section.
+
+5. NEVER say "it's liked" or "it's urgent" or "it's quick" - instead weave these attributes naturally into the description:
+   - BAD: "This task is liked and urgent"
+   - GOOD: "Tackle that important project while you're energized"
+
+6. When mentioning categories or attributes, be subtle and conversational:
+   - BAD: "These are both Admin Work tasks"
+   - GOOD: "Keep the admin momentum going"
+
+`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -115,12 +212,12 @@ Use natural language. Mention specific task attributes (quick, liked, urgent) co
         messages: [
           { 
             role: 'system', 
-            content: 'You are a chill friend explaining why this task order makes sense. No corporate jargon. Keep it real, casual, and human. Use 2-3 sentences that sound like how people actually talk.' 
+            content: 'You are a concise ADHD coach. Be BRIEF - one short sentence per task. No long explanations or fluff. Just explain the task order logic quickly. Think Twitter-length, not blog post. Get to the point.' 
           },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 150,
+        max_tokens: 200,
       }),
     });
 
@@ -134,30 +231,10 @@ Use natural language. Mention specific task attributes (quick, liked, urgent) co
     return data.choices[0].message.content.trim();
   } catch (error) {
     console.error('Error generating explanation:', error);
-    // Fallback to template-based explanation
-    return generateFallbackExplanation(tasks, energyState);
+    throw error;
   }
 }
 
-function generateFallbackExplanation(tasks: Task[], energyState: 'high' | 'low'): string {
-  const hasQuickStart = tasks[0]?.is_quick || (tasks[0]?.estimated_minutes && tasks[0].estimated_minutes <= 20);
-  const hasLikedSecond = tasks[1]?.is_liked;
-  const hasUrgent = tasks.some(t => t.is_urgent);
-
-  if (energyState === 'high') {
-    if (hasQuickStart && hasLikedSecond) {
-      return "Starting with something quick to get your brain going. Then we're hitting that task you actually enjoy while you're feeling good. Ending with easier stuff so you don't finish feeling fried.";
-    } else if (hasUrgent) {
-      return "Since you're feeling sharp right now, we're getting the urgent stuff done first. After that comes work that'll keep you interested. Finishing up with lighter tasks so you end feeling good, not exhausted.";
-    }
-    return "We've set things up to match when you're feeling most awake. Starting with the harder stuff while you're fresh, then easing off as you go. You'll get a lot done without burning yourself out.";
-  } else {
-    if (hasQuickStart) {
-      return "Since your energy's lower, we're starting super simple to get you going. Once you warm up, we'll work up to the bigger stuff. Ending with something easy so you finish on a good note.";
-    }
-    return "Working with your natural energy dip here. Starting with straightforward stuff to ease you in, then building up slowly. You'll still get things done without forcing it.";
-  }
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -177,7 +254,7 @@ serve(async (req) => {
       });
     }
 
-    const { tasks, userPreferences = {}, peakEnergyTime, lowestEnergyTime } = body;
+    const { tasks, userPreferences = {}, peakEnergyTime, lowestEnergyTime, targetHours } = body;
     
     if (!tasks || tasks.length === 0) {
       return new Response(JSON.stringify({ 
@@ -193,7 +270,7 @@ serve(async (req) => {
     const energyState = getCurrentEnergyState(peakEnergyTime, lowestEnergyTime);
     
     // Generate AI explanation
-    const explanation = await generateExplanation(tasks, energyState, userPreferences);
+    const explanation = await generateExplanation(tasks, energyState, userPreferences, targetHours);
 
     return new Response(JSON.stringify({
       explanation,

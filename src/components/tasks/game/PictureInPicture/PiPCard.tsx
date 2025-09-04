@@ -272,10 +272,13 @@ export const PiPCard = ({
   };
 
   const handleTaskComplete = async (taskId: string) => {
-    // Expand PiP window back to full size on completion
+    // Only expand PiP window if it's in ultra-compact mode
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(331, 466);
+        // Check if window is in ultra-compact mode (height <= 150)
+        if (pipWindow.innerHeight <= 150) {
+          pipWindow.resizeTo(331, 466);
+        }
       } catch (error) {
         console.warn('Failed to resize PiP window on completion:', error);
       }
@@ -284,10 +287,13 @@ export const PiPCard = ({
   };
 
   const handleMadeProgressWrapper = async (taskId: string) => {
-    // Expand PiP window back to full size on progress
+    // Only expand PiP window if it's in ultra-compact mode
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(331, 466);
+        // Check if window is in ultra-compact mode (height <= 150)
+        if (pipWindow.innerHeight <= 150) {
+          pipWindow.resizeTo(331, 466);
+        }
       } catch (error) {
         console.warn('Failed to resize PiP window on progress:', error);
       }
@@ -296,10 +302,13 @@ export const PiPCard = ({
   };
 
   const handleBreakdown = (taskId: string) => {
-    // Expand PiP window back to full size on breakdown
+    // Only expand PiP window if it's in ultra-compact mode
     if (pipWindow && !pipWindow.closed) {
       try {
-        pipWindow.resizeTo(331, 466);
+        // Check if window is in ultra-compact mode (height <= 150)
+        if (pipWindow.innerHeight <= 150) {
+          pipWindow.resizeTo(331, 466);
+        }
       } catch (error) {
         console.warn('Failed to resize PiP window on breakdown:', error);
       }

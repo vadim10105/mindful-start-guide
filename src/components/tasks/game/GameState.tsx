@@ -13,6 +13,7 @@ export interface TaskCardData {
   estimated_time?: string;
   time_spent_minutes?: number;
   task_status?: 'task_list' | 'not_started' | 'incomplete' | 'made_progress' | 'complete';
+  category?: string;
 }
 
 export interface CompletedTask {

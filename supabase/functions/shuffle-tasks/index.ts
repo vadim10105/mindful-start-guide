@@ -85,7 +85,7 @@ function applyRulePlacement(tasks: Task[]): Task[] {
   
   // Position 1: First Quick-tagged task (highest score if multiple)
   const quickTasks = available
-    .filter(t => t.is_quick || (t.estimated_minutes && t.estimated_minutes <= 20))
+    .filter(t => t.is_quick || (t.estimated_minutes && t.estimated_minutes <= 30))
     .sort((a, b) => b.score - a.score);
   
   if (quickTasks.length > 0) {
@@ -131,7 +131,7 @@ function applyRulePlacement(tasks: Task[]): Task[] {
     const goodEndingTasks = sortedRemaining.filter(t => 
       t.is_quick || 
       t.is_liked || 
-      (t.estimated_minutes && t.estimated_minutes <= 20)
+      (t.estimated_minutes && t.estimated_minutes <= 30)
     );
     
     let savedForEnd: Task | null = null;
