@@ -111,9 +111,28 @@ export const WhatsAheadMainWindow = ({
               const isPaused = gameState.pausedTasks.has(task.id);
               const isActive = index === gameState.activeCommittedIndex;
               const isCurrent = index === gameState.currentViewingIndex;
-              // Get time from todaysCompletedTasks (like PiPCard does)
+              
+              // Calculate time spent from multiple sources
+              let timeSpent = 0;
+              
+              // 1. Check completed tasks
               const completedTask = gameState.todaysCompletedTasks.find(t => t.id === task.id);
-              const timeSpent = completedTask?.timeSpent || 0;
+              if (completedTask?.timeSpent) {
+                timeSpent = completedTask.timeSpent;
+              }
+              // 2. Check paused tasks
+              else if (gameState.pausedTasks.has(task.id)) {
+                timeSpent = gameState.pausedTasks.get(task.id) || 0;
+              }
+              // 3. Check if it's the active task (currently being worked on)
+              else if (isActive && gameState.taskStartTimes[task.id]) {
+                const elapsedMs = Date.now() - gameState.taskStartTimes[task.id];
+                timeSpent = Math.round(elapsedMs / 60000);
+              }
+              // 4. Check saved time_spent_minutes from database
+              else if (task.time_spent_minutes) {
+                timeSpent = task.time_spent_minutes;
+              }
               
               return (
                 <div key={task.id}>
