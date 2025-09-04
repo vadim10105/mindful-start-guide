@@ -30,6 +30,17 @@ export const BlockStackingProgress = ({ progress, isPaused, isOvertime, isActive
       return () => clearInterval(interval);
     }
   }, [isActiveCommitted, isPaused]);
+
+  // Update timer for paused display
+  useEffect(() => {
+    if (isPaused && pausedStartTime) {
+      const interval = setInterval(() => {
+        setCurrentTime(Date.now());
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isPaused, pausedStartTime]);
   
   // Calculate progress using timer state (same as card view)
   const calculateProgress = () => {
