@@ -27,6 +27,7 @@ interface TaskGameControllerProps {
   isLoading?: boolean;
   isProcessing?: boolean;
   onLoadingComplete?: () => void;
+  wasShuffled?: boolean;
 }
 
 export const TaskGameController = ({ 
@@ -35,11 +36,17 @@ export const TaskGameController = ({
   onTaskComplete, 
   isLoading = false, 
   isProcessing = false, 
-  onLoadingComplete 
+  onLoadingComplete,
+  wasShuffled = false
 }: TaskGameControllerProps) => {
   const [tasks, setTasks] = useState(initialTasks);
   const gameState = useGameState(tasks);
   const [showWhatsAhead, setShowWhatsAhead] = useState(false);
+  
+  // Set wasShuffled on mount
+  useEffect(() => {
+    gameState.setWasShuffled(wasShuffled);
+  }, [wasShuffled]);
 
   // Update tasks when initialTasks changes - but only if they're actually different
   useEffect(() => {

@@ -1818,6 +1818,20 @@ const TasksContent = () => {
         
         setTaggedTasks(orderedTaggedTasks);
         
+        // Set prioritizedTasks to indicate shuffle was used
+        const prioritized: PrioritizedTask[] = data.shuffledTasks.map((shuffledTask, index) => ({
+          id: shuffledTask.id,
+          title: shuffledTask.title,
+          priority_score: shuffledTask.score || 0,
+          explanation: `Shuffled to position ${index + 1}`,
+          is_liked: taskTagsById[shuffledTask.id]?.isLiked,
+          is_urgent: taskTagsById[shuffledTask.id]?.isUrgent,
+          is_quick: taskTagsById[shuffledTask.id]?.isQuick,
+          category: tasksById[shuffledTask.id]?.category,
+          estimated_minutes: tasksById[shuffledTask.id]?.estimated_minutes
+        }));
+        setPrioritizedTasks(prioritized);
+        
         // Open PiP after animation completes
         setTimeout(() => {
           enterPiP();
@@ -1877,6 +1891,9 @@ const TasksContent = () => {
     
     console.log('📋 Setting tasks in manual order for game cards...');
     setTaggedTasks(orderedTaggedTasks);
+    
+    // Clear prioritizedTasks to indicate manual order
+    setPrioritizedTasks([]);
     
     // Update tasks to not_started status when entering game
     await updateTasksToNotStarted(taskIds);
@@ -3548,6 +3565,7 @@ const TasksContent = () => {
               estimated_time: taskTimeEstimatesById[task.id] || taskTimeEstimates[task.title] || formatEstimatedTime(tasksById[task.id]?.estimated_minutes),
               notes: task.notes // Include notes for game cards
             }))}
+            wasShuffled={prioritizedTasks.length > 0}
             isLoading={false}
             isProcessing={false}
             onLoadingComplete={() => setIsProcessing(false)}

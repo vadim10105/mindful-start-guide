@@ -1,6 +1,8 @@
-import React from 'react';
-import { Heart, AlertTriangle, Zap } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Heart, AlertTriangle, Zap, Sparkles } from "lucide-react";
 import { TaskCardData, GameStateType } from './GameState';
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface WhatsAheadMainWindowProps {
   tasks: TaskCardData[];
@@ -11,6 +13,59 @@ export const WhatsAheadMainWindow = ({
   tasks, 
   gameState
 }: WhatsAheadMainWindowProps) => {
+  const [userProfile, setUserProfile] = useState<any>(null);
+  
+  // Fetch user profile for energy times
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('peak_energy_time, lowest_energy_time, task_preferences')
+          .eq('user_id', user.id)
+          .single();
+        setUserProfile(data);
+      }
+    };
+    fetchProfile();
+  }, []);
+  
+  // Fetch AI explanation if tasks were shuffled
+  const { data: explanation, isLoading: isLoadingExplanation } = useQuery({
+    queryKey: ['task-order-explanation', tasks.map(t => t.id).join(','), gameState.wasShuffled],
+    queryFn: async () => {
+      if (!gameState.wasShuffled) return null;
+      
+      const { data, error } = await supabase.functions.invoke('explain-task-order', {
+        body: {
+          tasks: tasks.map((task, index) => ({
+            title: task.title,
+            position: index + 1,
+            score: task.priority_score,
+            is_liked: task.is_liked || false,
+            is_urgent: task.is_urgent || false,
+            is_quick: task.is_quick || false,
+            category: undefined, // We don't have category in TaskCardData
+            estimated_minutes: task.estimated_time ? parseInt(task.estimated_time) : 30
+          })),
+          userPreferences: userProfile?.task_preferences || {},
+          peakEnergyTime: userProfile?.peak_energy_time,
+          lowestEnergyTime: userProfile?.lowest_energy_time,
+          isShuffled: gameState.wasShuffled
+        }
+      });
+      
+      if (error) {
+        console.error('Error fetching task explanation:', error);
+        return null;
+      }
+      
+      return data?.explanation;
+    },
+    enabled: gameState.wasShuffled && !!userProfile,
+    staleTime: 5 * 60 * 1000 // Cache for 5 minutes
+  });
   return (
     <>
       {/* Dark overlay background */}
@@ -21,6 +76,35 @@ export const WhatsAheadMainWindow = ({
         backgroundColor: 'rgba(255, 255, 255, 0.05)'
       }}>
         <div className="overflow-y-auto max-h-[80vh] p-6">
+          {/* AI Explanation Section */}
+          {gameState.wasShuffled && explanation && (
+            <div className="mb-6 p-4 pr-8 rounded-lg" style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.06)'
+            }}>
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-yellow-400/80 flex-shrink-0 mt-0.5" />
+                <p className="text-white/90 text-base leading-relaxed">
+                  {explanation}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {/* Loading skeleton for explanation */}
+          {gameState.wasShuffled && isLoadingExplanation && (
+            <div className="mb-6 p-4 pr-8 rounded-lg animate-pulse" style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.06)'
+            }}>
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 bg-white/20 rounded flex-shrink-0"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-white/20 rounded w-3/4"></div>
+                  <div className="h-3 bg-white/20 rounded w-1/2"></div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-2">
             {tasks.map((task, index) => {
               const isCompleted = gameState.completedTasks.has(task.id);

@@ -28,6 +28,8 @@ export interface CompletedTask {
   cardNumber?: number;
 }
 
+export type GameStateType = ReturnType<typeof useGameState>;
+
 export const useGameState = (tasks: TaskCardData[]) => {
   const [currentViewingIndex, setCurrentViewingIndex] = useState(0);
   const [activeCommittedIndex, setActiveCommittedIndex] = useState(0);
@@ -42,6 +44,7 @@ export const useGameState = (tasks: TaskCardData[]) => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showTaskList, setShowTaskList] = useState(false);
   const [flowProgress, setFlowProgress] = useState(0);
+  const [wasShuffled, setWasShuffled] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout>();
   const swiperRef = useRef<any>(null);
@@ -114,6 +117,8 @@ export const useGameState = (tasks: TaskCardData[]) => {
     setShowTaskList,
     flowProgress,
     setFlowProgress,
+    wasShuffled,
+    setWasShuffled,
     
     // Refs
     timerRef,
