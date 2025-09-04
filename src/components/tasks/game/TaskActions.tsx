@@ -181,7 +181,7 @@ export const TaskActions = ({
             onPauseHover?.(false);
           }
         }}
-        className="group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-yellow-400/50 hover:bg-yellow-400 hover:shadow-lg overflow-hidden"
+        className="play-pause-button group relative min-w-[2.5rem] w-10 h-10 hover:w-auto rounded-full transition-all duration-500 ease-out flex items-center justify-center hover:justify-start hover:px-3 hover:gap-2 border border-gray-200/50 hover:border-yellow-400/50 hover:bg-yellow-400 hover:shadow-lg overflow-hidden"
         style={{ 
           backgroundColor: isPaused ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
           backdropFilter: isPaused ? 'blur(10px)' : 'none'

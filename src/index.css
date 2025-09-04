@@ -270,4 +270,9 @@ All colors MUST be HSL.
   animation-play-state: running;
 }
 
+/* Task card opacity on start button hover */
+.task-card-content:has(.play-pause-button:hover) {
+  opacity: 1 !important;
+}
+
 

@@ -908,7 +908,9 @@ export const TaskCard = ({
             </div>
           )}
         </>
-        <div className="h-full flex flex-col">
+        <div className={`task-card-content h-full flex flex-col transition-opacity duration-300 ${
+          !isActiveCommitted && !isPaused && hasCommittedToTask ? 'opacity-50' : 'opacity-100'
+        }`}>
           <CardHeader className={`text-center ${isPiP ? 'pb-2' : 'pb-4'} flex-shrink-0 relative overflow-visible px-8 ${isPiP ? 'py-4' : 'py-6'}`}>
             
             {/* Task Tags - Top Center */}
