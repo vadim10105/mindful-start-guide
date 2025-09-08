@@ -156,7 +156,7 @@ Total session: ${Math.round(totalMinutes/60)}h ${totalMinutes % 60}m
 ${targetContext}
 Estimated finish: around ${finishTimeString} (with breaks)
 
-Write a BRIEF explanation (60-80 words MAX) explaining WHY each task is positioned where it is to maximize completion probability. Focus on the strategic reasoning - momentum, energy matching, cognitive load, etc. ${targetContext ? `Note: ${targetContext}` : ''} Be specific about WHY this order helps you finish. NO SUMMARY. End with: "You'll wrap up around ${finishTimeString}." 
+Write a BRIEF explanation (60-80 words MAX) explaining WHY each task is positioned where it is to maximize completion probability. IMPORTANT: You MUST discuss the tasks IN NUMERICAL ORDER (start with [1], then [2], then [3], etc.) - explain why each task works well in its specific position. Focus on the strategic reasoning - momentum, energy matching, cognitive load, etc. ${targetContext ? `Note: ${targetContext}` : ''} Be specific about WHY this order helps you finish. NO SUMMARY. End with: "You'll wrap up around ${finishTimeString}." 
 
 As you describe the task flow, suggest breaks in a task-centered way (never time-specific):
 - For long tasks (1+ hours): "take a break halfway through" or "pause midway if needed"
@@ -168,7 +168,8 @@ As you describe the task flow, suggest breaks in a task-centered way (never time
 FORMATTING RULES: 
 1. When mentioning a task by name, format it as: **[1] Task Name** or **[2] Task Name** etc. based on its position in the list.
 2. Add a line break (new paragraph) after discussing each task to create visual breathing room.
-3. Structure like: "Talk about task 1... [line break] Then task 2... [line break] Finally task 3..."
+3. CRITICAL: Discuss tasks in SEQUENTIAL ORDER (1, 2, 3, etc.) - never jump around or reorder them in your explanation.
+4. Structure like: "Start with **[1] First Task**... [line break] Then move to **[2] Second Task**... [line break] Finally **[3] Third Task**..."
 
 Don't save all break mentions for the end - mention them AS you describe moving through the tasks.
 

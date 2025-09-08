@@ -3,13 +3,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,15 +16,13 @@ serve(async (req) => {
   try {
     const { brainDumpText, simplifyTasks, tasks } = await req.json();
 
-    // Handle task simplification
     if (simplifyTasks && tasks) {
       console.log('Simplifying tasks:', tasks);
-      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
@@ -36,47 +33,33 @@ serve(async (req) => {
 
 RULES:
 1. Create exactly 2 words for each task
-2. Use action words + object (e.g., "Email John", "Write Report", "Call Mom")
-3. Keep the essence of the task but make it calendar-friendly
-4. Return ONLY a JSON object mapping original task titles to simplified versions
+2. Use action words + object (e.g., "Email John", "Write Report")
+3. Keep the essence but make it calendar-friendly
+4. Return ONLY a JSON object mapping original to simplified
 5. Format: {"original task": "simplified version"}`
             },
             {
               role: 'user',
-              content: `Simplify these tasks:\n${tasks.map((task: string) => `- ${task}`).join('\n')}`
+              content: `Simplify these tasks:\n${tasks.map(t => `- ${t}`).join('\n')}`
             }
           ],
           temperature: 0.3,
-          max_tokens: 1000,
-        }),
+          max_tokens: 1000
+        })
       });
 
       const data = await response.json();
-      
-      if (!response.ok) {
-        console.error('OpenAI API error:', data);
-        throw new Error(data.error?.message || 'Failed to simplify tasks');
-      }
+      if (!response.ok) throw new Error(data.error?.message || 'Failed to simplify tasks');
 
-      const aiResponse = data.choices[0].message.content;
-      console.log('AI simplification response:', aiResponse);
-
-      let simplifiedTasks;
-      try {
-        const cleanedResponse = aiResponse.replace(/```json\n?|\n?```/g, '').trim();
-        simplifiedTasks = JSON.parse(cleanedResponse);
-      } catch (parseError) {
-        console.error('Failed to parse AI response:', aiResponse);
-        throw new Error('Failed to parse simplified tasks');
-      }
+      const cleaned = data.choices[0].message.content.replace(/```json\n?|\n?```/g, '').trim();
+      const simplifiedTasks = JSON.parse(cleaned);
 
       return new Response(JSON.stringify({ simplifiedTasks }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Handle brain dump processing (existing functionality)
-    if (!brainDumpText || brainDumpText.trim().length === 0) {
+    if (!brainDumpText?.trim()) {
       throw new Error('Brain dump text is required');
     }
 
@@ -86,80 +69,96 @@ RULES:
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: `You are a task organization assistant. Your job is to take unstructured brain dump text and extract discrete, actionable tasks from it.
+            content: `You are a task organization assistant specializing in extracting actionable tasks from unstructured brain dumps and random thoughts.
 
-RULES:
-1. Extract only actionable tasks - ignore thoughts, notes, or non-actionable items
-2. Each task should be a single, clear action
-3. Make tasks specific and actionable (e.g., "Email John about the meeting" not "John meeting")
-4. If a complex item has multiple steps, break it into separate tasks
-5. PRESERVE THE ORIGINAL ORDER - extract tasks in the same sequence they appear in the text
-6. Return ONLY a JSON array of task objects
-7. Each task object should have: {"title": "task description", "estimated_time": "time estimate using 'm' and 'h' (e.g., '15m', '2h', '1h 30m')", "is_urgent": boolean}
-8. Mark a task as urgent (is_urgent: true) ONLY when it contains:
-   - Explicit urgency words: "urgent", "ASAP", "immediately", "critical", "emergency"
-   - Blocking language: "blocking", "showstopper", "team waiting", "holding up"
-   - Overdue indicators: "overdue", "late", "past deadline", "should have been done"
-   - Otherwise, set is_urgent: false`
+CORE MISSION:
+Transform mental clutter into clear, specific, actionable tasks someone can start immediately.
+
+EXTRACTION RULES:
+1. Extract ONLY actionable tasks; ignore pure thoughts or notes.
+2. Each task must be a single, clear action with a strong verb.
+3. Break multi-step items into separate tasks.
+4. PRESERVE ORIGINAL ORDER.
+5. Return ONLY a JSON array of objects.
+
+WORDING BEST PRACTICES:
+- Start with a strong action verb (Send, Call, Schedule, Complete, Review, Research, Update, Create, Write, Book, Buy, Fix).
+- Specify WHO and WHAT.
+- Add WHY only if the purpose isn't obvious.
+- When details are missing, make reasonable assumptions without over-interpreting.
+
+NEXT-STEP CLARITY (only when obvious or mentioned):
+If the context clearly indicates what the next physical action should be, make it specific:
+- "Plan trip to Barcelona" → "Research train schedules for Barcelona" (if trains were mentioned)
+- "Handle project" → Keep as-is unless specific next step is mentioned
+- Only clarify when you can infer from the actual text, not from wild assumptions
+
+PROGRESS MILESTONES (for tasks 2 hours or more):
+Break down tasks that feel too big to start (2+ hours) into natural chunks:
+- "Create presentation" (2h) → "Create presentation outline" (30m) + "Build presentation slides" (1h 30m)
+- "Write blog post" (2h) → "Outline blog post" (30m) + "Draft blog post" (1h) + "Edit blog post" (30m)
+- "Deep clean apartment" (3h) → "Clean kitchen and bathroom" (1h 30m) + "Clean bedrooms and living areas" (1h 30m)
+- Keep natural breaking points that reduce friction to start
+- Aim for bite-sized starting points (often 30m-1h) to build momentum
+
+OUTCOME-ORIENTED LANGUAGE (only when context provides it):
+Add outcomes only when they're mentioned or clearly implied:
+- "Email Sarah about budget for Q4" → "Email Sarah about budget approval for Q4 funding"
+- "Call dentist" → Keep as-is unless purpose was mentioned
+- Don't invent outcomes that aren't in the original text
+
+JSON FORMAT:
+Each task object must include:
+{
+  "title": "specific actionable description",
+  "estimated_time": "use 'm' and 'h' (e.g., '15m', '2h')",
+  "is_urgent": boolean
+}
+
+URGENCY:
+Set is_urgent: true only if text contains explicit urgency (urgent, ASAP, immediately, critical, blocking, overdue). Otherwise false.
+
+QUALITY CHECKS:
+- Stay faithful to the original text
+- Only enhance clarity when information is actually available
+- Break down tasks based on natural workflow, not arbitrary time chunks`
           },
-          {
-            role: 'user',
-            content: brainDumpText
-          }
+          { role: 'user', content: brainDumpText }
         ],
         temperature: 0.3,
-        max_tokens: 1500,
-      }),
+        max_tokens: 1500
+      })
     });
 
     const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('OpenAI API error:', data);
-      throw new Error(data.error?.message || 'Failed to process brain dump');
-    }
+    if (!response.ok) throw new Error(data.error?.message || 'Failed to process brain dump');
 
-    const aiResponse = data.choices[0].message.content;
-    console.log('AI response:', aiResponse);
+    const cleaned = data.choices[0].message.content.replace(/```json\n?|\n?```/g, '').trim();
+    const extractedTasks = JSON.parse(cleaned);
 
-    // Parse the JSON response from AI
-    let extractedTasks;
-    try {
-      // Clean up the response in case it has markdown formatting
-      const cleanedResponse = aiResponse.replace(/```json\n?|\n?```/g, '').trim();
-      extractedTasks = JSON.parse(cleanedResponse);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', aiResponse);
-      throw new Error('Failed to parse extracted tasks');
-    }
-
-    // Validate the response structure
     if (!Array.isArray(extractedTasks)) {
       throw new Error('Invalid response format from AI');
     }
 
-    console.log('Extracted tasks:', extractedTasks);
-
     return new Response(JSON.stringify({ tasks: extractedTasks }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('Error in process-brain-dump function:', error);
-    
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: error.message,
       details: 'Failed to process brain dump text'
     }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
