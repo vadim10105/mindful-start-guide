@@ -878,29 +878,7 @@ const TasksContent = () => {
     return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, [currentStep, isSettingsOpen, isProcessing, isTransitioning]);
 
-  // Phantom focus effect to activate keyboard capture while preserving typewriter animation
-  useEffect(() => {
-    // Only phantom focus when we're on the input step and not processing/transitioning
-    if (currentStep === 'input' && !isProcessing && !isTransitioning && !isSettingsOpen) {
-      // Brief delay to ensure components are rendered
-      const timeoutId = setTimeout(() => {
-        let targetRef = null;
-        if (textareaRef.current) {
-          targetRef = textareaRef.current;
-        }
-        
-        if (targetRef) {
-          // Phantom focus: briefly focus then immediately blur to activate page
-          targetRef.focus();
-          setTimeout(() => {
-            targetRef.blur();
-          }, 50);
-        }
-      }, 10);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [currentStep, isProcessing, isTransitioning, isSettingsOpen]);
+  // Phantom focus effect disabled
 
   // Load tasks when user changes or component mounts  
   useEffect(() => {
