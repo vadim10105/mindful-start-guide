@@ -880,8 +880,8 @@ const TasksContent = () => {
 
   // Phantom focus effect to activate keyboard capture while preserving typewriter animation
   useEffect(() => {
-    // Only phantom focus when we're on the input step and not processing/transitioning
-    if (currentStep === 'input' && !isProcessing && !isTransitioning && !isSettingsOpen) {
+    // Only phantom focus when we're on the input step and not processing/transitioning, and no active tasks
+    if (currentStep === 'input' && !isProcessing && !isTransitioning && !isSettingsOpen && activeTaskIds.length === 0) {
       // Brief delay to ensure components are rendered
       const timeoutId = setTimeout(() => {
         let targetRef = null;

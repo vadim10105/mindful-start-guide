@@ -69,16 +69,7 @@ export function TaskTimeline({
   const blocks = calculateTimelineBlocks(tasks, timeEstimates);
   
   if (blocks.length === 0) {
-    return (
-      <div className={`${className}`}>
-        <div className="text-xs font-medium text-muted-foreground mb-4 text-center">
-          DAY TIMELINE
-        </div>
-        <div className="text-xs text-muted-foreground/60 text-center">
-          Add tasks to see timeline
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
