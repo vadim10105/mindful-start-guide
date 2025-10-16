@@ -13,6 +13,9 @@ import Tasks from "./pages/Tasks";
 import CloudTest from "./pages/CloudTest";
 import GrassTest from "./pages/GrassTest";
 import NotFound from "./pages/NotFound";
+import PlayingCards from "./pages/PlayingCards";
+import SkyTransition from "./pages/SkyTransition";
+import CubeGalaxy from "./pages/CubeGalaxy";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +35,9 @@ const App = () => (
               <Route path="/welcome" element={<Index />} />
               <Route path="/cloud" element={<CloudTest />} />
               <Route path="/grass-test" element={<GrassTest />} />
+              <Route path="/playing-cards" element={<PlayingCards />} />
+              <Route path="/sky-transition" element={<SkyTransition />} />
+              <Route path="/cube-galaxy" element={<CubeGalaxy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
