@@ -53,7 +53,7 @@ const CubeGalaxy: React.FC = () => {
   // Generate the 16 cube positions (removed top-front-right corner and connected cubes)
   const shellPositions = useMemo(() => {
     const positions: [number, number, number][] = [];
-    const spacing = 1.3;
+    const spacing = 1.2;
     
     // Layer 1 (bottom, y = -spacing): 1 1 1 / 1 1 1 / 1 1 1 (COMPLETELY FILLED)
     positions.push([-spacing, -spacing, -spacing]); // back-left
@@ -102,9 +102,13 @@ const CubeGalaxy: React.FC = () => {
     
     cubes.forEach((cube, index) => {
       const originalPosition = shellPositions[index];
-      const radius = 2.5 + Math.random() * 2;
-      const speed = 4 + Math.random() * 4;
-      const yOffset = (Math.random() - 0.5) * 1.5;
+      // Distribute cubes in different orbital layers to avoid intersections
+      const baseRadius = 3 + (index % 4) * 0.8; // 4 different orbital rings
+      const radiusVariation = Math.random() * 0.5; // Small random variation within each ring
+      const radius = baseRadius + radiusVariation;
+      const speed = 8 + Math.random() * 6;
+      // Spread cubes vertically across different levels
+      const yOffset = ((index % 5) - 2) * 0.6; // 5 different height levels
       
       // Animation data that will be continuously updated
       const animationData = { 
@@ -164,8 +168,8 @@ const CubeGalaxy: React.FC = () => {
     container.addEventListener('mouseenter', handleMouseEnter);
     container.addEventListener('mouseleave', handleMouseLeave);
 
-    // Start in formation (no animation for now)
-    // setTimeout(() => updateCubeStates(), 100);
+    // Initialize the smooth galaxy animation system
+    setTimeout(() => updateCubeStates(), 500);
 
     return () => {
       container.removeEventListener('mouseenter', handleMouseEnter);
@@ -179,7 +183,7 @@ const CubeGalaxy: React.FC = () => {
       ref={containerRef}
       className="w-full h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center"
     >
-      <div className="w-[600px] h-[600px]">
+      <div className="w-[1200px] h-[1200px]">
         <Canvas
           orthographic
           camera={{
@@ -187,23 +191,23 @@ const CubeGalaxy: React.FC = () => {
             zoom: 80,
           }}
         >
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[10, 10, 5]} intensity={0.8} />
+          <ambientLight intensity={0.4} />
+          <directionalLight position={[-10, 10, 5]} intensity={2.5} />
           
           <group ref={groupRef}>
-            {/* 21 shell cubes */}
+            {/* 19 shell cubes */}
             {shellPositions.map((position, index) => (
               <OutlinedCube
                 key={index}
                 position={position}
-                color="#e5e7eb"
+                color="#ffffff"
               />
             ))}
             
             {/* Center orange cube */}
             <OutlinedCube
               position={[0, 0, 0]}
-              color="#f97316"
+              color="#FF7300"
               isCenter={true}
             />
           </group>
